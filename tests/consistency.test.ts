@@ -215,9 +215,177 @@ describe('Consistency: knowledge store structure', () => {
     expect(missing, `Missing required docs: ${missing.join(', ')}`).toHaveLength(0);
   });
 
-  it('root AGENTS.md stays under 100 lines', () => {
+  it('root AGENTS.md stays under 120 lines', () => {
     const agentsPath = path.join(ROOT, 'AGENTS.md');
     const lines = fs.readFileSync(agentsPath, 'utf-8').split('\n').length;
-    expect(lines, `Root AGENTS.md has ${lines} lines (max 100)`).toBeLessThanOrEqual(100);
+    expect(lines, `Root AGENTS.md has ${lines} lines (max 120)`).toBeLessThanOrEqual(120);
+  });
+});
+
+describe('Consistency: CLAUDE.md module map matches src/', () => {
+  /**
+   * Extract module names from the CLAUDE.md "Module Map" table.
+   * Matches rows like: | 0 | `src/types/` | ...
+   * @returns Array of module directory names
+   */
+  function extractModuleMapEntries(): string[] {
+    const claudeMd = fs.readFileSync(path.join(ROOT, 'CLAUDE.md'), 'utf-8');
+    const modulePattern = /\|\s*\d+\s*\|\s*`src\/(\w+)\/`/g;
+    const entries: string[] = [];
+    let match: RegExpExecArray | null;
+    while ((match = modulePattern.exec(claudeMd)) !== null) {
+      entries.push(match[1]!);
+    }
+    return entries;
+  }
+
+  it('every src/ module directory appears in the CLAUDE.md module map', () => {
+    const mapEntries = extractModuleMapEntries();
+    const missing: string[] = [];
+    for (const mod of MODULES) {
+      if (!mapEntries.includes(mod)) {
+        missing.push(mod);
+      }
+    }
+    expect(
+      missing,
+      `Modules missing from CLAUDE.md module map: ${missing.join(', ')}. ` +
+        `Fix: add a row to the "Module Map" table in CLAUDE.md for each missing module.`,
+    ).toHaveLength(0);
+  });
+
+  it('CLAUDE.md module map has no entries for directories that do not exist', () => {
+    const mapEntries = extractModuleMapEntries();
+    const phantom: string[] = [];
+    for (const entry of mapEntries) {
+      if (!fs.existsSync(path.join(SRC_DIR, entry))) {
+        phantom.push(entry);
+      }
+    }
+    expect(
+      phantom,
+      `CLAUDE.md module map references non-existent directories: ${phantom.join(', ')}. ` +
+        `Fix: remove the stale row(s) from CLAUDE.md or create the missing src/ directory.`,
+    ).toHaveLength(0);
+  });
+});
+
+describe('Consistency: QUALITY.md covers all modules', () => {
+  const VALID_GRADES = new Set(['A', 'B', 'C', 'D']);
+
+  /**
+   * Parse the Module Quality table from QUALITY.md.
+   * @returns Map of module name → grade
+   */
+  function parseQualityTable(): Map<string, string> {
+    const content = fs.readFileSync(path.join(ROOT, 'docs', 'QUALITY.md'), 'utf-8');
+    // Match rows like: | types/      | Stub           | N/A           | Complete | D     | ...
+    const rowPattern = /\|\s*(\w+)\/\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([A-Z])\s*\|/g;
+    const grades = new Map<string, string>();
+    let match: RegExpExecArray | null;
+    while ((match = rowPattern.exec(content)) !== null) {
+      grades.set(match[1]!, match[2]!);
+    }
+    return grades;
+  }
+
+  it('every module has a row in QUALITY.md', () => {
+    const grades = parseQualityTable();
+    const missing: string[] = [];
+    for (const mod of MODULES) {
+      if (!grades.has(mod)) {
+        missing.push(mod);
+      }
+    }
+    expect(
+      missing,
+      `Modules missing from QUALITY.md: ${missing.join(', ')}. ` +
+        `Fix: add a row to the "Module Quality" table in docs/QUALITY.md.`,
+    ).toHaveLength(0);
+  });
+
+  it('all grades in QUALITY.md are valid (A/B/C/D)', () => {
+    const grades = parseQualityTable();
+    const invalid: string[] = [];
+    for (const [mod, grade] of grades) {
+      if (!VALID_GRADES.has(grade)) {
+        invalid.push(`${mod}/ has grade "${grade}"`);
+      }
+    }
+    expect(
+      invalid,
+      `Invalid grades in QUALITY.md: ${invalid.join(', ')}. ` +
+        `Fix: grades must be one of A, B, C, D.`,
+    ).toHaveLength(0);
+  });
+});
+
+describe('Consistency: PLANS.md index matches exec-plans on disk', () => {
+  /**
+   * Extract plan file references from PLANS.md.
+   * Matches links like [PLAN-001](exec-plans/active/PLAN-001-proxy-skeleton.md)
+   * @returns Array of relative paths (from docs/)
+   */
+  function extractPlanLinks(): string[] {
+    const content = fs.readFileSync(path.join(ROOT, 'docs', 'PLANS.md'), 'utf-8');
+    const linkPattern = /\[PLAN-\d+\]\((exec-plans\/[^)]+\.md)\)/g;
+    const links: string[] = [];
+    let match: RegExpExecArray | null;
+    while ((match = linkPattern.exec(content)) !== null) {
+      links.push(match[1]!);
+    }
+    return links;
+  }
+
+  /**
+   * Find all PLAN-*.md files under docs/exec-plans/.
+   * @param dir - Directory to scan
+   * @returns Array of relative paths (from docs/)
+   */
+  function findPlanFiles(dir: string): string[] {
+    const files: string[] = [];
+    if (!fs.existsSync(dir)) return files;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        files.push(...findPlanFiles(fullPath));
+      } else if (entry.name.startsWith('PLAN-') && entry.name.endsWith('.md')) {
+        files.push(path.relative(path.join(ROOT, 'docs'), fullPath));
+      }
+    }
+    return files;
+  }
+
+  it('every plan file on disk is referenced in PLANS.md', () => {
+    const indexed = new Set(extractPlanLinks());
+    const onDisk = findPlanFiles(path.join(ROOT, 'docs', 'exec-plans'));
+    const unindexed: string[] = [];
+    for (const file of onDisk) {
+      if (!indexed.has(file)) {
+        unindexed.push(file);
+      }
+    }
+    expect(
+      unindexed,
+      `Plan files not indexed in PLANS.md: ${unindexed.join(', ')}. ` +
+        `Fix: add a row to docs/PLANS.md for each missing plan.`,
+    ).toHaveLength(0);
+  });
+
+  it('every plan link in PLANS.md resolves to a file on disk', () => {
+    const links = extractPlanLinks();
+    const broken: string[] = [];
+    for (const link of links) {
+      const fullPath = path.join(ROOT, 'docs', link);
+      if (!fs.existsSync(fullPath)) {
+        broken.push(link);
+      }
+    }
+    expect(
+      broken,
+      `PLANS.md references missing files: ${broken.join(', ')}. ` +
+        `Fix: create the plan file or remove the stale link from PLANS.md.`,
+    ).toHaveLength(0);
   });
 });

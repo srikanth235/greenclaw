@@ -11,12 +11,15 @@ pnpm test:watch    # Run in watch mode
 
 ## Test Organization
 
-| Test File                          | Category | Purpose                                                             |
-| ---------------------------------- | -------- | ------------------------------------------------------------------- |
-| `tests/architecture.test.ts`       | Harness  | Enforces module layer dependency order                              |
-| `tests/consistency.test.ts`        | Harness  | Validates AGENTS.md sync, module structure, naming, doc cross-links |
-| `tests/classifier.fixture.test.ts` | Fixture  | Classifier accuracy (>=90% on 50 samples)                           |
-| `tests/golden.test.ts`             | Contract | API response shape validation                                       |
+| Test File                          | Category | Purpose                                                              |
+| ---------------------------------- | -------- | -------------------------------------------------------------------- |
+| `tests/architecture.test.ts`       | Harness  | Enforces module layer dependency order                               |
+| `tests/consistency.test.ts`        | Harness  | Validates AGENTS.md sync, module structure, naming, doc cross-links  |
+|                                    |          | + CLAUDE.md module map matches src/, QUALITY.md has all modules      |
+|                                    |          | + PLANS.md index matches exec-plans on disk, QUALITY.md grades valid |
+| `tests/file-limits.test.ts`        | Harness  | Source files stay under 300 lines — prevents monoliths               |
+| `tests/classifier.fixture.test.ts` | Fixture  | Classifier accuracy (>=90% on 50 samples)                            |
+| `tests/golden.test.ts`             | Contract | API response shape validation                                        |
 
 ## Test Categories
 
@@ -30,6 +33,10 @@ of the codebase itself.
 - Consistency checks (AGENTS.md, index.ts, naming guardrails)
 - Doc cross-link validation (all links in AGENTS.md resolve to real files)
 - Knowledge store structure (required docs exist)
+- CLAUDE.md module map matches actual `src/` directories
+- QUALITY.md has a row for every module, grades are valid (A/B/C/D)
+- PLANS.md index matches plan files on disk
+- File size limits (source files ≤300 lines)
 
 ### Fixture / Eval Tests (skipped until implemented)
 
