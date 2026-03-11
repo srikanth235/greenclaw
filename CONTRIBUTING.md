@@ -1,0 +1,122 @@
+# Contributing to GreenClaw
+
+## For humans and AI agents alike
+
+This guide defines the conventions that keep GreenClaw's codebase healthy.
+Follow these rules whether you're writing code by hand or generating it with
+an AI agent.
+
+## Name guardrail
+
+This product is **GreenClaw**. Never use "ClawProxy", "InferenceProxy", or
+any other name in code, docs, comments, or variable names. CI enforces this.
+
+## Change lifecycle
+
+Every change follows a docs-first workflow. Documentation is not an
+afterthought — it is the plan that guides implementation.
+
+| Step           | Action                                                   | When to skip                       |
+| -------------- | -------------------------------------------------------- | ---------------------------------- |
+| 1. **Plan**    | Create an execution plan in `docs/exec-plans/active/`    | Small bug fixes, single-file edits |
+| 2. **Decide**  | Write an ADR in `docs/design/` for non-obvious choices   | Obvious or already-decided choices |
+| 3. **Design**  | Define module ownership in `src/<module>/AGENTS.md`      | Changes to existing modules only   |
+| 4. **Update**  | Update the knowledge store (AGENTS.md, QUALITY.md, etc.) | Never skip                         |
+| 5. **Build**   | Implement the code                                       | Never skip                         |
+| 6. **Enforce** | Update tests (architecture, consistency, unit)           | No new modules or docs             |
+| 7. **Verify**  | `pnpm typecheck && pnpm lint && pnpm test`               | Never skip                         |
+
+**For new modules**: all 7 steps required.
+**For new features**: steps 1, 4–7 required (ADR only if non-obvious).
+**For bug fixes**: steps 4–7 (update QUALITY.md if relevant, write a test).
+
+**Knowledge store first**: write or update docs _before_ writing application
+code. Ship both in the same commit, but always write the doc first — it
+drives the implementation, not the other way around. See CLAUDE.md for the
+full enforcement rules.
+
+## Adding code to an existing module
+
+1. Read the module's `AGENTS.md` before touching any file in that directory.
+2. Only import from modules at the **same or lower** layer:
+   ```
+   types → config → classifier → compactor → router → api → dashboard
+   ```
+3. Run `pnpm typecheck && pnpm lint && pnpm test` before committing.
+
+## Adding a new module
+
+1. Create `src/<module>/index.ts` and `src/<module>/AGENTS.md`.
+2. Add the module to the `LAYER_ORDER` array in `tests/architecture.test.ts`.
+3. Add the module to the `MODULES` array in `tests/consistency.test.ts`.
+4. Add a row to the root `AGENTS.md` module map table.
+5. Add a row to `docs/QUALITY.md` module quality table.
+6. Keep the new `AGENTS.md` under 80 lines.
+
+## Type definitions
+
+- All external data shapes are Zod schemas in `src/types/`.
+- Derive TypeScript types via `z.infer<>`. Never declare standalone `interface`
+  or `type` for API contracts.
+- See [005-zod-as-source-of-truth](docs/design/005-zod-as-source-of-truth.md).
+
+## JSDoc requirements
+
+All exported functions, types, and classes require JSDoc comments with
+`@param` and `@returns` tags. ESLint enforces this.
+
+```typescript
+/**
+ * Classify a chat completion request into a task tier.
+ * @param messages - The conversation messages
+ * @param model - The requested model name
+ * @returns The classified task tier
+ */
+export function classify(messages: ChatMessage[], model: string): TaskTier {
+```
+
+## Error handling
+
+Follow the conventions in [docs/conventions/errors.md](docs/conventions/errors.md):
+
+- GreenClaw-generated errors (auth failures, internal errors) use a simple JSON
+  error format. Upstream provider errors are forwarded as-is.
+- Never leak upstream API keys or internal URLs in error messages.
+- Classifier and compactor never throw — they return safe fallbacks.
+
+## Testing
+
+See [docs/conventions/testing.md](docs/conventions/testing.md) for full testing
+conventions, harness test descriptions, and guidelines for new test files.
+
+Key tests:
+
+- **Architecture test**: `tests/architecture.test.ts` enforces layer rules.
+- **Consistency test**: `tests/consistency.test.ts` validates AGENTS.md sync and doc cross-links.
+- **Classifier fixture**: `tests/classifier.fixture.test.ts` requires ≥90% accuracy.
+- Write tests for new functionality. Use Vitest.
+
+## Commit workflow
+
+Pre-commit hooks run `lint-staged` automatically (ESLint + Prettier on staged
+files). If the hook fails, fix the issue before committing.
+
+## Architecture Decision Records
+
+Any non-obvious design choice requires a design doc in `docs/design/` before
+implementation begins. Assign the next sequential number and use the format:
+
+```
+# NNN-slug: Title
+## Status (Proposed | Accepted | Deprecated)
+## Context
+## Options Considered
+## Decision
+## Consequences
+```
+
+## Observability
+
+Every proxied request must emit a `RequestTrace` to structured logging.
+See [docs/conventions/observability.md](docs/conventions/observability.md)
+for the schema and conventions.

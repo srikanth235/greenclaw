@@ -1,0 +1,2011 @@
+[
+  {
+    "id": "hb-001",
+    "model": "greenclaw/auto",
+    "expected_tier": "HEARTBEAT",
+    "messages": [
+      { "role": "system", "content": "HEARTBEAT check agent." },
+      { "role": "user", "content": "ping" }
+    ]
+  },
+  {
+    "id": "hb-002",
+    "model": "auto",
+    "expected_tier": "HEARTBEAT",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a system health monitor. Respond with status only. HEARTBEAT"
+      },
+      { "role": "user", "content": "status" }
+    ]
+  },
+  {
+    "id": "hb-003",
+    "model": "greenclaw/auto",
+    "expected_tier": "HEARTBEAT",
+    "messages": [
+      { "role": "system", "content": "Cron health check agent. HEARTBEAT" },
+      { "role": "user", "content": "Are you alive?" }
+    ]
+  },
+  {
+    "id": "hb-004",
+    "model": "auto",
+    "expected_tier": "HEARTBEAT",
+    "messages": [
+      { "role": "system", "content": "HEARTBEAT keepalive probe." },
+      { "role": "user", "content": "ack" }
+    ]
+  },
+  {
+    "id": "hb-005",
+    "model": "greenclaw/auto",
+    "expected_tier": "HEARTBEAT",
+    "messages": [
+      { "role": "system", "content": "Service readiness probe. HEARTBEAT" },
+      { "role": "user", "content": "ready?" }
+    ]
+  },
+  {
+    "id": "hb-006",
+    "model": "auto",
+    "expected_tier": "HEARTBEAT",
+    "messages": [
+      { "role": "system", "content": "HEARTBEAT liveness monitor for openclaw-router-west." },
+      { "role": "user", "content": "healthz" }
+    ]
+  },
+  {
+    "id": "hb-007",
+    "model": "greenclaw/auto",
+    "expected_tier": "HEARTBEAT",
+    "messages": [
+      { "role": "system", "content": "Watchdog timer agent. HEARTBEAT interval=30s" },
+      { "role": "user", "content": "tick" }
+    ]
+  },
+  {
+    "id": "hb-008",
+    "model": "auto",
+    "expected_tier": "HEARTBEAT",
+    "messages": [
+      { "role": "system", "content": "HEARTBEAT canary deployment check." },
+      { "role": "user", "content": "check version" }
+    ]
+  },
+  {
+    "id": "hb-009",
+    "model": "greenclaw/auto",
+    "expected_tier": "HEARTBEAT",
+    "messages": [
+      { "role": "system", "content": "Scheduled uptime verification. HEARTBEAT" },
+      { "role": "user", "content": "uptime" }
+    ]
+  },
+  {
+    "id": "hb-010",
+    "model": "auto",
+    "expected_tier": "HEARTBEAT",
+    "messages": [
+      { "role": "system", "content": "HEARTBEAT synthetic monitor for API gateway." },
+      { "role": "user", "content": "pong request" }
+    ]
+  },
+  {
+    "id": "simple-001",
+    "model": "greenclaw/auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant with access to a calendar tool."
+      },
+      { "role": "user", "content": "What meetings do I have tomorrow?" },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_abc123",
+            "type": "function",
+            "function": {
+              "name": "calendar_lookup",
+              "arguments": "{\"date\": \"2026-03-12\", \"user_id\": \"u_8812\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "simple-002",
+    "model": "auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      { "role": "system", "content": "You are a concise assistant." },
+      { "role": "user", "content": "What is the capital of New Zealand?" }
+    ]
+  },
+  {
+    "id": "simple-003",
+    "model": "greenclaw/auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a weather assistant. Use the weather tool to answer."
+      },
+      { "role": "user", "content": "What's the weather like in Austin, TX right now?" },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_wx001",
+            "type": "function",
+            "function": {
+              "name": "get_current_weather",
+              "arguments": "{\"location\": \"Austin, TX\", \"units\": \"fahrenheit\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "simple-004",
+    "model": "auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      { "role": "system", "content": "You are a developer assistant with file access." },
+      { "role": "user", "content": "Show me the contents of package.json" },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_fs001",
+            "type": "function",
+            "function": {
+              "name": "read_file",
+              "arguments": "{\"path\": \"package.json\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "simple-005",
+    "model": "greenclaw/auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      { "role": "system", "content": "You are a timezone conversion assistant." },
+      { "role": "user", "content": "What time is it in Tokyo if it's 9am EST?" }
+    ]
+  },
+  {
+    "id": "simple-006",
+    "model": "auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      { "role": "system", "content": "You help users manage their tasks." },
+      { "role": "user", "content": "Add 'buy groceries' to my todo list." },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_todo001",
+            "type": "function",
+            "function": {
+              "name": "add_task",
+              "arguments": "{\"title\": \"buy groceries\", \"list\": \"default\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "simple-007",
+    "model": "greenclaw/auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      { "role": "system", "content": "You are an assistant that can look up stock prices." },
+      { "role": "user", "content": "What's the current price of AAPL?" },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_stk001",
+            "type": "function",
+            "function": {
+              "name": "get_stock_price",
+              "arguments": "{\"symbol\": \"AAPL\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "simple-008",
+    "model": "auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      { "role": "system", "content": "You are a math tutor for middle school students." },
+      { "role": "user", "content": "What is 15% of 240?" }
+    ]
+  },
+  {
+    "id": "simple-009",
+    "model": "greenclaw/auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      { "role": "system", "content": "You are a translation assistant." },
+      { "role": "user", "content": "How do you say 'thank you very much' in Japanese?" }
+    ]
+  },
+  {
+    "id": "simple-010",
+    "model": "auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      { "role": "system", "content": "You are a DNS lookup assistant with network tools." },
+      { "role": "user", "content": "Look up the A record for example.com" },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_dns001",
+            "type": "function",
+            "function": {
+              "name": "dns_lookup",
+              "arguments": "{\"domain\": \"example.com\", \"type\": \"A\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "simple-011",
+    "model": "greenclaw/auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      { "role": "system", "content": "You are a unit conversion assistant." },
+      { "role": "user", "content": "Convert 72 kilograms to pounds." }
+    ]
+  },
+  {
+    "id": "simple-012",
+    "model": "auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      { "role": "system", "content": "You are a Slack notification assistant." },
+      { "role": "user", "content": "Send a message to #general saying 'standup in 5 minutes'" },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_slk001",
+            "type": "function",
+            "function": {
+              "name": "send_slack_message",
+              "arguments": "{\"channel\": \"#general\", \"text\": \"standup in 5 minutes\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "simple-013",
+    "model": "greenclaw/auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      { "role": "system", "content": "You are a dictionary and definition assistant." },
+      { "role": "user", "content": "Define the word 'ephemeral'." }
+    ]
+  },
+  {
+    "id": "simple-014",
+    "model": "auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      { "role": "system", "content": "You are a helpful assistant that can query databases." },
+      { "role": "user", "content": "How many active users are there?" },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_db001",
+            "type": "function",
+            "function": {
+              "name": "run_sql_query",
+              "arguments": "{\"query\": \"SELECT COUNT(*) FROM users WHERE status = 'active'\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "simple-015",
+    "model": "greenclaw/auto",
+    "expected_tier": "SIMPLE",
+    "messages": [
+      { "role": "system", "content": "You are a quick-answer assistant for engineering teams." },
+      { "role": "user", "content": "What HTTP status code means 'Not Found'?" }
+    ]
+  },
+  {
+    "id": "moderate-001",
+    "model": "greenclaw/auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an email triage assistant. Read the user's inbox, classify emails by priority, and draft replies for urgent ones."
+      },
+      {
+        "role": "user",
+        "content": "Check my inbox and draft a reply to anything urgent from my manager."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_em001",
+            "type": "function",
+            "function": {
+              "name": "list_emails",
+              "arguments": "{\"folder\": \"inbox\", \"limit\": 20, \"unread\": true}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_em001",
+        "content": "[{\"id\": \"msg_441\", \"from\": \"manager@company.com\", \"subject\": \"Q1 Budget Review - Need Input by EOD\", \"snippet\": \"Can you send me the updated figures for...\"}, {\"id\": \"msg_442\", \"from\": \"newsletter@techdigest.com\", \"subject\": \"Weekly Roundup\", \"snippet\": \"Top stories this week...\"}]"
+      },
+      {
+        "role": "assistant",
+        "content": "I found an urgent email from your manager about the Q1 Budget Review. Let me read the full message and draft a reply.",
+        "tool_calls": [
+          {
+            "id": "call_em002",
+            "type": "function",
+            "function": {
+              "name": "read_email",
+              "arguments": "{\"id\": \"msg_441\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "moderate-002",
+    "model": "auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a document summarization assistant with access to a file store and web search."
+      },
+      {
+        "role": "user",
+        "content": "Summarize the PDF report I uploaded yesterday about renewable energy trends."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_fs010",
+            "type": "function",
+            "function": {
+              "name": "list_uploads",
+              "arguments": "{\"user_id\": \"u_3321\", \"date\": \"2026-03-10\", \"type\": \"pdf\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_fs010",
+        "content": "[{\"file_id\": \"f_8821\", \"name\": \"Renewable_Energy_Trends_2026.pdf\", \"pages\": 42}]"
+      },
+      {
+        "role": "assistant",
+        "content": "Found the report. Let me extract and summarize it.",
+        "tool_calls": [
+          {
+            "id": "call_fs011",
+            "type": "function",
+            "function": {
+              "name": "read_pdf",
+              "arguments": "{\"file_id\": \"f_8821\", \"pages\": \"1-42\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "moderate-003",
+    "model": "greenclaw/auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a project management assistant. You can access Jira and Slack."
+      },
+      {
+        "role": "user",
+        "content": "Create a Jira ticket for the login bug reported in Slack #bugs channel yesterday, and assign it to the on-call engineer."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_slk010",
+            "type": "function",
+            "function": {
+              "name": "search_slack_messages",
+              "arguments": "{\"channel\": \"#bugs\", \"query\": \"login bug\", \"after\": \"2026-03-10\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_slk010",
+        "content": "{\"messages\": [{\"user\": \"alice\", \"text\": \"Users are getting 500 errors on /api/auth/login after the 2.4.1 deploy. Seeing it in US-East region only.\", \"ts\": \"2026-03-10T14:22:00Z\"}]}"
+      },
+      {
+        "role": "assistant",
+        "content": "Found the bug report. Let me look up who's on-call and create the ticket.",
+        "tool_calls": [
+          {
+            "id": "call_pd001",
+            "type": "function",
+            "function": {
+              "name": "get_oncall_engineer",
+              "arguments": "{\"schedule\": \"backend-primary\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "moderate-004",
+    "model": "auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a data analysis assistant with access to a SQL database and charting tools."
+      },
+      {
+        "role": "user",
+        "content": "Show me a breakdown of signups by country for the last 30 days and highlight any country with more than 10% growth."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_db010",
+            "type": "function",
+            "function": {
+              "name": "run_sql_query",
+              "arguments": "{\"query\": \"SELECT country, COUNT(*) as signups, DATE_TRUNC('week', created_at) as week FROM users WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY country, week ORDER BY signups DESC\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_db010",
+        "content": "{\"rows\": [{\"country\": \"US\", \"signups\": 4521, \"week\": \"2026-03-02\"}, {\"country\": \"IN\", \"signups\": 2103, \"week\": \"2026-03-02\"}, {\"country\": \"BR\", \"signups\": 891, \"week\": \"2026-03-02\"}], \"row_count\": 47}"
+      },
+      {
+        "role": "assistant",
+        "content": "I have the signup data. Let me calculate growth rates and generate the chart.",
+        "tool_calls": [
+          {
+            "id": "call_chart001",
+            "type": "function",
+            "function": {
+              "name": "create_chart",
+              "arguments": "{\"type\": \"bar\", \"title\": \"Signups by Country (Last 30 Days)\", \"highlight_threshold\": 0.10}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "moderate-005",
+    "model": "greenclaw/auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a travel planning assistant with access to flight and hotel search APIs."
+      },
+      {
+        "role": "user",
+        "content": "Find me round-trip flights from SFO to JFK for March 20-24 and suggest a hotel near Times Square."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_fly001",
+            "type": "function",
+            "function": {
+              "name": "search_flights",
+              "arguments": "{\"origin\": \"SFO\", \"destination\": \"JFK\", \"depart_date\": \"2026-03-20\", \"return_date\": \"2026-03-24\", \"passengers\": 1}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_fly001",
+        "content": "{\"flights\": [{\"airline\": \"United\", \"price\": 389, \"depart\": \"07:00\", \"arrive\": \"15:30\"}, {\"airline\": \"JetBlue\", \"price\": 342, \"depart\": \"09:15\", \"arrive\": \"17:45\"}]}"
+      },
+      {
+        "role": "assistant",
+        "content": "Found some good flight options. Now let me search for hotels near Times Square.",
+        "tool_calls": [
+          {
+            "id": "call_htl001",
+            "type": "function",
+            "function": {
+              "name": "search_hotels",
+              "arguments": "{\"location\": \"Times Square, New York\", \"checkin\": \"2026-03-20\", \"checkout\": \"2026-03-24\", \"max_distance_km\": 0.5}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "moderate-006",
+    "model": "auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a CI/CD assistant that can read build logs and trigger deploys."
+      },
+      {
+        "role": "user",
+        "content": "The last build on main failed. Check the logs and tell me what went wrong."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_ci001",
+            "type": "function",
+            "function": {
+              "name": "get_latest_build",
+              "arguments": "{\"branch\": \"main\", \"status\": \"failed\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_ci001",
+        "content": "{\"build_id\": \"b_9923\", \"commit\": \"a1b2c3d\", \"author\": \"dev@company.com\", \"stage_failed\": \"test\", \"duration\": 184}"
+      },
+      {
+        "role": "assistant",
+        "content": "The build failed at the test stage. Let me pull the detailed logs.",
+        "tool_calls": [
+          {
+            "id": "call_ci002",
+            "type": "function",
+            "function": {
+              "name": "get_build_logs",
+              "arguments": "{\"build_id\": \"b_9923\", \"stage\": \"test\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "moderate-007",
+    "model": "greenclaw/auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a customer support assistant with CRM and knowledge base access."
+      },
+      {
+        "role": "user",
+        "content": "Customer #4412 is asking about their refund status. Check the order history and draft a response."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_crm001",
+            "type": "function",
+            "function": {
+              "name": "get_customer_orders",
+              "arguments": "{\"customer_id\": \"4412\", \"include_refunds\": true}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_crm001",
+        "content": "{\"orders\": [{\"order_id\": \"ORD-88123\", \"status\": \"refund_processing\", \"amount\": 149.99, \"refund_initiated\": \"2026-03-08\", \"estimated_completion\": \"2026-03-13\"}]}"
+      },
+      {
+        "role": "assistant",
+        "content": "The refund for order ORD-88123 ($149.99) was initiated on March 8th and is expected to complete by March 13th. Let me draft a response for the customer."
+      }
+    ]
+  },
+  {
+    "id": "moderate-008",
+    "model": "auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an HR assistant that can access employee records and scheduling systems."
+      },
+      {
+        "role": "user",
+        "content": "Check if Maria Santos has any remaining PTO days and schedule a meeting with her manager to discuss her performance review."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_hr001",
+            "type": "function",
+            "function": {
+              "name": "get_employee_pto",
+              "arguments": "{\"employee_name\": \"Maria Santos\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_hr001",
+        "content": "{\"employee_id\": \"emp_2291\", \"pto_remaining\": 8, \"pto_used\": 12, \"manager\": \"James Chen\", \"manager_id\": \"emp_1104\"}"
+      },
+      {
+        "role": "assistant",
+        "content": "Maria has 8 PTO days remaining. Let me find available time slots for a meeting with her manager James Chen.",
+        "tool_calls": [
+          {
+            "id": "call_cal010",
+            "type": "function",
+            "function": {
+              "name": "find_mutual_availability",
+              "arguments": "{\"participants\": [\"emp_2291\", \"emp_1104\"], \"duration_minutes\": 30, \"within_days\": 7}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "moderate-009",
+    "model": "greenclaw/auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a security monitoring assistant. You have access to audit logs and alerting systems."
+      },
+      {
+        "role": "user",
+        "content": "There was a spike in failed login attempts last night. Pull the logs between midnight and 6am and tell me which accounts were targeted."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_sec001",
+            "type": "function",
+            "function": {
+              "name": "query_audit_logs",
+              "arguments": "{\"event_type\": \"login_failed\", \"start\": \"2026-03-11T00:00:00Z\", \"end\": \"2026-03-11T06:00:00Z\", \"limit\": 500}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_sec001",
+        "content": "{\"total_events\": 347, \"unique_accounts\": 12, \"top_targeted\": [{\"account\": \"admin@corp.com\", \"attempts\": 189}, {\"account\": \"cto@corp.com\", \"attempts\": 94}], \"source_ips\": [\"203.0.113.42\", \"198.51.100.17\"]}"
+      },
+      {
+        "role": "assistant",
+        "content": "I see 347 failed login attempts targeting 12 accounts, with admin@corp.com and cto@corp.com being the primary targets. The attempts came from two IP addresses. Let me check if those IPs are in our threat intelligence database."
+      }
+    ]
+  },
+  {
+    "id": "moderate-010",
+    "model": "auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a code review assistant with access to GitHub APIs."
+      },
+      {
+        "role": "user",
+        "content": "Review PR #287 on the backend repo. Check if it has passing CI and summarize the changes."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_gh001",
+            "type": "function",
+            "function": {
+              "name": "get_pull_request",
+              "arguments": "{\"repo\": \"org/backend\", \"pr_number\": 287}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_gh001",
+        "content": "{\"title\": \"Add rate limiting to /api/v2 endpoints\", \"author\": \"dev-alice\", \"files_changed\": 7, \"additions\": 234, \"deletions\": 18, \"ci_status\": \"passing\", \"reviews\": []}"
+      },
+      {
+        "role": "assistant",
+        "content": "CI is green. Let me look at the actual diff to review the changes.",
+        "tool_calls": [
+          {
+            "id": "call_gh002",
+            "type": "function",
+            "function": {
+              "name": "get_pr_diff",
+              "arguments": "{\"repo\": \"org/backend\", \"pr_number\": 287}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "moderate-011",
+    "model": "greenclaw/auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an inventory management assistant for an e-commerce warehouse."
+      },
+      {
+        "role": "user",
+        "content": "Check stock levels for SKUs in the 'electronics' category and flag anything below reorder threshold."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_inv001",
+            "type": "function",
+            "function": {
+              "name": "query_inventory",
+              "arguments": "{\"category\": \"electronics\", \"include_thresholds\": true}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_inv001",
+        "content": "{\"items\": [{\"sku\": \"ELEC-001\", \"name\": \"USB-C Hub\", \"stock\": 12, \"threshold\": 50}, {\"sku\": \"ELEC-042\", \"name\": \"Wireless Keyboard\", \"stock\": 203, \"threshold\": 100}, {\"sku\": \"ELEC-099\", \"name\": \"HDMI Cable 6ft\", \"stock\": 8, \"threshold\": 200}]}"
+      },
+      {
+        "role": "assistant",
+        "content": "Two items are below reorder threshold: USB-C Hub (12 in stock, threshold 50) and HDMI Cable 6ft (8 in stock, threshold 200). Let me generate purchase orders for these.",
+        "tool_calls": [
+          {
+            "id": "call_inv002",
+            "type": "function",
+            "function": {
+              "name": "create_purchase_order_draft",
+              "arguments": "{\"items\": [{\"sku\": \"ELEC-001\", \"quantity\": 200}, {\"sku\": \"ELEC-099\", \"quantity\": 500}]}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "moderate-012",
+    "model": "auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a meeting notes assistant. You can access transcriptions and create follow-up tasks."
+      },
+      {
+        "role": "user",
+        "content": "Process the recording from today's sprint planning meeting. Extract action items and create tasks."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_meet001",
+            "type": "function",
+            "function": {
+              "name": "get_meeting_transcript",
+              "arguments": "{\"date\": \"2026-03-11\", \"title\": \"sprint planning\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_meet001",
+        "content": "{\"transcript_id\": \"tr_5567\", \"duration_minutes\": 45, \"participants\": [\"Alice\", \"Bob\", \"Carol\", \"Dave\"], \"summary\": \"Discussed Q2 priorities. Alice to finalize API design by Friday. Bob to set up staging environment. Carol to write migration script.\"}"
+      },
+      {
+        "role": "assistant",
+        "content": "I extracted 3 action items from the sprint planning. Let me create tasks for each one in your project tracker."
+      }
+    ]
+  },
+  {
+    "id": "moderate-013",
+    "model": "greenclaw/auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AWS infrastructure assistant with read access to CloudWatch and EC2."
+      },
+      {
+        "role": "user",
+        "content": "Check the CPU utilization of our production EC2 instances over the last hour and let me know if any are above 80%."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_aws001",
+            "type": "function",
+            "function": {
+              "name": "list_ec2_instances",
+              "arguments": "{\"environment\": \"production\", \"state\": \"running\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_aws001",
+        "content": "{\"instances\": [{\"id\": \"i-0a1b2c3d\", \"type\": \"m5.xlarge\", \"name\": \"prod-api-1\"}, {\"id\": \"i-0e4f5g6h\", \"type\": \"m5.xlarge\", \"name\": \"prod-api-2\"}, {\"id\": \"i-0i7j8k9l\", \"type\": \"c5.2xlarge\", \"name\": \"prod-worker-1\"}]}"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_aws002",
+            "type": "function",
+            "function": {
+              "name": "get_cloudwatch_metrics",
+              "arguments": "{\"instance_ids\": [\"i-0a1b2c3d\", \"i-0e4f5g6h\", \"i-0i7j8k9l\"], \"metric\": \"CPUUtilization\", \"period\": 3600}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "moderate-014",
+    "model": "auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a content moderation assistant for a social platform."
+      },
+      {
+        "role": "user",
+        "content": "Review the last 50 flagged posts and categorize them. Auto-remove anything that clearly violates our hate speech policy."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_mod001",
+            "type": "function",
+            "function": {
+              "name": "get_flagged_content",
+              "arguments": "{\"limit\": 50, \"status\": \"pending_review\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_mod001",
+        "content": "{\"posts\": [{\"id\": \"p_11001\", \"flag_reason\": \"hate_speech\", \"content\": \"[redacted]\", \"confidence\": 0.97}, {\"id\": \"p_11002\", \"flag_reason\": \"spam\", \"content\": \"Buy now at...\", \"confidence\": 0.85}], \"total\": 50}"
+      },
+      {
+        "role": "assistant",
+        "content": "I've categorized the 50 flagged posts: 12 hate speech (high confidence), 23 spam, 8 misinformation, 7 require manual review. Let me process the clear violations."
+      }
+    ]
+  },
+  {
+    "id": "moderate-015",
+    "model": "greenclaw/auto",
+    "expected_tier": "MODERATE",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a financial reporting assistant with access to accounting databases."
+      },
+      {
+        "role": "user",
+        "content": "Pull the revenue numbers for February and compare them to January. Format as a table."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_fin001",
+            "type": "function",
+            "function": {
+              "name": "get_revenue_report",
+              "arguments": "{\"months\": [\"2026-01\", \"2026-02\"], \"breakdown\": \"product_line\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_fin001",
+        "content": "{\"data\": [{\"month\": \"2026-01\", \"total\": 2450000, \"lines\": {\"saas\": 1800000, \"services\": 450000, \"support\": 200000}}, {\"month\": \"2026-02\", \"total\": 2680000, \"lines\": {\"saas\": 1950000, \"services\": 510000, \"support\": 220000}}]}"
+      },
+      {
+        "role": "assistant",
+        "content": "Here's the revenue comparison:\n\n| Product Line | January | February | Change |\n|---|---|---|---|\n| SaaS | $1.80M | $1.95M | +8.3% |\n| Services | $450K | $510K | +13.3% |\n| Support | $200K | $220K | +10.0% |\n| **Total** | **$2.45M** | **$2.68M** | **+9.4%** |\n\nAll product lines showed positive growth in February."
+      }
+    ]
+  },
+  {
+    "id": "complex-001",
+    "model": "greenclaw/auto",
+    "expected_tier": "COMPLEX",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a senior software architect assistant. You have access to the full codebase, CI/CD pipelines, monitoring dashboards, and can coordinate with sub-agents for testing and deployment. Handle multi-step engineering tasks end-to-end."
+      },
+      {
+        "role": "user",
+        "content": "We need to migrate our authentication system from session-based to JWT. Plan the migration, generate the implementation for the auth module, write tests, and set up a feature flag so we can gradually roll it out."
+      },
+      {
+        "role": "assistant",
+        "content": "This is a significant migration. Let me start by analyzing the current auth implementation to understand the scope.",
+        "tool_calls": [
+          {
+            "id": "call_code001",
+            "type": "function",
+            "function": {
+              "name": "search_codebase",
+              "arguments": "{\"query\": \"session authentication middleware\", \"file_types\": [\"ts\", \"js\"]}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_code001",
+        "content": "{\"results\": [{\"file\": \"src/middleware/auth.ts\", \"matches\": 8}, {\"file\": \"src/routes/login.ts\", \"matches\": 5}, {\"file\": \"src/lib/session-store.ts\", \"matches\": 12}, {\"file\": \"src/config/auth.ts\", \"matches\": 3}]}"
+      },
+      {
+        "role": "assistant",
+        "content": "I can see the auth system spans 4 key files. Let me read them all and also check for session usage across the codebase.",
+        "tool_calls": [
+          {
+            "id": "call_code002",
+            "type": "function",
+            "function": {
+              "name": "read_file",
+              "arguments": "{\"path\": \"src/middleware/auth.ts\"}"
+            }
+          },
+          {
+            "id": "call_code003",
+            "type": "function",
+            "function": {
+              "name": "read_file",
+              "arguments": "{\"path\": \"src/lib/session-store.ts\"}"
+            }
+          },
+          {
+            "id": "call_code004",
+            "type": "function",
+            "function": {
+              "name": "search_codebase",
+              "arguments": "{\"query\": \"req.session\", \"file_types\": [\"ts\", \"js\"]}"
+            }
+          },
+          {
+            "id": "call_code005",
+            "type": "function",
+            "function": {
+              "name": "get_feature_flags",
+              "arguments": "{\"prefix\": \"auth\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_code002",
+        "content": "// auth.ts - session-based authentication middleware\nimport { SessionStore } from '../lib/session-store';\n..."
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_code003",
+        "content": "// session-store.ts - Redis-backed session management\nimport Redis from 'ioredis';\n..."
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_code004",
+        "content": "{\"results\": [{\"file\": \"src/routes/api/users.ts\", \"line\": 14}, {\"file\": \"src/routes/api/orders.ts\", \"line\": 8}], \"total_matches\": 34}"
+      },
+      { "role": "tool", "tool_call_id": "call_code005", "content": "{\"flags\": []}" },
+      {
+        "role": "assistant",
+        "content": "I've mapped the full scope: 34 session references across the codebase, 4 core auth files, and no existing feature flags for auth. Let me create the migration plan and start generating the JWT implementation."
+      }
+    ]
+  },
+  {
+    "id": "complex-002",
+    "model": "auto",
+    "expected_tier": "COMPLEX",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a research and analysis agent with web search, document retrieval, database access, and report generation capabilities. Synthesize information from multiple sources to produce comprehensive reports."
+      },
+      {
+        "role": "user",
+        "content": "Research the competitive landscape for AI-powered customer support tools. Compare the top 5 players, their pricing, features, and market positioning. Create a report with a recommendation for our company."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_web001",
+            "type": "function",
+            "function": {
+              "name": "web_search",
+              "arguments": "{\"query\": \"top AI customer support tools 2026 comparison\"}"
+            }
+          },
+          {
+            "id": "call_web002",
+            "type": "function",
+            "function": {
+              "name": "web_search",
+              "arguments": "{\"query\": \"AI customer support market share 2026\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_web001",
+        "content": "{\"results\": [{\"title\": \"Top 10 AI Support Platforms\", \"url\": \"https://techreview.example.com/ai-support-2026\"}, {\"title\": \"G2 Grid for AI Customer Support\", \"url\": \"https://g2.example.com/ai-support\"}]}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_web002",
+        "content": "{\"results\": [{\"title\": \"AI Support Market Report Q1 2026\", \"url\": \"https://analyst.example.com/report\"}, {\"title\": \"Gartner Magic Quadrant\", \"url\": \"https://gartner.example.com/mq\"}]}"
+      },
+      {
+        "role": "assistant",
+        "content": "Found several good sources. Let me extract detailed information from these and also check our internal data on current support costs.",
+        "tool_calls": [
+          {
+            "id": "call_web003",
+            "type": "function",
+            "function": {
+              "name": "fetch_page",
+              "arguments": "{\"url\": \"https://techreview.example.com/ai-support-2026\"}"
+            }
+          },
+          {
+            "id": "call_web004",
+            "type": "function",
+            "function": {
+              "name": "fetch_page",
+              "arguments": "{\"url\": \"https://g2.example.com/ai-support\"}"
+            }
+          },
+          {
+            "id": "call_db020",
+            "type": "function",
+            "function": {
+              "name": "run_sql_query",
+              "arguments": "{\"query\": \"SELECT AVG(resolution_time_hours) as avg_resolution, COUNT(*) as ticket_count, SUM(cost) as total_cost FROM support_tickets WHERE created_at >= '2026-01-01'\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_web003",
+        "content": "{\"content\": \"AI customer support platforms have evolved significantly...\"}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_web004",
+        "content": "{\"content\": \"G2 ratings for AI support: Intercom 4.5/5, Zendesk AI 4.3/5...\"}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_db020",
+        "content": "{\"rows\": [{\"avg_resolution\": 14.2, \"ticket_count\": 8923, \"total_cost\": 267690}]}"
+      },
+      {
+        "role": "assistant",
+        "content": "I now have comprehensive data from market reports, review platforms, and our internal metrics. Let me compile the competitive analysis report with pricing breakdowns and a recommendation."
+      }
+    ]
+  },
+  {
+    "id": "complex-003",
+    "model": "greenclaw/auto",
+    "expected_tier": "COMPLEX",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a multi-agent orchestration coordinator. You manage sub-agents for code generation, testing, documentation, and deployment. Coordinate complex software delivery workflows."
+      },
+      {
+        "role": "user",
+        "content": "Build a new REST API endpoint for user preferences that supports CRUD operations, includes input validation, rate limiting, and audit logging. Deploy to staging when ready."
+      },
+      {
+        "role": "assistant",
+        "content": "I'll coordinate this across multiple agents. First, let me check the existing API structure and conventions.",
+        "tool_calls": [
+          {
+            "id": "call_orch001",
+            "type": "function",
+            "function": {
+              "name": "read_file",
+              "arguments": "{\"path\": \"src/routes/api/index.ts\"}"
+            }
+          },
+          {
+            "id": "call_orch002",
+            "type": "function",
+            "function": {
+              "name": "read_file",
+              "arguments": "{\"path\": \"src/middleware/rate-limiter.ts\"}"
+            }
+          },
+          {
+            "id": "call_orch003",
+            "type": "function",
+            "function": {
+              "name": "read_file",
+              "arguments": "{\"path\": \"src/lib/audit-log.ts\"}"
+            }
+          },
+          {
+            "id": "call_orch004",
+            "type": "function",
+            "function": {
+              "name": "get_db_schema",
+              "arguments": "{\"table\": \"user_preferences\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_orch001",
+        "content": "import { Router } from 'express';\nconst router = Router();\nrouter.use('/users', usersRouter);\n..."
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_orch002",
+        "content": "import rateLimit from 'express-rate-limit';\nexport const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });\n..."
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_orch003",
+        "content": "export class AuditLogger { async log(action: string, userId: string, details: Record<string, unknown>) { ... } }"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_orch004",
+        "content": "{\"table\": \"user_preferences\", \"columns\": [{\"name\": \"id\", \"type\": \"uuid\"}, {\"name\": \"user_id\", \"type\": \"uuid\"}, {\"name\": \"key\", \"type\": \"varchar(255)\"}, {\"name\": \"value\", \"type\": \"jsonb\"}]}"
+      },
+      {
+        "role": "assistant",
+        "content": "I have the full context. Now I'll dispatch tasks to the code generation agent for the route handlers, the test agent for the test suite, and prepare the deployment pipeline.",
+        "tool_calls": [
+          {
+            "id": "call_agent001",
+            "type": "function",
+            "function": {
+              "name": "dispatch_sub_agent",
+              "arguments": "{\"agent\": \"code-gen\", \"task\": \"Create CRUD route handlers for user preferences at /api/users/:userId/preferences with Zod validation schemas\", \"context\": {\"existing_patterns\": \"express-router\", \"validation\": \"zod\", \"db\": \"postgres-jsonb\"}}"
+            }
+          },
+          {
+            "id": "call_agent002",
+            "type": "function",
+            "function": {
+              "name": "dispatch_sub_agent",
+              "arguments": "{\"agent\": \"test-gen\", \"task\": \"Generate integration tests for user preferences CRUD API including auth, validation, rate limiting, and audit logging\", \"context\": {\"framework\": \"vitest\", \"style\": \"integration\"}}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "complex-004",
+    "model": "auto",
+    "expected_tier": "COMPLEX",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a database migration and performance optimization agent. You have access to production database metrics, query analyzers, schema management tools, and can coordinate zero-downtime migrations."
+      },
+      {
+        "role": "user",
+        "content": "Our orders table has grown to 500M rows and queries are getting slow. Analyze the current schema, identify bottlenecks, propose an optimization strategy with partitioning, and generate the migration scripts."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_dba001",
+            "type": "function",
+            "function": {
+              "name": "get_table_stats",
+              "arguments": "{\"table\": \"orders\", \"include_indexes\": true}"
+            }
+          },
+          {
+            "id": "call_dba002",
+            "type": "function",
+            "function": {
+              "name": "get_slow_queries",
+              "arguments": "{\"table\": \"orders\", \"period\": \"7d\", \"min_duration_ms\": 1000}"
+            }
+          },
+          {
+            "id": "call_dba003",
+            "type": "function",
+            "function": {
+              "name": "explain_analyze",
+              "arguments": "{\"query\": \"SELECT * FROM orders WHERE customer_id = 12345 AND created_at > '2026-01-01' ORDER BY created_at DESC LIMIT 50\"}"
+            }
+          },
+          {
+            "id": "call_dba004",
+            "type": "function",
+            "function": {
+              "name": "get_table_bloat",
+              "arguments": "{\"table\": \"orders\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_dba001",
+        "content": "{\"row_count\": 512000000, \"size_gb\": 284, \"indexes\": [{\"name\": \"orders_pkey\", \"columns\": [\"id\"], \"size_gb\": 11}, {\"name\": \"idx_orders_customer\", \"columns\": [\"customer_id\"], \"size_gb\": 14}], \"dead_tuples_pct\": 12.4}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_dba002",
+        "content": "{\"queries\": [{\"query\": \"SELECT * FROM orders WHERE status = 'pending' AND region = ...\", \"avg_duration_ms\": 4200, \"calls_per_hour\": 890}, {\"query\": \"SELECT customer_id, SUM(total) FROM orders WHERE created_at BETWEEN ...\", \"avg_duration_ms\": 12500, \"calls_per_hour\": 45}]}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_dba003",
+        "content": "{\"plan\": \"Seq Scan on orders (cost=0.00..18942310.00 rows=512000000 width=312)\\n  Filter: (customer_id = 12345)\\n  Rows Removed by Filter: 511999847\\nPlanning Time: 0.4ms\\nExecution Time: 3842ms\"}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_dba004",
+        "content": "{\"table_bloat_pct\": 18.7, \"wasted_gb\": 53.1}"
+      },
+      {
+        "role": "assistant",
+        "content": "The analysis reveals several critical issues: a sequential scan on 512M rows (the customer_id index isn't being used effectively), 18.7% table bloat wasting 53GB, and two expensive query patterns. I'll design a partitioning strategy by created_at with improved indexing. Let me generate the migration scripts.",
+        "tool_calls": [
+          {
+            "id": "call_dba005",
+            "type": "function",
+            "function": {
+              "name": "generate_migration",
+              "arguments": "{\"type\": \"partition_table\", \"table\": \"orders\", \"partition_key\": \"created_at\", \"partition_type\": \"range\", \"interval\": \"monthly\", \"include_index_rebuild\": true}"
+            }
+          },
+          {
+            "id": "call_dba006",
+            "type": "function",
+            "function": {
+              "name": "generate_migration",
+              "arguments": "{\"type\": \"create_index\", \"table\": \"orders\", \"columns\": [\"customer_id\", \"created_at\"], \"include\": [\"status\", \"total\"], \"concurrently\": true}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "complex-005",
+    "model": "greenclaw/auto",
+    "expected_tier": "COMPLEX",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an incident response coordinator agent. You have access to monitoring systems, runbooks, communication channels, and can execute remediation playbooks. Coordinate cross-team incident response."
+      },
+      {
+        "role": "user",
+        "content": "We're seeing a major spike in 5xx errors on the payment service. Error rate jumped from 0.1% to 15% in the last 10 minutes. Investigate and mitigate."
+      },
+      {
+        "role": "assistant",
+        "content": "This is a P1 incident. Let me gather data from multiple sources simultaneously.",
+        "tool_calls": [
+          {
+            "id": "call_inc001",
+            "type": "function",
+            "function": {
+              "name": "get_service_metrics",
+              "arguments": "{\"service\": \"payment-service\", \"metrics\": [\"error_rate\", \"latency_p99\", \"request_count\"], \"period\": \"30m\"}"
+            }
+          },
+          {
+            "id": "call_inc002",
+            "type": "function",
+            "function": {
+              "name": "get_recent_deployments",
+              "arguments": "{\"service\": \"payment-service\", \"hours\": 2}"
+            }
+          },
+          {
+            "id": "call_inc003",
+            "type": "function",
+            "function": {
+              "name": "get_error_logs",
+              "arguments": "{\"service\": \"payment-service\", \"level\": \"error\", \"limit\": 50, \"period\": \"10m\"}"
+            }
+          },
+          {
+            "id": "call_inc004",
+            "type": "function",
+            "function": {
+              "name": "check_dependency_health",
+              "arguments": "{\"service\": \"payment-service\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_inc001",
+        "content": "{\"error_rate\": [{\"time\": \"10:40\", \"value\": 0.1}, {\"time\": \"10:45\", \"value\": 2.3}, {\"time\": \"10:50\", \"value\": 15.1}], \"latency_p99\": [{\"time\": \"10:40\", \"value\": 120}, {\"time\": \"10:50\", \"value\": 8900}]}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_inc002",
+        "content": "{\"deployments\": [{\"version\": \"v3.14.2\", \"deployed_at\": \"2026-03-11T10:42:00Z\", \"deployer\": \"ci-bot\", \"commit\": \"f8e2a1b\"}]}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_inc003",
+        "content": "{\"errors\": [{\"message\": \"Connection refused: stripe-proxy:443\", \"count\": 2847}, {\"message\": \"Timeout waiting for response from payment gateway\", \"count\": 412}]}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_inc004",
+        "content": "{\"dependencies\": [{\"name\": \"stripe-proxy\", \"status\": \"unhealthy\", \"last_healthy\": \"2026-03-11T10:41:00Z\"}, {\"name\": \"postgres-payments\", \"status\": \"healthy\"}, {\"name\": \"redis-cache\", \"status\": \"healthy\"}]}"
+      },
+      {
+        "role": "assistant",
+        "content": "Root cause identified: A deployment at 10:42 (v3.14.2) coincides with the error spike, and the stripe-proxy dependency went unhealthy at 10:41. The errors are connection refusals to stripe-proxy. Initiating rollback and opening incident channel.",
+        "tool_calls": [
+          {
+            "id": "call_inc005",
+            "type": "function",
+            "function": {
+              "name": "rollback_deployment",
+              "arguments": "{\"service\": \"payment-service\", \"to_version\": \"v3.14.1\"}"
+            }
+          },
+          {
+            "id": "call_inc006",
+            "type": "function",
+            "function": {
+              "name": "create_incident_channel",
+              "arguments": "{\"severity\": \"P1\", \"title\": \"Payment Service 5xx Spike - stripe-proxy unhealthy\", \"notify\": [\"payments-oncall\", \"platform-oncall\", \"engineering-leads\"]}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "complex-006",
+    "model": "auto",
+    "expected_tier": "COMPLEX",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a full-stack development agent capable of designing, implementing, and testing complete features across frontend and backend. You have access to the codebase, design system, and deployment tools."
+      },
+      {
+        "role": "user",
+        "content": "Implement a real-time notification system. Users should get in-app notifications for mentions, task assignments, and deadline reminders. Include WebSocket support, a notification center UI component, and read/unread state management."
+      },
+      {
+        "role": "assistant",
+        "content": "This is a substantial feature. Let me analyze the existing infrastructure to design the notification system properly.",
+        "tool_calls": [
+          {
+            "id": "call_dev001",
+            "type": "function",
+            "function": {
+              "name": "search_codebase",
+              "arguments": "{\"query\": \"websocket OR socket.io OR ws\", \"file_types\": [\"ts\", \"tsx\", \"js\"]}"
+            }
+          },
+          {
+            "id": "call_dev002",
+            "type": "function",
+            "function": {
+              "name": "read_file",
+              "arguments": "{\"path\": \"src/components/Layout/Header.tsx\"}"
+            }
+          },
+          {
+            "id": "call_dev003",
+            "type": "function",
+            "function": {
+              "name": "get_db_schema",
+              "arguments": "{\"table\": \"notifications\"}"
+            }
+          },
+          {
+            "id": "call_dev004",
+            "type": "function",
+            "function": {
+              "name": "read_file",
+              "arguments": "{\"path\": \"package.json\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_dev001",
+        "content": "{\"results\": [], \"total_matches\": 0}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_dev002",
+        "content": "import React from 'react';\nexport const Header = () => { return <header>...</header>; };"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_dev003",
+        "content": "{\"error\": \"Table 'notifications' does not exist\"}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_dev004",
+        "content": "{\"dependencies\": {\"express\": \"4.18.2\", \"react\": \"18.2.0\", \"prisma\": \"5.2.0\"}}"
+      },
+      {
+        "role": "assistant",
+        "content": "No existing WebSocket or notification infrastructure. I need to build this from scratch. Here's my plan:\n1. Database schema for notifications table\n2. WebSocket server using ws library\n3. Notification service with event handlers\n4. React notification center component\n5. State management with read/unread tracking\n\nLet me start generating the implementation.",
+        "tool_calls": [
+          {
+            "id": "call_dev005",
+            "type": "function",
+            "function": {
+              "name": "generate_prisma_migration",
+              "arguments": "{\"name\": \"add_notifications\", \"schema\": \"model Notification { id String @id @default(uuid()) userId String type String title String body String read Boolean @default(false) metadata Json? createdAt DateTime @default(now()) }\"}"
+            }
+          },
+          {
+            "id": "call_dev006",
+            "type": "function",
+            "function": {
+              "name": "write_file",
+              "arguments": "{\"path\": \"src/lib/websocket-server.ts\", \"content\": \"import { WebSocketServer } from 'ws'; ...\"}"
+            }
+          },
+          {
+            "id": "call_dev007",
+            "type": "function",
+            "function": {
+              "name": "write_file",
+              "arguments": "{\"path\": \"src/services/notification-service.ts\", \"content\": \"export class NotificationService { ... }\"}"
+            }
+          },
+          {
+            "id": "call_dev008",
+            "type": "function",
+            "function": {
+              "name": "write_file",
+              "arguments": "{\"path\": \"src/components/NotificationCenter/NotificationCenter.tsx\", \"content\": \"import React from 'react'; ...\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "complex-007",
+    "model": "greenclaw/auto",
+    "expected_tier": "COMPLEX",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a data pipeline engineering agent. You manage ETL processes, data warehouse schemas, and can orchestrate complex data transformations across multiple systems including Kafka, Spark, and BigQuery."
+      },
+      {
+        "role": "user",
+        "content": "Design and implement a new data pipeline that ingests user clickstream events from Kafka, enriches them with user profile data from our PostgreSQL database, applies sessionization logic, and loads the results into BigQuery for the analytics team."
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_pipe001",
+            "type": "function",
+            "function": {
+              "name": "list_kafka_topics",
+              "arguments": "{\"pattern\": \"clickstream*\"}"
+            }
+          },
+          {
+            "id": "call_pipe002",
+            "type": "function",
+            "function": {
+              "name": "get_kafka_topic_schema",
+              "arguments": "{\"topic\": \"clickstream-events\"}"
+            }
+          },
+          {
+            "id": "call_pipe003",
+            "type": "function",
+            "function": {
+              "name": "get_db_schema",
+              "arguments": "{\"table\": \"user_profiles\"}"
+            }
+          },
+          {
+            "id": "call_pipe004",
+            "type": "function",
+            "function": {
+              "name": "list_bigquery_datasets",
+              "arguments": "{\"project\": \"analytics-prod\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_pipe001",
+        "content": "{\"topics\": [\"clickstream-events\", \"clickstream-events-dlq\"]}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_pipe002",
+        "content": "{\"schema\": {\"type\": \"record\", \"fields\": [{\"name\": \"user_id\", \"type\": \"string\"}, {\"name\": \"event_type\", \"type\": \"string\"}, {\"name\": \"url\", \"type\": \"string\"}, {\"name\": \"timestamp\", \"type\": \"long\"}, {\"name\": \"properties\", \"type\": \"map\"}]}}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_pipe003",
+        "content": "{\"columns\": [{\"name\": \"id\", \"type\": \"uuid\"}, {\"name\": \"email\", \"type\": \"varchar\"}, {\"name\": \"plan\", \"type\": \"varchar\"}, {\"name\": \"company_id\", \"type\": \"uuid\"}, {\"name\": \"created_at\", \"type\": \"timestamp\"}]}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_pipe004",
+        "content": "{\"datasets\": [\"raw_events\", \"enriched_events\", \"sessions\", \"dashboards\"]}"
+      },
+      {
+        "role": "assistant",
+        "content": "I have the full picture of source and destination schemas. The pipeline design:\n1. Kafka consumer for clickstream-events\n2. Lookup enrichment against user_profiles (with local cache)\n3. Sessionization with 30-min inactivity window\n4. BigQuery load into enriched_events.user_sessions\n\nLet me generate the Spark job and BigQuery schema.",
+        "tool_calls": [
+          {
+            "id": "call_pipe005",
+            "type": "function",
+            "function": {
+              "name": "write_file",
+              "arguments": "{\"path\": \"pipelines/clickstream-enrichment/spark_job.py\", \"content\": \"from pyspark.sql import SparkSession\\n...\"}"
+            }
+          },
+          {
+            "id": "call_pipe006",
+            "type": "function",
+            "function": {
+              "name": "create_bigquery_table",
+              "arguments": "{\"dataset\": \"enriched_events\", \"table\": \"user_sessions\", \"schema\": [{\"name\": \"session_id\", \"type\": \"STRING\"}, {\"name\": \"user_id\", \"type\": \"STRING\"}, {\"name\": \"plan\", \"type\": \"STRING\"}, {\"name\": \"event_count\", \"type\": \"INTEGER\"}, {\"name\": \"session_start\", \"type\": \"TIMESTAMP\"}, {\"name\": \"session_end\", \"type\": \"TIMESTAMP\"}, {\"name\": \"pages_visited\", \"type\": \"ARRAY<STRING>\"}], \"partition_field\": \"session_start\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "complex-008",
+    "model": "auto",
+    "expected_tier": "COMPLEX",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a security audit and remediation agent. You can scan codebases for vulnerabilities, analyze dependencies, review access controls, and generate security reports. You coordinate with DevSecOps tooling."
+      },
+      {
+        "role": "user",
+        "content": "Run a comprehensive security audit on our main application. Check for dependency vulnerabilities, hardcoded secrets, SQL injection risks, and OWASP Top 10 issues. Generate a prioritized remediation plan."
+      },
+      {
+        "role": "assistant",
+        "content": "Starting comprehensive security audit across multiple vectors.",
+        "tool_calls": [
+          {
+            "id": "call_sec010",
+            "type": "function",
+            "function": {
+              "name": "run_dependency_scan",
+              "arguments": "{\"path\": \".\", \"include_dev\": false}"
+            }
+          },
+          {
+            "id": "call_sec011",
+            "type": "function",
+            "function": {
+              "name": "scan_for_secrets",
+              "arguments": "{\"path\": \".\", \"patterns\": [\"api_key\", \"secret\", \"password\", \"token\", \"private_key\"]}"
+            }
+          },
+          {
+            "id": "call_sec012",
+            "type": "function",
+            "function": {
+              "name": "run_sast_scan",
+              "arguments": "{\"path\": \"src/\", \"rules\": [\"sql-injection\", \"xss\", \"path-traversal\", \"ssrf\", \"insecure-deserialization\"]}"
+            }
+          },
+          {
+            "id": "call_sec013",
+            "type": "function",
+            "function": {
+              "name": "check_security_headers",
+              "arguments": "{\"url\": \"https://app.company.com\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_sec010",
+        "content": "{\"critical\": 2, \"high\": 5, \"medium\": 12, \"low\": 28, \"vulnerabilities\": [{\"package\": \"lodash\", \"version\": \"4.17.15\", \"severity\": \"critical\", \"cve\": \"CVE-2025-1234\"}, {\"package\": \"express\", \"version\": \"4.17.1\", \"severity\": \"high\", \"cve\": \"CVE-2025-5678\"}]}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_sec011",
+        "content": "{\"findings\": [{\"file\": \"src/config/stripe.ts\", \"line\": 12, \"type\": \"api_key\", \"confidence\": \"high\"}, {\"file\": \".env.example\", \"line\": 3, \"type\": \"password\", \"confidence\": \"medium\"}]}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_sec012",
+        "content": "{\"findings\": [{\"rule\": \"sql-injection\", \"file\": \"src/routes/api/search.ts\", \"line\": 45, \"severity\": \"critical\", \"description\": \"User input directly interpolated into SQL query\"}, {\"rule\": \"xss\", \"file\": \"src/components/UserProfile.tsx\", \"line\": 23, \"severity\": \"high\", \"description\": \"dangerouslySetInnerHTML with unsanitized user content\"}]}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_sec013",
+        "content": "{\"missing_headers\": [\"Content-Security-Policy\", \"X-Content-Type-Options\", \"Strict-Transport-Security\"], \"grade\": \"D\"}"
+      },
+      {
+        "role": "assistant",
+        "content": "Audit complete. I found critical issues requiring immediate attention. Let me generate the prioritized remediation plan and create fix patches for the most severe issues.",
+        "tool_calls": [
+          {
+            "id": "call_sec014",
+            "type": "function",
+            "function": {
+              "name": "generate_security_report",
+              "arguments": "{\"format\": \"markdown\", \"include_remediation\": true, \"prioritize_by\": \"severity\"}"
+            }
+          },
+          {
+            "id": "call_sec015",
+            "type": "function",
+            "function": {
+              "name": "generate_fix_patch",
+              "arguments": "{\"file\": \"src/routes/api/search.ts\", \"issue\": \"sql-injection\", \"fix\": \"parameterized_query\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "complex-009",
+    "model": "greenclaw/auto",
+    "expected_tier": "COMPLEX",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an infrastructure-as-code agent specializing in Terraform and Kubernetes. You can read existing infrastructure, generate IaC configurations, plan changes, and coordinate with approval workflows before applying."
+      },
+      {
+        "role": "user",
+        "content": "We're launching in the EU region. Set up a complete replica of our US infrastructure in eu-west-1 including the EKS cluster, RDS instances, ElastiCache, and all networking. Make sure it complies with GDPR data residency requirements."
+      },
+      {
+        "role": "assistant",
+        "content": "This is a major infrastructure buildout. Let me first audit our current US setup to replicate it accurately.",
+        "tool_calls": [
+          {
+            "id": "call_tf001",
+            "type": "function",
+            "function": {
+              "name": "read_file",
+              "arguments": "{\"path\": \"infrastructure/terraform/us-east-1/main.tf\"}"
+            }
+          },
+          {
+            "id": "call_tf002",
+            "type": "function",
+            "function": {
+              "name": "read_file",
+              "arguments": "{\"path\": \"infrastructure/terraform/us-east-1/eks.tf\"}"
+            }
+          },
+          {
+            "id": "call_tf003",
+            "type": "function",
+            "function": {
+              "name": "read_file",
+              "arguments": "{\"path\": \"infrastructure/terraform/us-east-1/rds.tf\"}"
+            }
+          },
+          {
+            "id": "call_tf004",
+            "type": "function",
+            "function": {
+              "name": "read_file",
+              "arguments": "{\"path\": \"infrastructure/terraform/modules/\"}"
+            }
+          },
+          {
+            "id": "call_tf005",
+            "type": "function",
+            "function": {
+              "name": "list_k8s_resources",
+              "arguments": "{\"cluster\": \"prod-us-east-1\", \"resource_type\": \"deployments\", \"namespace\": \"default\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_tf001",
+        "content": "terraform { required_version = \">= 1.5\" }\nprovider \"aws\" { region = \"us-east-1\" }\nmodule \"vpc\" { source = \"../modules/vpc\" cidr_block = \"10.0.0.0/16\" }\n..."
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_tf002",
+        "content": "module \"eks\" { source = \"../modules/eks\" cluster_version = \"1.28\" node_groups = { default = { instance_types = [\"m5.xlarge\"] min_size = 3 max_size = 10 } } }"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_tf003",
+        "content": "module \"rds\" { source = \"../modules/rds\" engine = \"postgres\" engine_version = \"15.4\" instance_class = \"db.r6g.xlarge\" multi_az = true }"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_tf004",
+        "content": "{\"modules\": [\"vpc\", \"eks\", \"rds\", \"elasticache\", \"alb\", \"route53\", \"iam\"]}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_tf005",
+        "content": "{\"deployments\": [{\"name\": \"api-server\", \"replicas\": 3}, {\"name\": \"payment-service\", \"replicas\": 2}, {\"name\": \"notification-service\", \"replicas\": 2}, {\"name\": \"worker\", \"replicas\": 5}]}"
+      },
+      {
+        "role": "assistant",
+        "content": "I have the full infrastructure blueprint. Now I'll generate the eu-west-1 configuration with GDPR-specific adjustments: encryption at rest with EU-managed keys, VPC with no cross-region data transfer by default, and data residency tags on all resources.",
+        "tool_calls": [
+          {
+            "id": "call_tf006",
+            "type": "function",
+            "function": {
+              "name": "write_file",
+              "arguments": "{\"path\": \"infrastructure/terraform/eu-west-1/main.tf\", \"content\": \"terraform { required_version = \\\">=1.5\\\" }\\nprovider \\\"aws\\\" { region = \\\"eu-west-1\\\" }\\n...\"}"
+            }
+          },
+          {
+            "id": "call_tf007",
+            "type": "function",
+            "function": {
+              "name": "write_file",
+              "arguments": "{\"path\": \"infrastructure/terraform/eu-west-1/gdpr-compliance.tf\", \"content\": \"# GDPR Data Residency Controls\\nresource \\\"aws_kms_key\\\" \\\"eu_data_key\\\" { ... }\\n...\"}"
+            }
+          },
+          {
+            "id": "call_tf008",
+            "type": "function",
+            "function": {
+              "name": "terraform_plan",
+              "arguments": "{\"path\": \"infrastructure/terraform/eu-west-1\", \"var_file\": \"eu-prod.tfvars\"}"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "complex-010",
+    "model": "auto",
+    "expected_tier": "COMPLEX",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a machine learning operations (MLOps) agent. You manage model training pipelines, experiment tracking, model registry, and production model serving. You can coordinate GPU resources and automate the full ML lifecycle."
+      },
+      {
+        "role": "user",
+        "content": "Our recommendation model's accuracy has drifted below the threshold. Investigate the data drift, retrain the model with the latest data, run an A/B comparison against the current production model, and prepare a canary deployment if the new model performs better."
+      },
+      {
+        "role": "assistant",
+        "content": "Let me start by analyzing the current model performance and checking for data drift.",
+        "tool_calls": [
+          {
+            "id": "call_ml001",
+            "type": "function",
+            "function": {
+              "name": "get_model_metrics",
+              "arguments": "{\"model\": \"recommendation-v4\", \"environment\": \"production\", \"period\": \"30d\"}"
+            }
+          },
+          {
+            "id": "call_ml002",
+            "type": "function",
+            "function": {
+              "name": "run_drift_detection",
+              "arguments": "{\"model\": \"recommendation-v4\", \"reference_dataset\": \"training-2025-12\", \"current_window\": \"7d\"}"
+            }
+          },
+          {
+            "id": "call_ml003",
+            "type": "function",
+            "function": {
+              "name": "get_training_config",
+              "arguments": "{\"model\": \"recommendation-v4\"}"
+            }
+          },
+          {
+            "id": "call_ml004",
+            "type": "function",
+            "function": {
+              "name": "check_gpu_availability",
+              "arguments": "{\"cluster\": \"ml-training\", \"gpu_type\": \"A100\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_ml001",
+        "content": "{\"accuracy\": [{\"date\": \"2026-02-15\", \"value\": 0.89}, {\"date\": \"2026-03-01\", \"value\": 0.85}, {\"date\": \"2026-03-11\", \"value\": 0.79}], \"threshold\": 0.82, \"click_through_rate\": 0.034}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_ml002",
+        "content": "{\"drift_detected\": true, \"drifted_features\": [{\"feature\": \"user_engagement_score\", \"psi\": 0.31}, {\"feature\": \"item_category_distribution\", \"psi\": 0.24}], \"dataset_size_current\": 12400000}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_ml003",
+        "content": "{\"architecture\": \"two-tower\", \"embedding_dim\": 128, \"learning_rate\": 0.001, \"epochs\": 50, \"batch_size\": 4096, \"training_data\": \"s3://ml-data/recommendations/training-2025-12/\"}"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_ml004",
+        "content": "{\"available\": 4, \"total\": 8, \"estimated_queue_time\": 0}"
+      },
+      {
+        "role": "assistant",
+        "content": "Confirmed: significant data drift in user engagement scores and item category distributions. Accuracy dropped from 89% to 79%, below the 82% threshold. 4 A100 GPUs are available. Let me prepare and launch the retraining job with the latest data.",
+        "tool_calls": [
+          {
+            "id": "call_ml005",
+            "type": "function",
+            "function": {
+              "name": "prepare_training_dataset",
+              "arguments": "{\"source\": \"s3://ml-data/recommendations/\", \"date_range\": [\"2026-01-01\", \"2026-03-10\"], \"output\": \"s3://ml-data/recommendations/training-2026-03/\", \"validation_split\": 0.15}"
+            }
+          },
+          {
+            "id": "call_ml006",
+            "type": "function",
+            "function": {
+              "name": "launch_training_job",
+              "arguments": "{\"model\": \"recommendation-v5\", \"config\": {\"architecture\": \"two-tower\", \"embedding_dim\": 128, \"learning_rate\": 0.0008, \"epochs\": 60, \"batch_size\": 4096}, \"gpus\": 4, \"training_data\": \"s3://ml-data/recommendations/training-2026-03/\"}"
+            }
+          },
+          {
+            "id": "call_ml007",
+            "type": "function",
+            "function": {
+              "name": "create_experiment",
+              "arguments": "{\"name\": \"recommendation-v5-retrain-drift-fix\", \"description\": \"Retraining due to data drift in engagement and category features\", \"parent_model\": \"recommendation-v4\"}"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

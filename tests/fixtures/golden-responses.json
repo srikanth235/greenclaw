@@ -1,0 +1,81 @@
+{
+  "$schema": "Golden file for API response shape validation",
+  "chat_completion_response": {
+    "id": "chatcmpl-greenclaw-001",
+    "object": "chat.completion",
+    "created": 1710000000,
+    "model": "gpt-4o-mini",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Hello! How can I help you?"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 10,
+      "completion_tokens": 8,
+      "total_tokens": 18
+    }
+  },
+  "chat_completion_response_streaming_chunk": {
+    "id": "chatcmpl-greenclaw-002",
+    "object": "chat.completion.chunk",
+    "created": 1710000000,
+    "model": "gpt-4o-mini",
+    "choices": [
+      {
+        "index": 0,
+        "delta": {
+          "content": "Hello"
+        },
+        "finish_reason": null
+      }
+    ]
+  },
+  "health_response": {
+    "status": "ok",
+    "version": "0.1.0",
+    "uptime": 3600
+  },
+  "error_response": {
+    "error": {
+      "message": "Invalid request: messages array is required",
+      "type": "invalid_request_error",
+      "param": "messages",
+      "code": null
+    }
+  },
+  "request_trace": {
+    "id": "trace-001",
+    "timestamp": "2026-03-11T00:00:00.000Z",
+    "request_id": "req-001",
+    "original_model": "auto",
+    "routed_model": "gpt-4o-mini",
+    "routed_provider": "openai",
+    "task_tier": "SIMPLE",
+    "compaction_applied": false,
+    "tokens": {
+      "prompt": 50,
+      "completion": 20,
+      "total": 70
+    },
+    "estimated_cost": {
+      "original_usd": 0.00105,
+      "routed_usd": 0.0000175,
+      "savings_usd": 0.0010325
+    },
+    "latency_ms": {
+      "classify": 1,
+      "compact": 0,
+      "route": 0,
+      "upstream": 450,
+      "total": 455
+    },
+    "upstream_status": 200,
+    "error": null
+  }
+}
