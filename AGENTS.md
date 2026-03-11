@@ -102,6 +102,7 @@ Enforced by `tests/architecture.test.ts`.
 | [observability.md](docs/conventions/observability.md) | Structured logging, RequestTrace schema, health endpoint      |
 | [testing.md](docs/conventions/testing.md)             | Test categories, harness tests, adding new tests              |
 | [security.md](docs/conventions/security.md)           | API key handling, PII rules, error sanitization               |
+| [commits.md](docs/conventions/commits.md)             | Conventional Commits format, type table, scope rules          |
 
 ## Execution Plans
 

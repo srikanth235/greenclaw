@@ -98,6 +98,14 @@ Key tests:
 
 ## Commit workflow
 
+All commits use [Conventional Commits](https://www.conventionalcommits.org/)
+format. See [docs/conventions/commits.md](docs/conventions/commits.md) for the
+full type table and examples.
+
+```
+<type>(<scope>): <description>
+```
+
 Pre-commit hooks run `lint-staged` automatically (ESLint + Prettier on staged
 files). If the hook fails, fix the issue before committing.
 
