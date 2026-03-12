@@ -53,5 +53,7 @@ breadth before depth.
 - 2026-03-12: Fixed a false negative in `tests/architecture.test.ts` where
   comment text containing `fetch` could suppress real `fetch()` violation
   detection in pure pipeline modules.
+- 2026-03-12: Fixed three P2 bugs in telemetry module — logger JSON key
+  mismatch, silent SQLite init failure, and timezone-aware time-range queries.
 
 Last updated: 2026-03-12

@@ -21,10 +21,11 @@ Layer 2. Structured logging (Pino) and telemetry persistence (SQLite).
 ### Key invariants
 
 1. SQLite operations are synchronous (better-sqlite3 is sync by design)
-2. If DB init fails, return a no-op store — never crash the proxy
-3. Logger output matches the JSON format in `docs/conventions/observability.md`
-4. No PII in log output or stored traces
-5. DB file location is configurable via `GREENCLAW_TELEMETRY_DB` env var
+2. If DB init fails, emit a warn-level JSON line to stderr, return a no-op store
+3. Logger uses `messageKey: 'message'`, custom `timestamp` key, strips `pid`/`hostname`
+4. Timestamps are normalized to UTC ISO-8601 on insert and query
+5. No PII in log output or stored traces
+6. DB file location is configurable via `GREENCLAW_TELEMETRY_DB` env var
 
 ### Dependencies
 

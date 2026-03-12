@@ -177,5 +177,11 @@ CREATE INDEX IF NOT EXISTS idx_traces_latency ON request_traces(latency_total_ms
 
 If SQLite initialization fails, the telemetry store enters no-op mode:
 `insertTrace()` becomes a no-op, query functions return empty results.
-The proxy continues to serve requests. A `warn`-level log is emitted to
-stdout noting the failure.
+The proxy continues to serve requests. A `warn`-level JSON log is emitted
+to stderr noting the failure reason.
+
+### Timestamp Normalization
+
+All timestamps are normalized to UTC ISO-8601 (`Z` suffix) on insert and
+query. This ensures lexicographic comparison in SQL works correctly even
+when callers pass offsets (e.g., `+05:30`).

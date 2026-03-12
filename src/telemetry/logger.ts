@@ -25,8 +25,9 @@ export interface LoggerOptions {
 export function createLogger(options: LoggerOptions): pino.Logger {
   return pino({
     level: options.level,
-    name: options.name ?? 'greenclaw',
-    timestamp: pino.stdTimeFunctions.isoTime,
+    messageKey: 'message',
+    timestamp: () => `,"timestamp":"${new Date().toISOString()}"`,
+    base: { name: options.name ?? 'greenclaw' },
     formatters: {
       level(label: string) {
         return { level: label };

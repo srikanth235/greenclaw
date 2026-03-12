@@ -13,10 +13,6 @@ import type { RequestTrace, TelemetryStats, TelemetryStore } from './types.js';
 
 export type { RequestTrace, TraceTokens, TraceCost, TraceLatency, TelemetryStats, TelemetryStore } from './types.js';
 
-// ---------------------------------------------------------------------------
-// SQL
-// ---------------------------------------------------------------------------
-
 const CREATE_TABLE_SQL = `
 CREATE TABLE IF NOT EXISTS request_traces (
   id                  TEXT PRIMARY KEY,
@@ -64,6 +60,17 @@ INSERT INTO request_traces (
   @latency_upstream_ms, @latency_total_ms, @upstream_status, @error
 );`;
 
+/**
+ * Normalize an ISO-8601 timestamp to canonical UTC (Z suffix) for correct SQL comparison.
+ * @param iso - Any valid ISO-8601 string
+ * @returns UTC ISO string, or the original if unparseable
+ */
+function toUtcIso(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toISOString();
+}
+
 // ---------------------------------------------------------------------------
 // Row ↔ RequestTrace conversion
 // ---------------------------------------------------------------------------
@@ -100,7 +107,7 @@ interface FlatRow {
 function traceToRow(trace: RequestTrace): FlatRow {
   return {
     id: trace.id,
-    timestamp: trace.timestamp,
+    timestamp: toUtcIso(trace.timestamp),
     request_id: trace.request_id,
     original_model: trace.original_model,
     routed_model: trace.routed_model,
@@ -211,8 +218,15 @@ export function createStore(dbPath: string): TelemetryStore {
     for (const sql of CREATE_INDEXES_SQL) {
       db.exec(sql);
     }
-  } catch {
-    // Graceful degradation: return no-op store
+  } catch (err: unknown) {
+    const detail = err instanceof Error ? err.message : String(err);
+    process.stderr.write(
+      JSON.stringify({
+        level: 'warn',
+        timestamp: new Date().toISOString(),
+        message: `Telemetry store init failed: ${detail}. Falling back to no-op store.`,
+      }) + '\n',
+    );
     return createNoOpStore();
   }
 
@@ -226,7 +240,7 @@ export function createStore(dbPath: string): TelemetryStore {
     queryByTimeRange(from: string, to: string): RequestTrace[] {
       const rows = db
         .prepare('SELECT * FROM request_traces WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp')
-        .all(from, to) as FlatRow[];
+        .all(toUtcIso(from), toUtcIso(to)) as FlatRow[];
       return rows.map(rowToTrace);
     },
 
