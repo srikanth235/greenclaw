@@ -103,3 +103,205 @@ describe('Architecture: Layer Dependency Enforcement', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Pure function layers — classifier, compactor, and router must never import
+// I/O primitives. They are pure pipeline stages (ADR-001).
+// ---------------------------------------------------------------------------
+
+describe('Architecture: Pure Function Layers', () => {
+  /** Modules that must remain free of I/O imports. */
+  const PURE_MODULES = ['classifier', 'compactor', 'router'] as const;
+
+  /**
+   * Patterns that indicate I/O or side-effect imports.
+   * Matches common Node built-ins and fetch.
+   */
+  const IO_PATTERNS = [
+    /\bimport\b.*['"]node:(?:fs|http|https|net|dgram|child_process|cluster|tls|dns)['"]/,
+    /\bimport\b.*['"](?:fs|http|https|net|node-fetch)['"]/,
+    /\brequire\s*\(\s*['"](?:node:)?(?:fs|http|https|net|child_process)['"]\s*\)/,
+  ];
+
+  it('pure pipeline modules do not import I/O primitives', () => {
+    const violations: string[] = [];
+
+    for (const mod of PURE_MODULES) {
+      const moduleDir = path.join(SRC_DIR, mod);
+      for (const filePath of findTsFiles(moduleDir)) {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        for (const pattern of IO_PATTERNS) {
+          if (pattern.test(content)) {
+            violations.push(
+              `${path.relative(SRC_DIR, filePath)} imports I/O module (matched ${pattern.source})`,
+            );
+          }
+        }
+      }
+    }
+
+    expect(
+      violations,
+      `Pure-function layer violations:\n  ${violations.join('\n  ')}\n` +
+        `Fix: classifier/, compactor/, and router/ must not import fs, http, ` +
+        `net, or similar I/O modules. Side effects belong in api/.`,
+    ).toHaveLength(0);
+  });
+
+  it('pure pipeline modules do not use global fetch', () => {
+    const violations: string[] = [];
+
+    for (const mod of PURE_MODULES) {
+      const moduleDir = path.join(SRC_DIR, mod);
+      for (const filePath of findTsFiles(moduleDir)) {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        // Match standalone fetch calls but not mentions in comments/strings
+        // Look for fetch( at the start of an expression
+        if (/\bfetch\s*\(/.test(content) && !/\/\/.*\bfetch\b/.test(content)) {
+          // Rough heuristic: skip lines that are only comments
+          const lines = content.split('\n');
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
+            if (/\bfetch\s*\(/.test(trimmed)) {
+              violations.push(
+                `${path.relative(SRC_DIR, filePath)} uses fetch() — pure modules must not make network calls`,
+              );
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    expect(
+      violations,
+      `Pure-function layer violations:\n  ${violations.join('\n  ')}\n` +
+        `Fix: network calls belong in api/, not in pure pipeline modules.`,
+    ).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// No circular dependencies — walk the import graph and detect cycles.
+// ---------------------------------------------------------------------------
+
+describe('Architecture: No Circular Dependencies', () => {
+  /**
+   * Build an adjacency map of module → modules it imports.
+   * @returns Map from module name to set of imported module names
+   */
+  function buildImportGraph(): Map<string, Set<string>> {
+    const graph = new Map<string, Set<string>>();
+
+    for (const moduleName of LAYER_ORDER) {
+      const moduleDir = path.join(SRC_DIR, moduleName);
+      const imports = new Set<string>();
+
+      for (const filePath of findTsFiles(moduleDir)) {
+        for (const imported of extractModuleImports(filePath)) {
+          if (imported !== moduleName) {
+            imports.add(imported);
+          }
+        }
+      }
+
+      graph.set(moduleName, imports);
+    }
+
+    return graph;
+  }
+
+  /**
+   * Detect cycles using DFS.
+   * @param graph - Adjacency map
+   * @returns Array of cycle descriptions, empty if acyclic
+   */
+  function detectCycles(graph: Map<string, Set<string>>): string[] {
+    const cycles: string[] = [];
+    const visited = new Set<string>();
+    const inStack = new Set<string>();
+    const pathStack: string[] = [];
+
+    function dfs(node: string): void {
+      if (inStack.has(node)) {
+        const cycleStart = pathStack.indexOf(node);
+        const cycle = [...pathStack.slice(cycleStart), node];
+        cycles.push(cycle.join(' → '));
+        return;
+      }
+      if (visited.has(node)) return;
+
+      visited.add(node);
+      inStack.add(node);
+      pathStack.push(node);
+
+      const neighbors = graph.get(node) ?? new Set();
+      for (const neighbor of neighbors) {
+        dfs(neighbor);
+      }
+
+      pathStack.pop();
+      inStack.delete(node);
+    }
+
+    for (const node of graph.keys()) {
+      dfs(node);
+    }
+
+    return cycles;
+  }
+
+  it('no circular dependencies exist between modules', () => {
+    const graph = buildImportGraph();
+    const cycles = detectCycles(graph);
+
+    expect(
+      cycles,
+      `Circular dependencies detected:\n  ${cycles.join('\n  ')}\n` +
+        `Fix: break the cycle by moving shared types to a lower layer or ` +
+        `extracting an interface.`,
+    ).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Re-export hygiene — modules must only be imported via their index.ts entry
+// point. No deep imports into internal files from outside the module.
+// ---------------------------------------------------------------------------
+
+describe('Architecture: Re-export Hygiene (no deep imports)', () => {
+  it('no module imports a non-index file from another module', () => {
+    const violations: string[] = [];
+
+    for (const moduleName of LAYER_ORDER) {
+      const moduleDir = path.join(SRC_DIR, moduleName);
+      for (const filePath of findTsFiles(moduleDir)) {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        // Regex is created per-file to avoid stale lastIndex from the g flag
+        const deepImportRegex = /(?:import|from)\s+['"]\.\.?\/([\w-]+)\/((?!index)[^'"]+)['"]/g;
+        let match: RegExpExecArray | null;
+        while ((match = deepImportRegex.exec(content)) !== null) {
+          const targetModule = match[1]!;
+          const deepPath = match[2]!;
+          // Only flag cross-module deep imports, not within the same module
+          if (
+            targetModule !== moduleName &&
+            LAYER_ORDER.includes(targetModule as (typeof LAYER_ORDER)[number])
+          ) {
+            violations.push(
+              `${moduleName}/${path.relative(path.join(SRC_DIR, moduleName), filePath)} ` +
+                `deep-imports ${targetModule}/${deepPath} — use ${targetModule}/index.ts instead`,
+            );
+          }
+        }
+      }
+    }
+
+    expect(
+      violations,
+      `Deep import violations:\n  ${violations.join('\n  ')}\n` +
+        `Fix: import from the module's index.ts entry point, not internal files.`,
+    ).toHaveLength(0);
+  });
+});
