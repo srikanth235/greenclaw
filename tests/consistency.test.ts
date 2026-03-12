@@ -24,6 +24,42 @@ const MODULES = [
   'dashboard',
 ] as const;
 
+// ---------------------------------------------------------------------------
+// Shared file-content cache — avoids redundant fs.readFileSync calls across
+// tests in this file. Every test that reads CLAUDE.md, AGENTS.md, QUALITY.md,
+// or module AGENTS.md files should use these cached values.
+// ---------------------------------------------------------------------------
+
+/**
+ * Lazy, per-path file-content cache. Reads once, returns the same string.
+ */
+const fileCache = new Map<string, string>();
+
+/**
+ * Read a file, returning a cached copy if already read.
+ * @param filePath - Absolute path
+ * @returns File content as a string
+ */
+function cachedRead(filePath: string): string {
+  let content = fileCache.get(filePath);
+  if (content === undefined) {
+    content = fs.readFileSync(filePath, 'utf-8');
+    fileCache.set(filePath, content);
+  }
+  return content;
+}
+
+/** Pre-resolved paths used in multiple describe blocks. */
+const PATHS = {
+  claudeMd: path.join(ROOT, 'CLAUDE.md'),
+  agentsMd: path.join(ROOT, 'AGENTS.md'),
+  architectureMd: path.join(ROOT, 'ARCHITECTURE.md'),
+  contributingMd: path.join(ROOT, 'CONTRIBUTING.md'),
+  qualityMd: path.join(ROOT, 'docs', 'QUALITY.md'),
+  plansMd: path.join(ROOT, 'docs', 'PLANS.md'),
+  designIndex: path.join(ROOT, 'docs', 'design', 'index.md'),
+} as const;
+
 describe('Consistency: AGENTS.md files', () => {
   it('every module directory has an AGENTS.md', () => {
     for (const mod of MODULES) {
@@ -36,13 +72,13 @@ describe('Consistency: AGENTS.md files', () => {
     for (const mod of MODULES) {
       const agentsPath = path.join(SRC_DIR, mod, 'AGENTS.md');
       if (!fs.existsSync(agentsPath)) continue;
-      const lines = fs.readFileSync(agentsPath, 'utf-8').split('\n').length;
+      const lines = cachedRead(agentsPath).split('\n').length;
       expect(lines, `src/${mod}/AGENTS.md has ${lines} lines (max 80)`).toBeLessThanOrEqual(80);
     }
   });
 
   it('root AGENTS.md references every module', () => {
-    const rootAgents = fs.readFileSync(path.join(ROOT, 'AGENTS.md'), 'utf-8');
+    const rootAgents = cachedRead(PATHS.agentsMd);
     for (const mod of MODULES) {
       expect(rootAgents, `Root AGENTS.md does not reference module "${mod}"`).toContain(mod);
     }
@@ -132,7 +168,7 @@ describe('Consistency: doc cross-links', () => {
    * @returns Array of { linkPath, resolvedPath } objects
    */
   function extractLocalLinks(filePath: string): { linkPath: string; resolvedPath: string }[] {
-    const content = fs.readFileSync(filePath, 'utf-8');
+    const content = cachedRead(filePath);
     const linkRegex = /\[[^\]]*\]\(([^)]+)\)/g;
     const links: { linkPath: string; resolvedPath: string }[] = [];
     let match: RegExpExecArray | null;
@@ -216,8 +252,7 @@ describe('Consistency: knowledge store structure', () => {
   });
 
   it('root AGENTS.md stays under 120 lines', () => {
-    const agentsPath = path.join(ROOT, 'AGENTS.md');
-    const lines = fs.readFileSync(agentsPath, 'utf-8').split('\n').length;
+    const lines = cachedRead(PATHS.agentsMd).split('\n').length;
     expect(lines, `Root AGENTS.md has ${lines} lines (max 120)`).toBeLessThanOrEqual(120);
   });
 });
@@ -229,7 +264,7 @@ describe('Consistency: CLAUDE.md module map matches src/', () => {
    * @returns Array of module directory names
    */
   function extractModuleMapEntries(): string[] {
-    const claudeMd = fs.readFileSync(path.join(ROOT, 'CLAUDE.md'), 'utf-8');
+    const claudeMd = cachedRead(PATHS.claudeMd);
     const modulePattern = /\|\s*\d+\s*\|\s*`src\/(\w+)\/`/g;
     const entries: string[] = [];
     let match: RegExpExecArray | null;
@@ -278,7 +313,7 @@ describe('Consistency: QUALITY.md covers all modules', () => {
    * @returns Map of module name → grade
    */
   function parseQualityTable(): Map<string, string> {
-    const content = fs.readFileSync(path.join(ROOT, 'docs', 'QUALITY.md'), 'utf-8');
+    const content = cachedRead(PATHS.qualityMd);
     // Match rows like: | types/      | Stub           | N/A           | Complete | D     | ...
     const rowPattern = /\|\s*(\w+)\/\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([A-Z])\s*\|/g;
     const grades = new Map<string, string>();
@@ -327,7 +362,7 @@ describe('Consistency: PLANS.md index matches exec-plans on disk', () => {
    * @returns Array of relative paths (from docs/)
    */
   function extractPlanLinks(): string[] {
-    const content = fs.readFileSync(path.join(ROOT, 'docs', 'PLANS.md'), 'utf-8');
+    const content = cachedRead(PATHS.plansMd);
     const linkPattern = /\[PLAN-\d+\]\((exec-plans\/[^)]+\.md)\)/g;
     const links: string[] = [];
     let match: RegExpExecArray | null;
@@ -386,6 +421,344 @@ describe('Consistency: PLANS.md index matches exec-plans on disk', () => {
       broken,
       `PLANS.md references missing files: ${broken.join(', ')}. ` +
         `Fix: create the plan file or remove the stale link from PLANS.md.`,
+    ).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Exec-plan lifecycle — plans in active/ must say Active, completed/ must say
+// Completed, and no stray plan files should sit in the root exec-plans/ dir.
+// ---------------------------------------------------------------------------
+
+describe('Consistency: exec-plan lifecycle', () => {
+  /**
+   * Read a plan file and extract its Status line.
+   * @param filePath - Absolute path to the plan file
+   * @returns The status string, or null if not found
+   */
+  function extractPlanStatus(filePath: string): string | null {
+    const content = cachedRead(filePath);
+    const match = content.match(/\*\*Status\*\*:\s*(.+)/);
+    return match ? match[1]!.trim() : null;
+  }
+
+  it('plans in active/ have Active status', () => {
+    const activeDir = path.join(ROOT, 'docs', 'exec-plans', 'active');
+    if (!fs.existsSync(activeDir)) return;
+    const violations: string[] = [];
+    for (const entry of fs.readdirSync(activeDir)) {
+      if (!entry.endsWith('.md')) continue;
+      const status = extractPlanStatus(path.join(activeDir, entry));
+      if (status && !status.toLowerCase().startsWith('active')) {
+        violations.push(`active/${entry} has status "${status}" (expected "Active …")`);
+      }
+    }
+    expect(
+      violations,
+      `Plan lifecycle violations:\n  ${violations.join('\n  ')}\n` +
+        `Fix: plans in active/ must have status starting with "Active".`,
+    ).toHaveLength(0);
+  });
+
+  it('plans in completed/ have Completed status', () => {
+    const completedDir = path.join(ROOT, 'docs', 'exec-plans', 'completed');
+    if (!fs.existsSync(completedDir)) return;
+    const violations: string[] = [];
+    for (const entry of fs.readdirSync(completedDir)) {
+      if (!entry.endsWith('.md')) continue;
+      const status = extractPlanStatus(path.join(completedDir, entry));
+      if (status && !status.toLowerCase().startsWith('completed')) {
+        violations.push(`completed/${entry} has status "${status}" (expected "Completed …")`);
+      }
+    }
+    expect(
+      violations,
+      `Plan lifecycle violations:\n  ${violations.join('\n  ')}\n` +
+        `Fix: plans in completed/ must have status starting with "Completed".`,
+    ).toHaveLength(0);
+  });
+
+  it('no plan files exist outside active/ or completed/', () => {
+    const execPlansDir = path.join(ROOT, 'docs', 'exec-plans');
+    if (!fs.existsSync(execPlansDir)) return;
+    const stray: string[] = [];
+    for (const entry of fs.readdirSync(execPlansDir)) {
+      const fullPath = path.join(execPlansDir, entry);
+      if (
+        entry.startsWith('PLAN-') &&
+        entry.endsWith('.md') &&
+        !fs.statSync(fullPath).isDirectory()
+      ) {
+        stray.push(entry);
+      }
+    }
+    expect(
+      stray,
+      `Plan files outside active/ or completed/: ${stray.join(', ')}. ` +
+        `Fix: move plan files into docs/exec-plans/active/ or docs/exec-plans/completed/.`,
+    ).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Doc backlinks — every document inside docs/ sub-directories must be
+// reachable (linked) from at least one entry-point file. Catches orphan docs
+// that rot silently (harness-engineering §3 progressive disclosure).
+// ---------------------------------------------------------------------------
+
+describe('Consistency: doc backlinks (no orphan docs)', () => {
+  /**
+   * Collect all local markdown links from a set of entry-point files.
+   * @param entryFiles - Absolute paths to entry-point markdown files
+   * @returns Set of resolved absolute paths that are linked to
+   */
+  function collectReachableDocs(entryFiles: string[]): Set<string> {
+    const reachable = new Set<string>();
+    const linkRegex = /\[[^\]]*\]\(([^)]+)\)/g;
+
+    for (const entryFile of entryFiles) {
+      if (!fs.existsSync(entryFile)) continue;
+      const content = fs.readFileSync(entryFile, 'utf-8');
+      let match: RegExpExecArray | null;
+      while ((match = linkRegex.exec(content)) !== null) {
+        const linkPath = match[1]!;
+        if (linkPath.startsWith('http') || linkPath.startsWith('#')) continue;
+        const resolved = path.resolve(path.dirname(entryFile), linkPath);
+        reachable.add(resolved);
+      }
+    }
+    return reachable;
+  }
+
+  /**
+   * Find all markdown files in a directory recursively.
+   * @param dir - Directory to scan
+   * @returns Array of absolute file paths
+   */
+  function findMdFiles(dir: string): string[] {
+    const files: string[] = [];
+    if (!fs.existsSync(dir)) return files;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        files.push(...findMdFiles(fullPath));
+      } else if (entry.name.endsWith('.md')) {
+        files.push(fullPath);
+      }
+    }
+    return files;
+  }
+
+  it('every doc in docs/design/ is reachable from an entry point', () => {
+    const entryPoints = [
+      path.join(ROOT, 'CLAUDE.md'),
+      path.join(ROOT, 'AGENTS.md'),
+      path.join(ROOT, 'ARCHITECTURE.md'),
+      path.join(ROOT, 'docs', 'design', 'index.md'),
+    ];
+    const reachable = collectReachableDocs(entryPoints);
+    const designDocs = findMdFiles(path.join(ROOT, 'docs', 'design')).filter(
+      (f) => path.basename(f) !== 'index.md',
+    );
+    const orphans: string[] = [];
+    for (const doc of designDocs) {
+      if (!reachable.has(doc)) {
+        orphans.push(path.relative(ROOT, doc));
+      }
+    }
+    expect(
+      orphans,
+      `Orphan design docs (not linked from any entry point): ${orphans.join(', ')}. ` +
+        `Fix: add a link from CLAUDE.md, docs/design/index.md, or a module AGENTS.md.`,
+    ).toHaveLength(0);
+  });
+
+  it('every doc in docs/conventions/ is reachable from an entry point', () => {
+    const entryPoints = [
+      path.join(ROOT, 'CLAUDE.md'),
+      path.join(ROOT, 'AGENTS.md'),
+      path.join(ROOT, 'CONTRIBUTING.md'),
+    ];
+    const reachable = collectReachableDocs(entryPoints);
+    const conventionDocs = findMdFiles(path.join(ROOT, 'docs', 'conventions'));
+    const orphans: string[] = [];
+    for (const doc of conventionDocs) {
+      if (!reachable.has(doc)) {
+        orphans.push(path.relative(ROOT, doc));
+      }
+    }
+    expect(
+      orphans,
+      `Orphan convention docs (not linked from CLAUDE.md or CONTRIBUTING.md): ` +
+        `${orphans.join(', ')}. Fix: add a link from CLAUDE.md or CONTRIBUTING.md.`,
+    ).toHaveLength(0);
+  });
+
+  it('every doc in docs/exec-plans/ is reachable from PLANS.md or CLAUDE.md', () => {
+    const entryPoints = [
+      path.join(ROOT, 'CLAUDE.md'),
+      path.join(ROOT, 'AGENTS.md'),
+      path.join(ROOT, 'docs', 'PLANS.md'),
+    ];
+    const reachable = collectReachableDocs(entryPoints);
+    const planDocs = findMdFiles(path.join(ROOT, 'docs', 'exec-plans'));
+    const orphans: string[] = [];
+    for (const doc of planDocs) {
+      if (!reachable.has(doc)) {
+        orphans.push(path.relative(ROOT, doc));
+      }
+    }
+    expect(
+      orphans,
+      `Orphan exec-plan docs (not linked from PLANS.md or CLAUDE.md): ` +
+        `${orphans.join(', ')}. Fix: add a link from docs/PLANS.md or CLAUDE.md.`,
+    ).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// AGENTS.md structure validation — every module AGENTS.md must have a
+// consistent set of sections so agents can reliably parse them.
+// ---------------------------------------------------------------------------
+
+describe('Consistency: AGENTS.md structure validation', () => {
+  const REQUIRED_SECTIONS = [
+    'Ownership',
+    'What it owns',
+    'What it must NOT do',
+    'Key invariants',
+    'Dependencies',
+  ] as const;
+
+  it('every module AGENTS.md contains required sections', () => {
+    const violations: string[] = [];
+
+    for (const mod of MODULES) {
+      const agentsPath = path.join(SRC_DIR, mod, 'AGENTS.md');
+      if (!fs.existsSync(agentsPath)) continue;
+      const content = fs.readFileSync(agentsPath, 'utf-8');
+
+      for (const section of REQUIRED_SECTIONS) {
+        if (!content.includes(section)) {
+          violations.push(`src/${mod}/AGENTS.md missing section: "${section}"`);
+        }
+      }
+    }
+
+    expect(
+      violations,
+      `AGENTS.md structure violations:\n  ${violations.join('\n  ')}\n` +
+        `Fix: every module AGENTS.md must contain: ${REQUIRED_SECTIONS.join(', ')}.`,
+    ).toHaveLength(0);
+  });
+
+  it('AGENTS.md section headings are consistent across modules', () => {
+    const coreHeadings = ['What it owns', 'What it must NOT do', 'Key invariants'];
+    const violations: string[] = [];
+
+    for (const mod of MODULES) {
+      const agentsPath = path.join(SRC_DIR, mod, 'AGENTS.md');
+      if (!fs.existsSync(agentsPath)) continue;
+      const content = fs.readFileSync(agentsPath, 'utf-8');
+      const headings = [...content.matchAll(/^###\s+(.+)$/gm)].map((m) => m[1]!.trim());
+
+      for (const required of coreHeadings) {
+        if (!headings.includes(required)) {
+          violations.push(`src/${mod}/AGENTS.md missing heading: "### ${required}"`);
+        }
+      }
+    }
+
+    expect(
+      violations,
+      `Inconsistent AGENTS.md headings:\n  ${violations.join('\n  ')}\n` +
+        `Fix: ensure every module AGENTS.md has: ${coreHeadings.map((h) => `### ${h}`).join(', ')}.`,
+    ).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Convention coverage — every convention doc must appear in CLAUDE.md,
+// every design doc must appear in the design index.
+// ---------------------------------------------------------------------------
+
+describe('Consistency: convention coverage in CLAUDE.md', () => {
+  it('every convention doc in docs/conventions/ is listed in CLAUDE.md', () => {
+    const conventionsDir = path.join(ROOT, 'docs', 'conventions');
+    if (!fs.existsSync(conventionsDir)) return;
+
+    const conventionFiles = fs.readdirSync(conventionsDir).filter((f) => f.endsWith('.md'));
+    const claudeMd = fs.readFileSync(path.join(ROOT, 'CLAUDE.md'), 'utf-8');
+    const missing: string[] = [];
+
+    for (const file of conventionFiles) {
+      if (!claudeMd.includes(file)) {
+        missing.push(file);
+      }
+    }
+
+    expect(
+      missing,
+      `Convention docs not listed in CLAUDE.md: ${missing.join(', ')}. ` +
+        `Fix: add a row to the "Conventions" table in CLAUDE.md for each missing convention.`,
+    ).toHaveLength(0);
+  });
+
+  it('every design doc in docs/design/ is listed in design/index.md', () => {
+    const designDir = path.join(ROOT, 'docs', 'design');
+    if (!fs.existsSync(designDir)) return;
+
+    const designFiles = fs
+      .readdirSync(designDir)
+      .filter((f) => f.endsWith('.md') && f !== 'index.md');
+    const indexPath = path.join(ROOT, 'docs', 'design', 'index.md');
+    if (!fs.existsSync(indexPath)) return;
+    const indexMd = fs.readFileSync(indexPath, 'utf-8');
+    const missing: string[] = [];
+
+    for (const file of designFiles) {
+      if (!indexMd.includes(file)) {
+        missing.push(file);
+      }
+    }
+
+    expect(
+      missing,
+      `Design docs not listed in docs/design/index.md: ${missing.join(', ')}. ` +
+        `Fix: add a row to the design index table for each missing document.`,
+    ).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Design doc freshness — validate statuses in the design index are from the
+// allowed set, catching typos and unrecognised lifecycle states.
+// ---------------------------------------------------------------------------
+
+describe('Consistency: design doc freshness', () => {
+  const VALID_STATUSES = ['Verified', 'Accepted', 'Stale', 'Draft', 'Superseded'];
+
+  it('every design doc in the index has a valid status', () => {
+    const indexPath = path.join(ROOT, 'docs', 'design', 'index.md');
+    if (!fs.existsSync(indexPath)) return;
+
+    const content = fs.readFileSync(indexPath, 'utf-8');
+    // Match rows like: | [001-philosophy](001-philosophy.md) | Verified | ...
+    const rowPattern = /\|\s*\[[\w-]+\]\([^)]+\)\s*\|\s*(\w+)\s*\|/g;
+    const invalid: string[] = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = rowPattern.exec(content)) !== null) {
+      const status = match[1]!;
+      if (!VALID_STATUSES.includes(status)) {
+        invalid.push(`status "${status}" is not one of: ${VALID_STATUSES.join(', ')}`);
+      }
+    }
+
+    expect(
+      invalid,
+      `Invalid design doc statuses in index.md:\n  ${invalid.join('\n  ')}\n` +
+        `Fix: valid statuses are: ${VALID_STATUSES.join(', ')}.`,
     ).toHaveLength(0);
   });
 });
