@@ -36,6 +36,11 @@ progresses. Use this document to identify gaps and prioritize work.
 | Harness: docs freshness    | Active     | B     | Design doc status validation, plan lifecycle checks      |
 | Harness: ESLint layers     | Active     | B     | `no-restricted-imports` enforces layer boundaries        |
 | Harness: no-console        | Active     | B     | `no-console` in src/ enforces structured logging         |
+| Harness: process.env gate  | Active     | A     | ESLint bans `process.env` outside config/                |
+| Harness: skip hygiene      | Active     | A     | No unmanaged it.skip/describe.skip without allowlist     |
+| Harness: knowledge gate    | Active     | A     | Deterministic CI: src/ changes require docs/ changes     |
+| Harness: side-effect ban   | Active     | A     | Timers, Math.random, Date.now banned in pure layers      |
+| Harness: proxy contracts   | Documented | D     | Passthrough, only-model-mutates, boot smoke (skipped)    |
 | Error conventions          | Documented | B     | Schema defined, not yet implemented in api/              |
 | Observability              | Documented | D     | RequestTrace schema defined, no persistence yet          |
 | Security                   | Documented | C     | Conventions written, implementation pending              |
@@ -52,5 +57,10 @@ breadth before depth.
 - 2026-03-12: Fixed a false negative in `tests/architecture.test.ts` where
   comment text containing `fetch` could suppress real `fetch()` violation
   detection in pure pipeline modules.
+
+- 2026-03-12: Added process.env restriction ESLint rule, no-unmanaged-skips
+  harness test, deterministic knowledge-store CI gate, extended pure-module
+  I/O ban (timers, Math.random, Date.now), and proxy contract test stubs
+  (upstream passthrough, only-model-mutates, boot smoke test).
 
 Last updated: 2026-03-12

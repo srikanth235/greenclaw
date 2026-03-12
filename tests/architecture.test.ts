@@ -148,6 +148,52 @@ describe('Architecture: Pure Function Layers', () => {
     ).toHaveLength(0);
   });
 
+  /**
+   * Side-effect patterns banned in pure modules.
+   * Timers, randomness, and Date.now introduce non-determinism.
+   */
+  const SIDE_EFFECT_PATTERNS = [
+    { pattern: /\bsetTimeout\s*\(/, label: 'setTimeout' },
+    { pattern: /\bsetInterval\s*\(/, label: 'setInterval' },
+    { pattern: /\bsetImmediate\s*\(/, label: 'setImmediate' },
+    { pattern: /\bMath\.random\s*\(/, label: 'Math.random' },
+    { pattern: /\bDate\.now\s*\(/, label: 'Date.now' },
+    { pattern: /\bnew\s+Date\s*\(/, label: 'new Date()' },
+    { pattern: /\bcrypto\.random/, label: 'crypto.random*' },
+  ];
+
+  it('pure pipeline modules do not use timers, randomness, or Date.now', () => {
+    const violations: string[] = [];
+
+    for (const mod of PURE_MODULES) {
+      const moduleDir = path.join(SRC_DIR, mod);
+      for (const filePath of findTsFiles(moduleDir)) {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const lines = content.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+          const trimmed = lines[i]!.trim();
+          if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')) {
+            continue;
+          }
+          for (const { pattern, label } of SIDE_EFFECT_PATTERNS) {
+            if (pattern.test(trimmed)) {
+              violations.push(
+                `${path.relative(SRC_DIR, filePath)}:${i + 1} uses ${label} — ` +
+                  `pure modules must be deterministic and side-effect free`,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    expect(
+      violations,
+      `Side-effect violations in pure modules:\n  ${violations.join('\n  ')}\n` +
+        `Fix: timers, randomness, and Date access belong in api/, not in pure pipeline modules.`,
+    ).toHaveLength(0);
+  });
+
   it('pure pipeline modules do not use global fetch', () => {
     const violations: string[] = [];
 

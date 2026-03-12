@@ -18,6 +18,9 @@ pnpm test:watch    # Run in watch mode
 |                                    |          | AGENTS.md structure, convention coverage, plan lifecycle, freshness |
 | `tests/file-limits.test.ts`        | Harness  | Source files ≤300 lines, test-file-per-module                       |
 | `tests/module-boundaries.test.ts`  | Harness  | No hardcoded models, no PII in logs, Zod source-of-truth            |
+| `tests/skip-hygiene.test.ts`       | Harness  | No unmanaged `it.skip`/`describe.skip` without allowlisted reason   |
+| `tests/knowledge-gate.test.ts`     | Harness  | Deterministic CI gate: src/ changes require docs/ changes           |
+| `tests/proxy-contracts.test.ts`    | Contract | Upstream passthrough, only-model-mutates, boot smoke test           |
 | `tests/classifier.fixture.test.ts` | Fixture  | Classifier accuracy (>=90% on 50 samples)                           |
 | `tests/golden.test.ts`             | Contract | API response shape validation                                       |
 
@@ -49,6 +52,10 @@ of the codebase itself.
 - No hardcoded model names outside config/
 - No PII/secrets in log calls
 - Zod source-of-truth enforcement in types/
+- No `process.env` outside config/ (ESLint `no-restricted-syntax`)
+- Pure-module side-effect ban (timers, Math.random, Date.now in pure layers)
+- No unmanaged `it.skip`/`describe.skip` without allowlisted reason
+- Knowledge-store CI gate (src/ changes require docs/ changes)
 
 ### Fixture / Eval Tests (skipped until implemented)
 
@@ -56,6 +63,14 @@ Tests that evaluate the quality of a module's output against a labeled dataset.
 These use `it.skip` until the module has real logic (not stubs).
 
 - Classifier accuracy fixture: >=90% on `tests/fixtures/requests.json`
+
+### Contract Tests (skipped until implemented)
+
+Tests that validate proxy behavior invariants against mock upstreams.
+
+- Upstream passthrough parity (non-streaming success, error forwarding)
+- Only-model-mutates (GreenClaw changes only the `model` field)
+- Boot smoke test (`/health` returns documented shape on ephemeral port)
 
 ### Unit Tests
 
