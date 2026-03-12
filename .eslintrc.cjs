@@ -83,6 +83,23 @@ module.exports = {
       },
     },
 
+    // ── process.env restricted to config/ only ──
+    // Config is the single source of truth for environment variables.
+    // All other modules receive configuration via dependency injection.
+    ...LAYERS.filter((mod) => mod !== "config").map((mod) => ({
+      files: [`src/${mod}/**/*.ts`],
+      rules: {
+        "no-restricted-syntax": [
+          "error",
+          {
+            selector: "MemberExpression[object.name='process'][property.name='env']",
+            message: `Direct process.env access is not allowed in ${mod}/. ` +
+              `Use config/ to read environment variables. See docs/conventions/security.md.`,
+          },
+        ],
+      },
+    })),
+
     // ── Layer dependency enforcement per module ──
     ...LAYERS.map((mod, i) => ({
       files: [`src/${mod}/**/*.ts`],
