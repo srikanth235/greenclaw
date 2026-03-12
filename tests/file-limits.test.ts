@@ -5,13 +5,13 @@ import * as path from 'node:path';
 /**
  * File size limit enforcement — prevents monolithic source files.
  *
- * From harness-engineering §5: "file size limits … enforced by custom
+ * From harness-engineering §5: "file size limits ... enforced by custom
  * lint rules." We use a structural test rather than an ESLint rule
  * because this check spans all file types (not just TS).
  */
 
 const ROOT = path.resolve(__dirname, '..');
-const SRC_DIR = path.join(ROOT, 'src');
+const PACKAGES_DIR = path.join(ROOT, 'packages');
 const MAX_SOURCE_LINES = 300;
 
 /**
@@ -37,26 +37,29 @@ function findSourceFiles(dir: string): string[] {
 
 const TESTS_DIR = path.join(ROOT, 'tests');
 
-const MODULES = [
+const PACKAGES = [
   'types',
   'config',
   'telemetry',
-  'classifier',
-  'compactor',
-  'router',
+  'optimization',
+  'monitoring',
+  'cli',
   'api',
   'dashboard',
 ] as const;
 
 describe('File limits: source files stay under line cap', () => {
-  it(`no source file in src/ exceeds ${MAX_SOURCE_LINES} lines`, () => {
+  it(`no source file in packages/*/src/ exceeds ${MAX_SOURCE_LINES} lines`, () => {
     const violations: string[] = [];
 
-    for (const filePath of findSourceFiles(SRC_DIR)) {
-      const lineCount = fs.readFileSync(filePath, 'utf-8').split('\n').length;
-      if (lineCount > MAX_SOURCE_LINES) {
-        const relPath = path.relative(ROOT, filePath);
-        violations.push(`${relPath} (${lineCount} lines)`);
+    for (const pkg of PACKAGES) {
+      const srcDir = path.join(PACKAGES_DIR, pkg, 'src');
+      for (const filePath of findSourceFiles(srcDir)) {
+        const lineCount = fs.readFileSync(filePath, 'utf-8').split('\n').length;
+        if (lineCount > MAX_SOURCE_LINES) {
+          const relPath = path.relative(ROOT, filePath);
+          violations.push(`${relPath} (${lineCount} lines)`);
+        }
       }
     }
 
@@ -69,39 +72,45 @@ describe('File limits: source files stay under line cap', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Test file per module — every module in src/ must have at least one
-// corresponding test file in tests/. Ensures no module is silently untested.
+// Test file per package — every package must have at least one
+// corresponding test file. Ensures no package is silently untested.
 // ---------------------------------------------------------------------------
 
-describe('File limits: test file per module', () => {
-  // Skip until modules have real implementation — stubs don't need dedicated tests.
-  // Unskip when PLAN-001 completes and modules have real logic.
-  it.skip('every module has at least one test file in tests/', () => {
-    const testFiles = fs.existsSync(TESTS_DIR)
+describe('File limits: test file per package', () => {
+  // Skip until packages have real implementation — stubs don't need dedicated tests.
+  // Unskip when PLAN-001 completes and packages have real logic.
+  it.skip('every package has at least one test file', () => {
+    const rootTestFiles = fs.existsSync(TESTS_DIR)
       ? fs.readdirSync(TESTS_DIR).filter((f) => f.endsWith('.test.ts'))
       : [];
     const missing: string[] = [];
 
-    for (const mod of MODULES) {
-      // A module is covered if any test file contains the module name
-      // e.g., classifier.test.ts, classifier.fixture.test.ts
-      const hasCoverage = testFiles.some((f) => f.includes(mod));
-      if (!hasCoverage) {
-        missing.push(mod);
+    for (const pkg of PACKAGES) {
+      // Check for package-local tests in packages/<pkg>/tests/
+      const pkgTestsDir = path.join(PACKAGES_DIR, pkg, 'tests');
+      const hasPkgTests =
+        fs.existsSync(pkgTestsDir) &&
+        fs.readdirSync(pkgTestsDir).some((f) => f.endsWith('.test.ts'));
+
+      // Also check root tests/ for files mentioning the package name
+      const hasRootTests = rootTestFiles.some((f) => f.includes(pkg));
+
+      if (!hasPkgTests && !hasRootTests) {
+        missing.push(pkg);
       }
     }
 
     // Harness tests (consistency, architecture, file-limits, module-boundaries)
-    // cover all modules collectively, so we only flag modules that lack BOTH
+    // cover all packages collectively, so we only flag packages that lack BOTH
     // dedicated test files AND coverage from harness tests.
-    // For now, we check that at least a test file mentioning the module exists
-    // OR the module is covered by the harness tests (which run for all modules).
-    // This test becomes stricter once modules have real implementation.
+    // For now, we check that at least a test file mentioning the package exists
+    // OR the package is covered by the harness tests (which run for all packages).
+    // This test becomes stricter once packages have real implementation.
 
     expect(
       missing,
-      `Modules without any test file in tests/: ${missing.join(', ')}. ` +
-        `Fix: create tests/<module>.test.ts or tests/<module>.*.test.ts. ` +
+      `Packages without any test file: ${missing.join(', ')}. ` +
+        `Fix: create packages/<pkg>/tests/<pkg>.test.ts or tests/<pkg>.*.test.ts. ` +
         `See docs/conventions/testing.md §Adding Tests for a New Module.`,
     ).toHaveLength(0);
   });

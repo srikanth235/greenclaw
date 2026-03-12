@@ -7,21 +7,21 @@ import * as path from 'node:path';
  * convention violations mechanically.
  *
  * From harness-engineering §5: "Taste invariants — structured logging,
- * naming conventions, … enforced by custom lint rules." These tests
+ * naming conventions, ... enforced by custom lint rules." These tests
  * complement ESLint with checks that are easier to express as structural
  * tests.
  */
 
 const ROOT = path.resolve(__dirname, '..');
-const SRC_DIR = path.join(ROOT, 'src');
+const PACKAGES_DIR = path.join(ROOT, 'packages');
 
-const MODULES = [
+const PACKAGES = [
   'types',
   'config',
   'telemetry',
-  'classifier',
-  'compactor',
-  'router',
+  'optimization',
+  'monitoring',
+  'cli',
   'api',
   'dashboard',
 ] as const;
@@ -48,7 +48,8 @@ function findTsFiles(dir: string): string[] {
 
 // ---------------------------------------------------------------------------
 // No hardcoded model names — model strings (e.g. "gpt-4", "claude-3")
-// must only appear in config/. All other modules get models from config.
+// must only appear in config/ and types/. All other packages get models
+// from config.
 // ---------------------------------------------------------------------------
 
 describe('Module Boundaries: No Hardcoded Model Names', () => {
@@ -66,17 +67,17 @@ describe('Module Boundaries: No Hardcoded Model Names', () => {
     /['"]command-r[^'"]*['"]/,
   ];
 
-  /** Modules where model name strings are allowed. */
-  const ALLOWED_MODULES = new Set(['config', 'types']);
+  /** Packages where model name strings are allowed. */
+  const ALLOWED_PACKAGES = new Set(['config', 'types']);
 
-  it('model name strings only appear in config/ and types/', () => {
+  it('model name strings only appear in config and types packages', () => {
     const violations: string[] = [];
 
-    for (const mod of MODULES) {
-      if (ALLOWED_MODULES.has(mod)) continue;
-      const moduleDir = path.join(SRC_DIR, mod);
+    for (const pkg of PACKAGES) {
+      if (ALLOWED_PACKAGES.has(pkg)) continue;
+      const pkgSrcDir = path.join(PACKAGES_DIR, pkg, 'src');
 
-      for (const filePath of findTsFiles(moduleDir)) {
+      for (const filePath of findTsFiles(pkgSrcDir)) {
         const content = fs.readFileSync(filePath, 'utf-8');
         const lines = content.split('\n');
 
@@ -89,7 +90,7 @@ describe('Module Boundaries: No Hardcoded Model Names', () => {
           for (const pattern of MODEL_PATTERNS) {
             if (pattern.test(trimmed)) {
               violations.push(
-                `src/${mod}/${path.relative(path.join(SRC_DIR, mod), filePath)}:${i + 1} ` +
+                `packages/${pkg}/${path.relative(path.join(PACKAGES_DIR, pkg), filePath)}:${i + 1} ` +
                   `contains hardcoded model name`,
               );
               break;
@@ -101,9 +102,9 @@ describe('Module Boundaries: No Hardcoded Model Names', () => {
 
     expect(
       violations,
-      `Hardcoded model names outside config/:\n  ${violations.join('\n  ')}\n` +
+      `Hardcoded model names outside config/ and types/:\n  ${violations.join('\n  ')}\n` +
         `Fix: model names must come from config, not be inlined. ` +
-        `See router/AGENTS.md: "Hardcode model names — all mappings come from config".`,
+        `See optimization/router AGENTS.md: "Hardcode model names — all mappings come from config".`,
     ).toHaveLength(0);
   });
 });
@@ -139,10 +140,10 @@ describe('Module Boundaries: No PII in Log Calls', () => {
   it('no source file logs sensitive field names', () => {
     const violations: string[] = [];
 
-    for (const mod of MODULES) {
-      const moduleDir = path.join(SRC_DIR, mod);
+    for (const pkg of PACKAGES) {
+      const pkgSrcDir = path.join(PACKAGES_DIR, pkg, 'src');
 
-      for (const filePath of findTsFiles(moduleDir)) {
+      for (const filePath of findTsFiles(pkgSrcDir)) {
         const content = fs.readFileSync(filePath, 'utf-8');
         const lines = content.split('\n');
 
@@ -158,7 +159,7 @@ describe('Module Boundaries: No PII in Log Calls', () => {
           for (const pattern of SENSITIVE_PATTERNS) {
             if (pattern.test(trimmed)) {
               violations.push(
-                `src/${mod}/${path.relative(path.join(SRC_DIR, mod), filePath)}:${i + 1} ` +
+                `packages/${pkg}/${path.relative(path.join(PACKAGES_DIR, pkg), filePath)}:${i + 1} ` +
                   `logs potentially sensitive data (matched ${pattern.source})`,
               );
               break;
@@ -178,14 +179,15 @@ describe('Module Boundaries: No PII in Log Calls', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Zod as source of truth — in types/, every exported TypeScript type must
-// be derived from a Zod schema via z.infer<>. No standalone interfaces for
-// external-facing shapes (ADR-005).
+// Zod as source of truth — in the types package, every exported TypeScript
+// type must be derived from a Zod schema via z.infer<>. No standalone
+// interfaces for external-facing shapes (ADR-005).
 // ---------------------------------------------------------------------------
 
-describe('Module Boundaries: Zod as Source of Truth (types/)', () => {
-  it('types/ does not export standalone interfaces or type aliases without z.infer', () => {
-    const typesDir = path.join(SRC_DIR, 'types');
+describe('Module Boundaries: Zod as Source of Truth (types package)', () => {
+  const typesDir = path.join(PACKAGES_DIR, 'types', 'src');
+
+  it('types package does not export standalone interfaces or type aliases without z.infer', () => {
     const violations: string[] = [];
 
     for (const filePath of findTsFiles(typesDir)) {
@@ -200,7 +202,7 @@ describe('Module Boundaries: Zod as Source of Truth (types/)', () => {
         // Detect exported interfaces (standalone, not z.infer derived)
         if (/^export\s+interface\s+\w+/.test(trimmed)) {
           violations.push(
-            `src/types/${path.relative(typesDir, filePath)}:${i + 1} ` +
+            `packages/types/${path.relative(typesDir, filePath)}:${i + 1} ` +
               `exports a standalone interface — use z.infer<> from a Zod schema instead`,
           );
         }
@@ -217,7 +219,7 @@ describe('Module Boundaries: Zod as Source of Truth (types/)', () => {
             // This is likely fine if it references a schema
           } else if (!trimmed.includes('|') && !trimmed.includes('typeof')) {
             violations.push(
-              `src/types/${path.relative(typesDir, filePath)}:${i + 1} ` +
+              `packages/types/${path.relative(typesDir, filePath)}:${i + 1} ` +
                 `exports a type alias not derived from z.infer<> — ` +
                 `see ADR-005 (Zod as source of truth)`,
             );
@@ -228,26 +230,25 @@ describe('Module Boundaries: Zod as Source of Truth (types/)', () => {
 
     expect(
       violations,
-      `Zod source-of-truth violations in types/:\n  ${violations.join('\n  ')}\n` +
+      `Zod source-of-truth violations in types package:\n  ${violations.join('\n  ')}\n` +
         `Fix: every exported type must be derived from a Zod schema via z.infer<>. ` +
         `See docs/design/005-zod-as-source-of-truth.md.`,
     ).toHaveLength(0);
   });
 
-  it('types/ does not import from any other src/ module', () => {
-    const typesDir = path.join(SRC_DIR, 'types');
+  it('types package does not import from any other @greenclaw/* package', () => {
     const violations: string[] = [];
-    const otherModules = MODULES.filter((m) => m !== 'types');
+    const otherPackages = PACKAGES.filter((p) => p !== 'types');
 
     for (const filePath of findTsFiles(typesDir)) {
       const content = fs.readFileSync(filePath, 'utf-8');
-      for (const mod of otherModules) {
-        // Match imports from sibling modules like '../config/index.js'
-        const importPattern = new RegExp(`from\\s+['"]\\.\\./${mod}(?:/[^'"]*)?['"]`);
+      for (const pkg of otherPackages) {
+        // Match imports from other @greenclaw packages
+        const importPattern = new RegExp(`from\\s+['"]@greenclaw/${pkg}(?:/[^'"]*)?['"]`);
         if (importPattern.test(content)) {
           violations.push(
-            `src/types/${path.relative(typesDir, filePath)} imports from ${mod}/ — ` +
-              `types is the bottom layer and must not import from any other module`,
+            `packages/types/${path.relative(typesDir, filePath)} imports from @greenclaw/${pkg} — ` +
+              `types is the bottom layer and must not import from any other package`,
           );
         }
       }
@@ -255,8 +256,8 @@ describe('Module Boundaries: Zod as Source of Truth (types/)', () => {
 
     expect(
       violations,
-      `Layer-zero violation in types/:\n  ${violations.join('\n  ')}\n` +
-        `Fix: types/ must not import from any other src/ module.`,
+      `Layer-zero violation in types package:\n  ${violations.join('\n  ')}\n` +
+        `Fix: types package must not import from any other @greenclaw/* package.`,
     ).toHaveLength(0);
   });
 });

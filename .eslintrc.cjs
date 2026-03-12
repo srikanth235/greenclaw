@@ -1,30 +1,31 @@
 /**
- * Layer order (lowest → highest):
- *   0 types → 1 config → 2 telemetry → 3 classifier → 4 compactor → 5 router → 6 api → 7 dashboard
+ * Package order (lowest → highest):
+ *   0 types → 1 config → 2 telemetry → 3 optimization → 4 monitoring → 5 cli → 6 api → 7 dashboard
  *
- * Each module may only import from same or lower layers.
+ * Each package may only import from same or lower layers.
  * We use per-directory overrides with no-restricted-imports to enforce this
  * at lint time — faster feedback than waiting for `pnpm test`.
  */
 
 // Helpers — build a no-restricted-imports pattern for a given layer.
-// "forbidden" is every module strictly above the current layer.
-const LAYERS = ["types", "config", "telemetry", "classifier", "compactor", "router", "api", "dashboard"];
+// "forbidden" is every package strictly above the current layer.
+const PACKAGES = ["types", "config", "telemetry", "optimization", "monitoring", "cli", "api", "dashboard"];
 
 /**
- * Build a no-restricted-imports rule value for a module at `layerIndex`.
+ * Build a no-restricted-imports rule value for a package at `layerIndex`.
+ * Cross-package imports use workspace names like `@greenclaw/<pkg>`.
  * @param {number} layerIndex
  * @returns {import('eslint').Linter.RuleEntry}
  */
 function restrictAbove(layerIndex) {
-  const forbidden = LAYERS.slice(layerIndex + 1);
+  const forbidden = PACKAGES.slice(layerIndex + 1);
   if (forbidden.length === 0) return "off";
   return [
     "error",
     {
-      patterns: forbidden.map((mod) => ({
-        group: [`../${mod}/*`, `../${mod}`, `./${mod}/*`, `./${mod}`],
-        message: `Layer violation: cannot import from "${mod}/" (layer ${LAYERS.indexOf(mod)}) — only same or lower layers allowed. See ARCHITECTURE.md.`,
+      patterns: forbidden.map((pkg) => ({
+        group: [`@greenclaw/${pkg}`, `@greenclaw/${pkg}/*`],
+        message: `Layer violation: cannot import from "@greenclaw/${pkg}" (layer ${PACKAGES.indexOf(pkg)}) — only same or lower layers allowed. See ARCHITECTURE.md.`,
       })),
     },
   ];
@@ -77,32 +78,32 @@ module.exports = {
   overrides: [
     // ── Structured logging: no console.* in production source ──
     {
-      files: ["src/**/*.ts"],
+      files: ["packages/*/src/**/*.ts"],
       rules: {
         "no-console": "error",
       },
     },
 
-    // ── process.env restricted to config/ only ──
+    // ── process.env restricted to config package only ──
     // Config is the single source of truth for environment variables.
-    // All other modules receive configuration via dependency injection.
-    ...LAYERS.filter((mod) => mod !== "config").map((mod) => ({
-      files: [`src/${mod}/**/*.ts`],
+    // All other packages receive configuration via dependency injection.
+    ...PACKAGES.filter((pkg) => pkg !== "config").map((pkg) => ({
+      files: [`packages/${pkg}/src/**/*.ts`],
       rules: {
         "no-restricted-syntax": [
           "error",
           {
             selector: "MemberExpression[object.name='process'][property.name='env']",
-            message: `Direct process.env access is not allowed in ${mod}/. ` +
-              `Use config/ to read environment variables. See docs/conventions/security.md.`,
+            message: `Direct process.env access is not allowed in ${pkg}/. ` +
+              `Use config package to read environment variables. See docs/conventions/security.md.`,
           },
         ],
       },
     })),
 
-    // ── Layer dependency enforcement per module ──
-    ...LAYERS.map((mod, i) => ({
-      files: [`src/${mod}/**/*.ts`],
+    // ── Layer dependency enforcement per package ──
+    ...PACKAGES.map((pkg, i) => ({
+      files: [`packages/${pkg}/src/**/*.ts`],
       rules: {
         "no-restricted-imports": restrictAbove(i),
       },

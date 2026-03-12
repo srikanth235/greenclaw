@@ -15,54 +15,56 @@ provider.
 
 ```mermaid
 graph TD
-    OC[OpenClaw Agent] -->|HTTP request| API[api/]
-    API --> CL[classifier/]
-    CL -->|TaskTier| API
-    API --> CO[compactor/]
-    CO -->|Compacted messages| API
-    API --> RO[router/]
-    RO -->|Swapped model| API
+    OC[OpenClaw Agent] -->|HTTP request| API["@greenclaw/api"]
+    API --> OPT["@greenclaw/optimization"]
+    OPT -->|TaskTier + routing| API
     API -->|fetch: forward as-is| UP[Upstream Provider]
     UP -->|Response stream / JSON| API
     API -->|Pass-through response| OC
-    API -->|RequestTrace| TEL[telemetry/]
+    API -->|RequestTrace| TEL["@greenclaw/telemetry"]
     TEL -->|SQLite| DB[(data/telemetry.db)]
-    TEL --> DASH[dashboard/]
+    MON["@greenclaw/monitoring"] -->|reads| DB
+    CLI["@greenclaw/cli"] --> MON
+    CLI --> TEL
+    DASH["@greenclaw/dashboard"] --> MON
+    DASH --> TEL
+    SKILL[OpenClaw Skill] -->|bash| CLI
 
     subgraph GreenClaw Proxy
         API
-        CL
-        CO
-        RO
+        OPT
         TEL
+        MON
         DB
         DASH
     end
 
-    CFG[config/] -.->|Config| API
-    CFG -.->|Config| RO
+    subgraph User Tools
+        CLI
+        SKILL
+    end
+
+    CFG["@greenclaw/config"] -.->|Config| API
+    CFG -.->|Config| OPT
     CFG -.->|Config| TEL
-    TYP[types/] -.->|Schemas| CL
-    TYP -.->|Schemas| CO
-    TYP -.->|Schemas| RO
+    TYP["@greenclaw/types"] -.->|Schemas| OPT
     TYP -.->|Schemas| API
     TYP -.->|Schemas| TEL
+    TYP -.->|Schemas| MON
 ```
 
-## Dependency Layer Rules
+## Package Layer Rules
 
-Modules are organized in strict layers. A module may only import from modules at
-the same level or below. No upward imports are permitted.
+Packages are organized in strict layers within a pnpm workspace monorepo.
+A package may only import from packages at the same level or below.
 
 ```
-Layer 7 (top):  dashboard
-Layer 6:        api
-Layer 5:        router
-Layer 4:        compactor
-Layer 3:        classifier
-Layer 2:        telemetry
-Layer 1:        config
-Layer 0 (base): types
+Layer 5 (top):  @greenclaw/dashboard
+Layer 4:        @greenclaw/api, @greenclaw/cli
+Layer 3:        @greenclaw/optimization, @greenclaw/monitoring
+Layer 2:        @greenclaw/telemetry
+Layer 1:        @greenclaw/config
+Layer 0 (base): @greenclaw/types
 ```
 
 This is enforced by `tests/architecture.test.ts` in CI.
@@ -111,3 +113,16 @@ Every proxied request produces a `RequestTrace` containing:
 - Estimated cost (original vs. routed)
 - Latency (classify, compact, route, upstream, total)
 - Whether compaction was applied
+
+## Usage Analytics
+
+The `@greenclaw/monitoring` package provides user-facing usage analytics by
+aggregating `request_traces` data. It offers:
+
+- Usage summaries (daily/weekly/monthly tokens, cost, savings)
+- Breakdowns by model, tier, or provider
+- Time-series trends
+- Budget alerting with threshold-based rules
+
+The `@greenclaw/cli` package exposes these as the `greenclaw` CLI tool, and the
+OpenClaw skill (`skill/greenclaw/SKILL.md`) wraps it for natural language access.

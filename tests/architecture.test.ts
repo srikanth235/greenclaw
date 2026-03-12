@@ -5,32 +5,33 @@ import * as path from 'node:path';
 /**
  * Dependency layer enforcement.
  *
- * Layer order (lowest to highest):
- *   types → config → telemetry → classifier → compactor → router → api → dashboard
+ * Package order (lowest to highest):
+ *   types → config → telemetry → optimization → monitoring → cli → api → dashboard
  *
- * A module may only import from modules at the same or lower layer.
+ * A package may only import from packages at the same or lower layer.
  */
 
-const LAYER_ORDER = [
+const PACKAGE_ORDER = [
   'types',
   'config',
   'telemetry',
-  'classifier',
-  'compactor',
-  'router',
+  'optimization',
+  'monitoring',
+  'cli',
   'api',
   'dashboard',
 ] as const;
 
-const SRC_DIR = path.resolve(__dirname, '..', 'src');
+const ROOT = path.resolve(__dirname, '..');
+const PACKAGES_DIR = path.join(ROOT, 'packages');
 
 /**
- * Get the layer index for a given module name.
- * @param moduleName - The module directory name
+ * Get the layer index for a given package name.
+ * @param packageName - The package directory name
  * @returns The layer index, or -1 if not found
  */
-function getLayerIndex(moduleName: string): number {
-  return LAYER_ORDER.indexOf(moduleName as (typeof LAYER_ORDER)[number]);
+function getLayerIndex(packageName: string): number {
+  return PACKAGE_ORDER.indexOf(packageName as (typeof PACKAGE_ORDER)[number]);
 }
 
 /**
@@ -54,51 +55,52 @@ function findTsFiles(dir: string): string[] {
 }
 
 /**
- * Extract local src/ module imports from a TypeScript file.
+ * Extract cross-package @greenclaw/* imports from a TypeScript file.
  * Matches patterns like:
- *   import { foo } from '../types/index.js';
- *   import * as bar from '../config/index.js';
+ *   import { foo } from '@greenclaw/types';
+ *   import * as bar from '@greenclaw/config';
+ *   import { baz } from '@greenclaw/telemetry/something';
  * @param filePath - Absolute path to the .ts file
- * @returns Array of module names imported (e.g., ['types', 'config'])
+ * @returns Array of package names imported (e.g., ['types', 'config'])
  */
-function extractModuleImports(filePath: string): string[] {
+function extractPackageImports(filePath: string): string[] {
   const content = fs.readFileSync(filePath, 'utf-8');
-  const importRegex = /(?:import|from)\s+['"]\.\.?\/([\w-]+)(?:\/[^'"]*)?['"]/g;
-  const modules: string[] = [];
+  const importRegex = /(?:import|from)\s+['"]@greenclaw\/([\w-]+)(?:\/[^'"]*)?['"]/g;
+  const packages: string[] = [];
 
   let match: RegExpExecArray | null;
   while ((match = importRegex.exec(content)) !== null) {
-    const moduleName = match[1];
+    const packageName = match[1];
     if (
-      moduleName !== undefined &&
-      LAYER_ORDER.includes(moduleName as (typeof LAYER_ORDER)[number])
+      packageName !== undefined &&
+      PACKAGE_ORDER.includes(packageName as (typeof PACKAGE_ORDER)[number])
     ) {
-      modules.push(moduleName);
+      packages.push(packageName);
     }
   }
 
-  return [...new Set(modules)];
+  return [...new Set(packages)];
 }
 
 describe('Architecture: Layer Dependency Enforcement', () => {
-  // Skip until modules have real code — stubs have no imports to validate
-  it.skip('no module imports from a higher layer', () => {
-    for (const moduleName of LAYER_ORDER) {
-      const moduleDir = path.join(SRC_DIR, moduleName);
-      const moduleLayer = getLayerIndex(moduleName);
-      const tsFiles = findTsFiles(moduleDir);
+  // Skip until packages have real code — stubs have no imports to validate
+  it.skip('no package imports from a higher layer', () => {
+    for (const packageName of PACKAGE_ORDER) {
+      const packageSrcDir = path.join(PACKAGES_DIR, packageName, 'src');
+      const packageLayer = getLayerIndex(packageName);
+      const tsFiles = findTsFiles(packageSrcDir);
 
       for (const filePath of tsFiles) {
-        const imports = extractModuleImports(filePath);
-        for (const importedModule of imports) {
-          const importedLayer = getLayerIndex(importedModule);
+        const imports = extractPackageImports(filePath);
+        for (const importedPackage of imports) {
+          const importedLayer = getLayerIndex(importedPackage);
           expect(
             importedLayer,
-            `${moduleName}/ imports from ${importedModule}/ — layer violation! ` +
-              `${moduleName} (layer ${moduleLayer}) cannot import from ` +
-              `${importedModule} (layer ${importedLayer}). ` +
-              `File: ${path.relative(SRC_DIR, filePath)}`,
-          ).toBeLessThanOrEqual(moduleLayer);
+            `${packageName}/ imports from ${importedPackage}/ — layer violation! ` +
+              `${packageName} (layer ${packageLayer}) cannot import from ` +
+              `${importedPackage} (layer ${importedLayer}). ` +
+              `File: ${path.relative(PACKAGES_DIR, filePath)}`,
+          ).toBeLessThanOrEqual(packageLayer);
         }
       }
     }
@@ -106,13 +108,14 @@ describe('Architecture: Layer Dependency Enforcement', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Pure function layers — classifier, compactor, and router must never import
-// I/O primitives. They are pure pipeline stages (ADR-001).
+// Pure function layers — classifier, compactor, and router (inside the
+// optimization package) must never import I/O primitives. They are pure
+// pipeline stages (ADR-001).
 // ---------------------------------------------------------------------------
 
 describe('Architecture: Pure Function Layers', () => {
-  /** Modules that must remain free of I/O imports. */
-  const PURE_MODULES = ['classifier', 'compactor', 'router'] as const;
+  /** Sub-modules within the optimization package that must remain free of I/O imports. */
+  const PURE_SUBMODULES = ['classifier', 'compactor', 'router'] as const;
 
   /**
    * Patterns that indicate I/O or side-effect imports.
@@ -124,17 +127,19 @@ describe('Architecture: Pure Function Layers', () => {
     /\brequire\s*\(\s*['"](?:node:)?(?:fs|http|https|net|child_process)['"]\s*\)/,
   ];
 
+  const OPTIMIZATION_SRC = path.join(PACKAGES_DIR, 'optimization', 'src');
+
   it('pure pipeline modules do not import I/O primitives', () => {
     const violations: string[] = [];
 
-    for (const mod of PURE_MODULES) {
-      const moduleDir = path.join(SRC_DIR, mod);
-      for (const filePath of findTsFiles(moduleDir)) {
+    for (const submod of PURE_SUBMODULES) {
+      const submodDir = path.join(OPTIMIZATION_SRC, submod);
+      for (const filePath of findTsFiles(submodDir)) {
         const content = fs.readFileSync(filePath, 'utf-8');
         for (const pattern of IO_PATTERNS) {
           if (pattern.test(content)) {
             violations.push(
-              `${path.relative(SRC_DIR, filePath)} imports I/O module (matched ${pattern.source})`,
+              `${path.relative(PACKAGES_DIR, filePath)} imports I/O module (matched ${pattern.source})`,
             );
           }
         }
@@ -144,7 +149,7 @@ describe('Architecture: Pure Function Layers', () => {
     expect(
       violations,
       `Pure-function layer violations:\n  ${violations.join('\n  ')}\n` +
-        `Fix: classifier/, compactor/, and router/ must not import fs, http, ` +
+        `Fix: optimization/{classifier,compactor,router}/ must not import fs, http, ` +
         `net, or similar I/O modules. Side effects belong in api/.`,
     ).toHaveLength(0);
   });
@@ -166,9 +171,9 @@ describe('Architecture: Pure Function Layers', () => {
   it('pure pipeline modules do not use timers, randomness, or Date.now', () => {
     const violations: string[] = [];
 
-    for (const mod of PURE_MODULES) {
-      const moduleDir = path.join(SRC_DIR, mod);
-      for (const filePath of findTsFiles(moduleDir)) {
+    for (const submod of PURE_SUBMODULES) {
+      const submodDir = path.join(OPTIMIZATION_SRC, submod);
+      for (const filePath of findTsFiles(submodDir)) {
         const content = fs.readFileSync(filePath, 'utf-8');
         const lines = content.split('\n');
         for (let i = 0; i < lines.length; i++) {
@@ -179,7 +184,7 @@ describe('Architecture: Pure Function Layers', () => {
           for (const { pattern, label } of SIDE_EFFECT_PATTERNS) {
             if (pattern.test(trimmed)) {
               violations.push(
-                `${path.relative(SRC_DIR, filePath)}:${i + 1} uses ${label} — ` +
+                `${path.relative(PACKAGES_DIR, filePath)}:${i + 1} uses ${label} — ` +
                   `pure modules must be deterministic and side-effect free`,
               );
             }
@@ -198,9 +203,9 @@ describe('Architecture: Pure Function Layers', () => {
   it('pure pipeline modules do not use global fetch', () => {
     const violations: string[] = [];
 
-    for (const mod of PURE_MODULES) {
-      const moduleDir = path.join(SRC_DIR, mod);
-      for (const filePath of findTsFiles(moduleDir)) {
+    for (const submod of PURE_SUBMODULES) {
+      const submodDir = path.join(OPTIMIZATION_SRC, submod);
+      for (const filePath of findTsFiles(submodDir)) {
         const content = fs.readFileSync(filePath, 'utf-8');
         const lines = content.split('\n');
         for (const line of lines) {
@@ -210,7 +215,7 @@ describe('Architecture: Pure Function Layers', () => {
           }
           if (/\bfetch\s*\(/.test(trimmed)) {
             violations.push(
-              `${path.relative(SRC_DIR, filePath)} uses fetch() — pure modules must not make network calls`,
+              `${path.relative(PACKAGES_DIR, filePath)} uses fetch() — pure modules must not make network calls`,
             );
             break;
           }
@@ -232,25 +237,25 @@ describe('Architecture: Pure Function Layers', () => {
 
 describe('Architecture: No Circular Dependencies', () => {
   /**
-   * Build an adjacency map of module → modules it imports.
-   * @returns Map from module name to set of imported module names
+   * Build an adjacency map of package → packages it imports.
+   * @returns Map from package name to set of imported package names
    */
   function buildImportGraph(): Map<string, Set<string>> {
     const graph = new Map<string, Set<string>>();
 
-    for (const moduleName of LAYER_ORDER) {
-      const moduleDir = path.join(SRC_DIR, moduleName);
+    for (const packageName of PACKAGE_ORDER) {
+      const packageSrcDir = path.join(PACKAGES_DIR, packageName, 'src');
       const imports = new Set<string>();
 
-      for (const filePath of findTsFiles(moduleDir)) {
-        for (const imported of extractModuleImports(filePath)) {
-          if (imported !== moduleName) {
+      for (const filePath of findTsFiles(packageSrcDir)) {
+        for (const imported of extractPackageImports(filePath)) {
+          if (imported !== packageName) {
             imports.add(imported);
           }
         }
       }
 
-      graph.set(moduleName, imports);
+      graph.set(packageName, imports);
     }
 
     return graph;
@@ -296,7 +301,7 @@ describe('Architecture: No Circular Dependencies', () => {
     return cycles;
   }
 
-  it('no circular dependencies exist between modules', () => {
+  it('no circular dependencies exist between packages', () => {
     const graph = buildImportGraph();
     const cycles = detectCycles(graph);
 
@@ -310,32 +315,33 @@ describe('Architecture: No Circular Dependencies', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Re-export hygiene — modules must only be imported via their index.ts entry
-// point. No deep imports into internal files from outside the module.
+// Re-export hygiene — cross-package imports must use the package entry point
+// (@greenclaw/<pkg>), not deep paths into internal files
+// (@greenclaw/<pkg>/internal/foo).
 // ---------------------------------------------------------------------------
 
 describe('Architecture: Re-export Hygiene (no deep imports)', () => {
-  it('no module imports a non-index file from another module', () => {
+  it('no package imports a non-entry-point path from another package', () => {
     const violations: string[] = [];
 
-    for (const moduleName of LAYER_ORDER) {
-      const moduleDir = path.join(SRC_DIR, moduleName);
-      for (const filePath of findTsFiles(moduleDir)) {
+    for (const packageName of PACKAGE_ORDER) {
+      const packageSrcDir = path.join(PACKAGES_DIR, packageName, 'src');
+      for (const filePath of findTsFiles(packageSrcDir)) {
         const content = fs.readFileSync(filePath, 'utf-8');
-        // Regex is created per-file to avoid stale lastIndex from the g flag
-        const deepImportRegex = /(?:import|from)\s+['"]\.\.?\/([\w-]+)\/((?!index)[^'"]+)['"]/g;
+        // Match @greenclaw/<pkg>/<deep-path> imports (anything beyond the bare package name)
+        const deepImportRegex = /(?:import|from)\s+['"]@greenclaw\/([\w-]+)\/([^'"]+)['"]/g;
         let match: RegExpExecArray | null;
         while ((match = deepImportRegex.exec(content)) !== null) {
-          const targetModule = match[1]!;
+          const targetPackage = match[1]!;
           const deepPath = match[2]!;
-          // Only flag cross-module deep imports, not within the same module
+          // Only flag cross-package deep imports, not within the same package
           if (
-            targetModule !== moduleName &&
-            LAYER_ORDER.includes(targetModule as (typeof LAYER_ORDER)[number])
+            targetPackage !== packageName &&
+            PACKAGE_ORDER.includes(targetPackage as (typeof PACKAGE_ORDER)[number])
           ) {
             violations.push(
-              `${moduleName}/${path.relative(path.join(SRC_DIR, moduleName), filePath)} ` +
-                `deep-imports ${targetModule}/${deepPath} — use ${targetModule}/index.ts instead`,
+              `${packageName}/${path.relative(path.join(PACKAGES_DIR, packageName), filePath)} ` +
+                `deep-imports @greenclaw/${targetPackage}/${deepPath} — use @greenclaw/${targetPackage} instead`,
             );
           }
         }
@@ -345,7 +351,7 @@ describe('Architecture: Re-export Hygiene (no deep imports)', () => {
     expect(
       violations,
       `Deep import violations:\n  ${violations.join('\n  ')}\n` +
-        `Fix: import from the module's index.ts entry point, not internal files.`,
+        `Fix: import from the package entry point (@greenclaw/<pkg>), not internal files.`,
     ).toHaveLength(0);
   });
 });

@@ -21,7 +21,7 @@ before writing or modifying application code.**
 2. **Document** — Write or update the knowledge store artifact _first_:
    - New feature → execution plan in `docs/exec-plans/active/`
    - Non-obvious decision → ADR in `docs/design/`
-   - Behaviour change → update the module's `src/<mod>/AGENTS.md`
+   - Behaviour change → update the package's `packages/<pkg>/AGENTS.md`
    - Quality change → update `docs/QUALITY.md`
    - New convention → add to `docs/conventions/`
 3. **Implement** — Only now write application code, tests, and config.
@@ -36,7 +36,7 @@ before writing or modifying application code.**
 | New feature    | Execution plan + module AGENTS.md                                                  |
 | Bug fix        | Update QUALITY.md (defect log) + add test description to testing.md if new pattern |
 | Refactor       | ADR if architectural, else update affected AGENTS.md                               |
-| New module     | AGENTS.md + QUALITY.md row + CLAUDE.md module map row + architecture test entry    |
+| New package    | AGENTS.md + QUALITY.md row + CLAUDE.md package map row + architecture test entry   |
 | Config / infra | Update relevant convention doc                                                     |
 
 ### Why this ordering matters
@@ -63,18 +63,18 @@ before writing or modifying application code.**
 | [docs/QUALITY.md](docs/QUALITY.md)             | Quality grade per module — implementation, tests, docs gaps |
 | [CONTRIBUTING.md](CONTRIBUTING.md)             | Change lifecycle, adding code, commit workflow, JSDoc       |
 
-## Module Map
+## Package Map
 
-| Layer | Module            | Owner doc                              |
-| ----- | ----------------- | -------------------------------------- |
-| 7     | `src/dashboard/`  | [AGENTS.md](src/dashboard/AGENTS.md)   |
-| 6     | `src/api/`        | [AGENTS.md](src/api/AGENTS.md)         |
-| 5     | `src/router/`     | [AGENTS.md](src/router/AGENTS.md)      |
-| 4     | `src/compactor/`  | [AGENTS.md](src/compactor/AGENTS.md)   |
-| 3     | `src/classifier/` | [AGENTS.md](src/classifier/AGENTS.md)  |
-| 2     | `src/telemetry/`  | [AGENTS.md](src/telemetry/AGENTS.md)   |
-| 1     | `src/config/`     | [AGENTS.md](src/config/AGENTS.md)      |
-| 0     | `src/types/`      | [AGENTS.md](src/types/AGENTS.md)       |
+| Layer | Package                  | Owner doc                                    |
+| ----- | ------------------------ | -------------------------------------------- |
+| 5     | `packages/dashboard/`    | [AGENTS.md](packages/dashboard/AGENTS.md)    |
+| 4     | `packages/api/`          | [AGENTS.md](packages/api/AGENTS.md)          |
+| 4     | `packages/cli/`          | [AGENTS.md](packages/cli/AGENTS.md)          |
+| 3     | `packages/optimization/` | [AGENTS.md](packages/optimization/AGENTS.md) |
+| 3     | `packages/monitoring/`   | [AGENTS.md](packages/monitoring/AGENTS.md)   |
+| 2     | `packages/telemetry/`    | [AGENTS.md](packages/telemetry/AGENTS.md)    |
+| 1     | `packages/config/`       | [AGENTS.md](packages/config/AGENTS.md)       |
+| 0     | `packages/types/`        | [AGENTS.md](packages/types/AGENTS.md)        |
 
 **Dependency rule**: import only from **same or lower** layer.
 Enforced by `tests/architecture.test.ts`.
@@ -105,10 +105,11 @@ Enforced by `tests/architecture.test.ts`.
 
 [All plans](docs/PLANS.md) · [Tech debt](docs/exec-plans/tech-debt-tracker.md)
 
-| Plan                                                          | Status | Goal                                               |
-| ------------------------------------------------------------- | ------ | -------------------------------------------------- |
-| [PLAN-001](docs/exec-plans/active/PLAN-001-proxy-skeleton.md) | Active | Transparent passthrough proxy with instrumentation |
-| [PLAN-006](docs/exec-plans/active/PLAN-006-local-telemetry-store.md) | Active | Local observability stack (Pino + SQLite)           |
+| Plan                                                                 | Status | Goal                                               |
+| -------------------------------------------------------------------- | ------ | -------------------------------------------------- |
+| [PLAN-001](docs/exec-plans/active/PLAN-001-proxy-skeleton.md)        | Active | Transparent passthrough proxy with instrumentation |
+| [PLAN-006](docs/exec-plans/active/PLAN-006-local-telemetry-store.md) | Active | Local observability stack (Pino + SQLite)          |
+| [PLAN-007](docs/exec-plans/active/PLAN-007-usage-analytics.md)       | Active | Monorepo + usage analytics + budget alerting       |
 
 ## References
 

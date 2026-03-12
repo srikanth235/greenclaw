@@ -43,6 +43,9 @@ full enforcement rules.
    types → config → classifier → compactor → router → api → dashboard
    ```
 3. Run `pnpm typecheck && pnpm lint && pnpm test` before committing.
+4. Root scripts and hooks must invoke repository-pinned CLIs via `pnpm exec`
+   when they rely on local tool versions. Do not depend on globally installed
+   `eslint`, `prettier`, or similar binaries.
 
 ## Adding a new module
 
@@ -114,6 +117,10 @@ Pre-commit hooks run automatically:
    Bypass with `SKIP_KNOWLEDGE_CHECK=1`.
 2. **lint-staged** — ESLint + Prettier on staged files.
 3. **Tests** — `pnpm test`.
+
+Hook commands must resolve tools from this workspace, not from the user's
+global environment. Prefer `pnpm exec <tool>` in root scripts and hook config
+when a command depends on the repo's pinned tool version.
 
 If any hook fails, fix the issue before committing.
 
