@@ -68,6 +68,9 @@ Module-specific tests for business logic. Each module may have its own test file
 3. **Fast**: Individual tests complete in <100ms (except fixture evals)
 4. **Isolated**: No dependency on execution order
 5. **Descriptive failures**: Use expect's second argument for context messages
+6. **Line-scoped static checks**: For regex-based source scans, evaluate
+   exclusions (like comment handling) per line, not per file, to avoid
+   false negatives.
 
 ## Adding Tests for a New Module
 

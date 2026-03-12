@@ -155,20 +155,17 @@ describe('Architecture: Pure Function Layers', () => {
       const moduleDir = path.join(SRC_DIR, mod);
       for (const filePath of findTsFiles(moduleDir)) {
         const content = fs.readFileSync(filePath, 'utf-8');
-        // Match standalone fetch calls but not mentions in comments/strings
-        // Look for fetch( at the start of an expression
-        if (/\bfetch\s*\(/.test(content) && !/\/\/.*\bfetch\b/.test(content)) {
-          // Rough heuristic: skip lines that are only comments
-          const lines = content.split('\n');
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
-            if (/\bfetch\s*\(/.test(trimmed)) {
-              violations.push(
-                `${path.relative(SRC_DIR, filePath)} uses fetch() — pure modules must not make network calls`,
-              );
-              break;
-            }
+        const lines = content.split('\n');
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')) {
+            continue;
+          }
+          if (/\bfetch\s*\(/.test(trimmed)) {
+            violations.push(
+              `${path.relative(SRC_DIR, filePath)} uses fetch() — pure modules must not make network calls`,
+            );
+            break;
           }
         }
       }

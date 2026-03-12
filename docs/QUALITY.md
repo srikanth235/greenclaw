@@ -47,4 +47,10 @@ When you complete work on a module, update both the grade and the notes column.
 The goal is to reach grade B across all modules before any module reaches A —
 breadth before depth.
 
+## Defect Log
+
+- 2026-03-12: Fixed a false negative in `tests/architecture.test.ts` where
+  comment text containing `fetch` could suppress real `fetch()` violation
+  detection in pure pipeline modules.
+
 Last updated: 2026-03-12
