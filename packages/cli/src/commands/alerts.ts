@@ -6,6 +6,7 @@
 import { loadConfig } from '@greenclaw/config';
 import { createStore } from '@greenclaw/telemetry';
 import { createUsageStore } from '@greenclaw/monitoring';
+import { AlertMetricSchema, ThresholdUnitSchema, AlertPeriodSchema } from '@greenclaw/types';
 
 /**
  * Parse a named argument value.
@@ -49,13 +50,47 @@ export function runAlertsCommand(args: string[]): void {
         return;
       }
 
+      const metricResult = AlertMetricSchema.safeParse(metric);
+      if (!metricResult.success) {
+        process.stderr.write(
+          `Error: invalid --metric "${metric}". Must be one of: daily_tokens, daily_cost, weekly_cost, per_model_cost\n`,
+        );
+        process.exitCode = 1;
+        return;
+      }
+
+      const unitResult = ThresholdUnitSchema.safeParse(unit);
+      if (!unitResult.success) {
+        process.stderr.write(`Error: invalid --unit "${unit}". Must be one of: tokens, usd\n`);
+        process.exitCode = 1;
+        return;
+      }
+
+      const periodResult = AlertPeriodSchema.safeParse(period);
+      if (!periodResult.success) {
+        process.stderr.write(
+          `Error: invalid --period "${period}". Must be one of: day, week, month\n`,
+        );
+        process.exitCode = 1;
+        return;
+      }
+
+      const thresholdNum = Number(threshold);
+      if (Number.isNaN(thresholdNum) || thresholdNum < 0) {
+        process.stderr.write(
+          `Error: invalid --threshold "${threshold}". Must be a non-negative number\n`,
+        );
+        process.exitCode = 1;
+        return;
+      }
+
       const rule = {
         id: `rule-${Date.now().toString(36)}`,
         name,
-        metric,
-        threshold_value: Number(threshold),
-        threshold_unit: unit,
-        period,
+        metric: metricResult.data,
+        threshold_value: thresholdNum,
+        threshold_unit: unitResult.data,
+        period: periodResult.data,
         model_filter: model,
         enabled: true,
         created_at: new Date().toISOString(),

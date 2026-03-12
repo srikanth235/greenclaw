@@ -71,4 +71,10 @@ breadth before depth.
   OpenClaw skill. Consolidated classifier/compactor/router into
   @greenclaw/optimization.
 
+- 2026-03-12: PR review fixes — (1) exposed greenclaw bin at workspace
+  root so SKILL.md commands work from a fresh checkout, (2) added Zod
+  validation in `alerts set` to reject invalid metric/unit/period/threshold,
+  (3) added UNIQUE(rule_id, period_start) constraint on alert_events
+  and switched to INSERT OR IGNORE for atomic deduplication.
+
 Last updated: 2026-03-12

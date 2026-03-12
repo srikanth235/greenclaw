@@ -5,7 +5,7 @@ description: Token usage analytics and budget alerting for the GreenClaw inferen
 
 # GreenClaw Usage Analytics
 
-You have access to the `greenclaw` CLI tool for querying token usage, cost analytics, and managing budget alerts. All commands output JSON.
+You have access to the `greenclaw` CLI tool for querying token usage, cost analytics, and managing budget alerts. Run it via `npx greenclaw` (requires `pnpm build` first). All commands output JSON.
 
 ## Available Commands
 
@@ -14,29 +14,29 @@ You have access to the `greenclaw` CLI tool for querying token usage, cost analy
 **Daily summary:**
 
 ```bash
-greenclaw usage summary --period day
+npx greenclawusage summary --period day
 ```
 
 **Weekly or monthly summary:**
 
 ```bash
-greenclaw usage summary --period week
-greenclaw usage summary --period month
+npx greenclawusage summary --period week
+npx greenclawusage summary --period month
 ```
 
 **Breakdown by model, tier, or provider:**
 
 ```bash
-greenclaw usage breakdown --by model --period day
-greenclaw usage breakdown --by tier --period week
-greenclaw usage breakdown --by provider --period month
+npx greenclawusage breakdown --by model --period day
+npx greenclawusage breakdown --by tier --period week
+npx greenclawusage breakdown --by provider --period month
 ```
 
 **Trends over time:**
 
 ```bash
-greenclaw usage trends --period day --last 7
-greenclaw usage trends --period week --last 4
+npx greenclawusage trends --period day --last 7
+npx greenclawusage trends --period week --last 4
 ```
 
 ### Budget Alerts
@@ -44,43 +44,43 @@ greenclaw usage trends --period week --last 4
 **List alert rules:**
 
 ```bash
-greenclaw alerts list
+npx greenclawalerts list
 ```
 
 **Set a daily cost budget:**
 
 ```bash
-greenclaw alerts set --name "daily budget" --metric daily_cost --threshold 50 --unit usd --period day
+npx greenclawalerts set --name "daily budget" --metric daily_cost --threshold 50 --unit usd --period day
 ```
 
 **Set a weekly token limit:**
 
 ```bash
-greenclaw alerts set --name "weekly tokens" --metric weekly_cost --threshold 100 --unit usd --period week
+npx greenclawalerts set --name "weekly tokens" --metric weekly_cost --threshold 100 --unit usd --period week
 ```
 
 **Set a per-model cost cap:**
 
 ```bash
-greenclaw alerts set --name "gpt-4 cap" --metric per_model_cost --threshold 30 --unit usd --period day --model gpt-4
+npx greenclawalerts set --name "gpt-4 cap" --metric per_model_cost --threshold 30 --unit usd --period day --model gpt-4
 ```
 
 **Check alerts now:**
 
 ```bash
-greenclaw alerts check
+npx greenclawalerts check
 ```
 
 **View alert history:**
 
 ```bash
-greenclaw alerts history --last 10
+npx greenclawalerts history --last 10
 ```
 
 **Remove an alert rule:**
 
 ```bash
-greenclaw alerts remove <rule-id>
+npx greenclawalerts remove <rule-id>
 ```
 
 ### Raw Traces
@@ -88,14 +88,14 @@ greenclaw alerts remove <rule-id>
 **Aggregated stats:**
 
 ```bash
-greenclaw traces --stats
+npx greenclawtraces --stats
 ```
 
 **Filter by tier or model:**
 
 ```bash
-greenclaw traces --tier HEARTBEAT
-greenclaw traces --model gpt-4o-mini
+npx greenclawtraces --tier HEARTBEAT
+npx greenclawtraces --model gpt-4o-mini
 ```
 
 ## How to Present Results

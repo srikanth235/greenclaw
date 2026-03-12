@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS alert_events (
   FOREIGN KEY (rule_id) REFERENCES alert_rules(id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_alert_events_rule ON alert_events(rule_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_alert_events_dedup ON alert_events(rule_id, period_start);
 CREATE INDEX IF NOT EXISTS idx_alert_events_triggered ON alert_events(triggered_at);
 `;
 

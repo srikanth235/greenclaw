@@ -22,7 +22,8 @@ Layer 3. Usage analytics and budget alerting for end users.
 ### Key invariants
 
 - All aggregations are on-demand SQL, no materialized views
-- Alert events deduplicated by (rule_id, period_start)
+- Alert events deduplicated by (rule_id, period_start) via UNIQUE
+  constraint + INSERT OR IGNORE (atomic, no TOCTOU race)
 - Graceful degradation: returns empty results if DB handle is null
 - All timestamps are UTC ISO-8601
 

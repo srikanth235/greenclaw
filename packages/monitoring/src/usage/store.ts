@@ -155,12 +155,6 @@ export function createUsageStore(db: Database.Database | null): UsageStore {
       for (const rule of rules) {
         const [start, end] = periodBounds(rule.period);
 
-        // Check if already triggered for this period
-        const existing = db
-          .prepare('SELECT id FROM alert_events WHERE rule_id = ? AND period_start = ?')
-          .get(rule.id, start);
-        if (existing) continue;
-
         // Compute metric value
         let metricValue = 0;
         if (
@@ -201,23 +195,28 @@ export function createUsageStore(db: Database.Database | null): UsageStore {
             period_end: end,
             acknowledged: false,
           };
-          db.prepare(
-            `
-            INSERT INTO alert_events
+          // INSERT OR IGNORE: UNIQUE(rule_id, period_start) prevents duplicates atomically
+          const result = db
+            .prepare(
+              `
+            INSERT OR IGNORE INTO alert_events
             (id, rule_id, triggered_at, metric_value, threshold_value, period_start, period_end, acknowledged)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
           `,
-          ).run(
-            event.id,
-            event.rule_id,
-            event.triggered_at,
-            event.metric_value,
-            event.threshold_value,
-            event.period_start,
-            event.period_end,
-            0,
-          );
-          triggered.push(event);
+            )
+            .run(
+              event.id,
+              event.rule_id,
+              event.triggered_at,
+              event.metric_value,
+              event.threshold_value,
+              event.period_start,
+              event.period_end,
+              0,
+            );
+          if (result.changes > 0) {
+            triggered.push(event);
+          }
         }
       }
 

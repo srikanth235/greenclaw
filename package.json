@@ -4,6 +4,9 @@
   "private": true,
   "description": "Transparent inference proxy for OpenClaw — reduces token costs by 60%+ through intelligent task classification, context compaction, and model routing",
   "type": "module",
+  "bin": {
+    "greenclaw": "./packages/cli/dist/index.js"
+  },
   "scripts": {
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
