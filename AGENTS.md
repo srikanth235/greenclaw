@@ -41,13 +41,9 @@ before writing or modifying application code.**
 
 ### Why this ordering matters
 
-- Agents operate on repository-local context. Un-documented intent is
-  invisible to future sessions.
-- Writing the doc first forces clear thinking about scope, affected
-  modules, and edge cases — before code is generated.
-- It prevents knowledge drift: the docs and code ship together, but
-  the docs are written first so they drive the implementation, not
-  the other way around.
+- Un-documented intent is invisible to future agent sessions.
+- Docs-first forces clear thinking about scope before code is generated.
+- Prevents knowledge drift: docs and code ship together.
 
 ### Enforcement
 
@@ -69,15 +65,16 @@ before writing or modifying application code.**
 
 ## Module Map
 
-| Layer | Module            | Owner doc                             |
-| ----- | ----------------- | ------------------------------------- |
-| 6     | `src/dashboard/`  | [AGENTS.md](src/dashboard/AGENTS.md)  |
-| 5     | `src/api/`        | [AGENTS.md](src/api/AGENTS.md)        |
-| 4     | `src/router/`     | [AGENTS.md](src/router/AGENTS.md)     |
-| 3     | `src/compactor/`  | [AGENTS.md](src/compactor/AGENTS.md)  |
-| 2     | `src/classifier/` | [AGENTS.md](src/classifier/AGENTS.md) |
-| 1     | `src/config/`     | [AGENTS.md](src/config/AGENTS.md)     |
-| 0     | `src/types/`      | [AGENTS.md](src/types/AGENTS.md)      |
+| Layer | Module            | Owner doc                              |
+| ----- | ----------------- | -------------------------------------- |
+| 7     | `src/dashboard/`  | [AGENTS.md](src/dashboard/AGENTS.md)   |
+| 6     | `src/api/`        | [AGENTS.md](src/api/AGENTS.md)         |
+| 5     | `src/router/`     | [AGENTS.md](src/router/AGENTS.md)      |
+| 4     | `src/compactor/`  | [AGENTS.md](src/compactor/AGENTS.md)   |
+| 3     | `src/classifier/` | [AGENTS.md](src/classifier/AGENTS.md)  |
+| 2     | `src/telemetry/`  | [AGENTS.md](src/telemetry/AGENTS.md)   |
+| 1     | `src/config/`     | [AGENTS.md](src/config/AGENTS.md)      |
+| 0     | `src/types/`      | [AGENTS.md](src/types/AGENTS.md)       |
 
 **Dependency rule**: import only from **same or lower** layer.
 Enforced by `tests/architecture.test.ts`.
@@ -111,6 +108,7 @@ Enforced by `tests/architecture.test.ts`.
 | Plan                                                          | Status | Goal                                               |
 | ------------------------------------------------------------- | ------ | -------------------------------------------------- |
 | [PLAN-001](docs/exec-plans/active/PLAN-001-proxy-skeleton.md) | Active | Transparent passthrough proxy with instrumentation |
+| [PLAN-006](docs/exec-plans/active/PLAN-006-local-telemetry-store.md) | Active | Local observability stack (Pino + SQLite)           |
 
 ## References
 

@@ -1,6 +1,6 @@
 /**
  * Layer order (lowest → highest):
- *   0 types → 1 config → 2 classifier → 3 compactor → 4 router → 5 api → 6 dashboard
+ *   0 types → 1 config → 2 telemetry → 3 classifier → 4 compactor → 5 router → 6 api → 7 dashboard
  *
  * Each module may only import from same or lower layers.
  * We use per-directory overrides with no-restricted-imports to enforce this
@@ -9,7 +9,7 @@
 
 // Helpers — build a no-restricted-imports pattern for a given layer.
 // "forbidden" is every module strictly above the current layer.
-const LAYERS = ["types", "config", "classifier", "compactor", "router", "api", "dashboard"];
+const LAYERS = ["types", "config", "telemetry", "classifier", "compactor", "router", "api", "dashboard"];
 
 /**
  * Build a no-restricted-imports rule value for a module at `layerIndex`.

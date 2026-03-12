@@ -4,5 +4,6 @@ dist
 *.tsbuildinfo
 .DS_Store
 coverage
+data
 .history
 .claude/settings.local.json

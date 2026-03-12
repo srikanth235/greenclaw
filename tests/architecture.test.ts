@@ -6,7 +6,7 @@ import * as path from 'node:path';
  * Dependency layer enforcement.
  *
  * Layer order (lowest to highest):
- *   types → config → classifier → compactor → router → api → dashboard
+ *   types → config → telemetry → classifier → compactor → router → api → dashboard
  *
  * A module may only import from modules at the same or lower layer.
  */
@@ -14,6 +14,7 @@ import * as path from 'node:path';
 const LAYER_ORDER = [
   'types',
   'config',
+  'telemetry',
   'classifier',
   'compactor',
   'router',

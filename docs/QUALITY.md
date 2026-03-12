@@ -22,6 +22,7 @@ progresses. Use this document to identify gaps and prioritize work.
 | compactor/  | Stub           | N/A           | Complete | D     | Returns input unchanged             |
 | router/     | Stub           | N/A           | Complete | D     | Returns default provider model      |
 | api/        | Stub           | N/A           | Complete | D     | Hono app not yet wired              |
+| telemetry/  | Stub           | N/A           | Complete | D     | Pino + SQLite, PLAN-006             |
 | dashboard/  | Stub           | N/A           | Complete | D     | Built last per plan                 |
 
 ## Cross-Cutting Quality

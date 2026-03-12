@@ -9,6 +9,7 @@ completed plans, and known technical debt are all versioned and co-located.
 | Plan                                                     | Status          | Goal                                               |
 | -------------------------------------------------------- | --------------- | -------------------------------------------------- |
 | [PLAN-001](exec-plans/active/PLAN-001-proxy-skeleton.md) | Active — Week 1 | Transparent passthrough proxy with instrumentation |
+| [PLAN-006](exec-plans/active/PLAN-006-local-telemetry-store.md) | Active — Week 1 | Local observability stack (Pino + SQLite)           |
 
 ## Completed Plans
 

@@ -29,6 +29,12 @@ CloudWatch, etc.) without parsing.
 
 `LOG_LEVEL` env var controls the minimum level emitted (default: `info`).
 
+### Implementation
+
+[Pino](https://github.com/pinojs/pino) is the structured logger. Logger
+instances are created via `src/telemetry/logger.ts` and configured from
+`src/config/`.
+
 ## RequestTrace Schema
 
 Every proxied request emits exactly one `RequestTrace`. This is the
@@ -119,3 +125,57 @@ The dashboard module reads `RequestTrace` records to compute:
 
 These aggregations are computed on read, not maintained as counters, to
 keep the proxy hot path free of dashboard overhead.
+
+## Telemetry Persistence (SQLite)
+
+RequestTrace records are persisted to a local SQLite database for agent
+querying and dashboard aggregation.
+
+### Database Location
+
+`data/telemetry.db` in the project root (configurable via
+`GREENCLAW_TELEMETRY_DB` env var). The `data/` directory is git-ignored.
+
+### Schema
+
+```sql
+CREATE TABLE IF NOT EXISTS request_traces (
+  id                  TEXT PRIMARY KEY,
+  timestamp           TEXT NOT NULL,
+  request_id          TEXT NOT NULL,
+  original_model      TEXT NOT NULL,
+  routed_model        TEXT NOT NULL,
+  routed_provider     TEXT NOT NULL,
+  task_tier           TEXT NOT NULL,
+  compaction_applied  INTEGER NOT NULL,
+  tokens_prompt       INTEGER NOT NULL,
+  tokens_completion   INTEGER NOT NULL,
+  tokens_total        INTEGER NOT NULL,
+  cost_original_usd   REAL NOT NULL,
+  cost_routed_usd     REAL NOT NULL,
+  cost_savings_usd    REAL NOT NULL,
+  latency_classify_ms  REAL NOT NULL,
+  latency_compact_ms   REAL NOT NULL,
+  latency_route_ms     REAL NOT NULL,
+  latency_upstream_ms  REAL NOT NULL,
+  latency_total_ms     REAL NOT NULL,
+  upstream_status      INTEGER,
+  error                TEXT
+);
+```
+
+### Indexes
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_traces_timestamp ON request_traces(timestamp);
+CREATE INDEX IF NOT EXISTS idx_traces_tier ON request_traces(task_tier);
+CREATE INDEX IF NOT EXISTS idx_traces_model ON request_traces(routed_model);
+CREATE INDEX IF NOT EXISTS idx_traces_latency ON request_traces(latency_total_ms);
+```
+
+### Graceful Degradation
+
+If SQLite initialization fails, the telemetry store enters no-op mode:
+`insertTrace()` becomes a no-op, query functions return empty results.
+The proxy continues to serve requests. A `warn`-level log is emitted to
+stdout noting the failure.

@@ -17,6 +17,7 @@ const SRC_DIR = path.join(ROOT, 'src');
 const MODULES = [
   'types',
   'config',
+  'telemetry',
   'classifier',
   'compactor',
   'router',
