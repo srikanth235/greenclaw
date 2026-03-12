@@ -106,8 +106,16 @@ full type table and examples.
 <type>(<scope>): <description>
 ```
 
-Pre-commit hooks run `lint-staged` automatically (ESLint + Prettier on staged
-files). If the hook fails, fix the issue before committing.
+Pre-commit hooks run automatically:
+
+1. **Knowledge-store check** — uses `claude -p` to verify that all required
+   doc updates are present when `src/` files are staged. See
+   [docs/conventions/commits.md](docs/conventions/commits.md) for details.
+   Bypass with `SKIP_KNOWLEDGE_CHECK=1`.
+2. **lint-staged** — ESLint + Prettier on staged files.
+3. **Tests** — `pnpm test`.
+
+If any hook fails, fix the issue before committing.
 
 ## Architecture Decision Records
 
