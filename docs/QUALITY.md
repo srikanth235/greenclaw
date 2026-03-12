@@ -12,40 +12,40 @@ progresses. Use this document to identify gaps and prioritize work.
 | C     | Implemented: core logic works but incomplete coverage       |
 | D     | Stub: not yet implemented                                   |
 
-## Module Quality
+## Package Quality
 
-| Module      | Implementation | Tests         | Docs     | Grade | Notes                               |
-| ----------- | -------------- | ------------- | -------- | ----- | ----------------------------------- |
-| types/      | Stub           | N/A           | Complete | D     | Zod schemas not yet defined         |
-| config/     | Stub           | N/A           | Complete | D     | Env var loading not yet implemented |
-| classifier/ | Stub           | Fixture ready | Complete | D     | Returns COMPLEX as placeholder      |
-| compactor/  | Stub           | N/A           | Complete | D     | Returns input unchanged             |
-| router/     | Stub           | N/A           | Complete | D     | Returns default provider model      |
-| api/        | Stub           | N/A           | Complete | D     | Hono app not yet wired              |
-| telemetry/  | Stub           | N/A           | Complete | D     | Pino + SQLite, PLAN-006             |
-| dashboard/  | Stub           | N/A           | Complete | D     | Built last per plan                 |
+| Package       | Implementation | Tests         | Docs     | Grade | Notes                                |
+| ------------- | -------------- | ------------- | -------- | ----- | ------------------------------------ |
+| types/        | Partial        | N/A           | Complete | C     | Alert Zod schemas implemented        |
+| config/       | Stub           | N/A           | Complete | D     | Env var loading not yet implemented  |
+| telemetry/    | Functional     | Comprehensive | Complete | B     | Pino + SQLite + getDb() accessor     |
+| optimization/ | Stub           | N/A           | Complete | D     | classifier/compactor/router stubs    |
+| monitoring/   | Functional     | Pending       | Complete | C     | UsageStore + alert CRUD + evaluation |
+| cli/          | Functional     | Pending       | Complete | C     | usage/alerts/traces subcommands      |
+| api/          | Stub           | N/A           | Complete | D     | Hono app not yet wired               |
+| dashboard/    | Stub           | N/A           | Complete | D     | Built last per plan                  |
 
 ## Cross-Cutting Quality
 
-| Domain                     | Status     | Grade | Notes                                                    |
-| -------------------------- | ---------- | ----- | -------------------------------------------------------- |
-| Architecture enforcement   | Active     | B     | Layer deps, pure-function-layers, circular dep detection |
-| Consistency checks         | Active     | A     | AGENTS.md sync, naming, module map, QUALITY, PLANS       |
-| Harness: doc integrity     | Active     | A     | Doc backlinks, AGENTS.md structure, convention coverage  |
-| Harness: file limits       | Active     | B     | Source file max 300 lines + test-file-per-module         |
-| Harness: module boundaries | Active     | B     | No deep imports, no hardcoded models, no PII in logs     |
-| Harness: docs freshness    | Active     | B     | Design doc status validation, plan lifecycle checks      |
-| Harness: ESLint layers     | Active     | B     | `no-restricted-imports` enforces layer boundaries        |
-| Harness: no-console        | Active     | B     | `no-console` in src/ enforces structured logging         |
-| Harness: process.env gate  | Active     | A     | ESLint bans `process.env` outside config/                |
-| Harness: skip hygiene      | Active     | A     | No unmanaged it.skip/describe.skip without allowlist     |
-| Harness: knowledge gate    | Active     | A     | Deterministic CI: src/ changes require docs/ changes     |
-| Harness: side-effect ban   | Active     | A     | Timers, Math.random, Date.now banned in pure layers      |
-| Harness: proxy contracts   | Documented | D     | Passthrough, only-model-mutates, boot smoke (skipped)    |
-| Error conventions          | Documented | B     | Schema defined, not yet implemented in api/              |
-| Observability              | Documented | D     | RequestTrace schema defined, no persistence yet          |
-| Security                   | Documented | C     | Conventions written, implementation pending              |
-| CI pipeline                | Partial    | B     | Lint + typecheck + test, no integration tests yet        |
+| Domain                     | Status     | Grade | Notes                                                     |
+| -------------------------- | ---------- | ----- | --------------------------------------------------------- |
+| Architecture enforcement   | Active     | B     | Layer deps, pure-function-layers, circular dep detection  |
+| Consistency checks         | Active     | A     | AGENTS.md sync, naming, module map, QUALITY, PLANS        |
+| Harness: doc integrity     | Active     | A     | Doc backlinks, AGENTS.md structure, convention coverage   |
+| Harness: file limits       | Active     | B     | Source file max 300 lines + test-file-per-module          |
+| Harness: module boundaries | Active     | B     | No deep imports, no hardcoded models, no PII in logs      |
+| Harness: docs freshness    | Active     | B     | Design doc status validation, plan lifecycle checks       |
+| Harness: ESLint layers     | Active     | B     | `no-restricted-imports` enforces layer boundaries         |
+| Harness: no-console        | Active     | B     | `no-console` in packages/ enforces structured logging     |
+| Harness: process.env gate  | Active     | A     | ESLint bans `process.env` outside config/                 |
+| Harness: skip hygiene      | Active     | A     | No unmanaged it.skip/describe.skip without allowlist      |
+| Harness: knowledge gate    | Active     | A     | Deterministic CI: packages/ changes require docs/ changes |
+| Harness: side-effect ban   | Active     | A     | Timers, Math.random, Date.now banned in pure layers       |
+| Harness: proxy contracts   | Documented | D     | Passthrough, only-model-mutates, boot smoke (skipped)     |
+| Error conventions          | Documented | B     | Schema defined, not yet implemented in api/               |
+| Observability              | Documented | D     | RequestTrace schema defined, no persistence yet           |
+| Security                   | Documented | C     | Conventions written, implementation pending               |
+| CI pipeline                | Partial    | B     | Lint + typecheck + test, no integration tests yet         |
 
 ## Tracking Gaps
 
@@ -65,5 +65,10 @@ breadth before depth.
   harness test, deterministic knowledge-store CI gate, extended pure-module
   I/O ban (timers, Math.random, Date.now), and proxy contract test stubs
   (upstream passthrough, only-model-mutates, boot smoke test).
+
+- 2026-03-12: Restructured to pnpm workspace monorepo (PLAN-007). Added
+  @greenclaw/monitoring (usage analytics + alerts), @greenclaw/cli, and
+  OpenClaw skill. Consolidated classifier/compactor/router into
+  @greenclaw/optimization.
 
 Last updated: 2026-03-12

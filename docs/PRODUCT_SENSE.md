@@ -10,8 +10,18 @@ single-tool-call operations that don't need a $15/MTok model.
 ## The Solution
 
 GreenClaw is a transparent inference proxy that sits between OpenClaw and
-upstream LLM providers. It intercepts requests, classifies their complexity,
-and routes them to the cheapest appropriate model:
+upstream LLM providers. It does two things:
+
+1. **Cost optimization**: intercepts requests, classifies complexity, and routes
+   to the cheapest appropriate model
+2. **Cost visibility**: tracks token consumption, cost, and savings — with
+   budget alerts and analytics exposed via CLI and as an OpenClaw skill
+
+OpenClaw's built-in usage tracking is limited (session-only counts, no history,
+no alerts). Since every request passes through GreenClaw, it naturally captures
+granular usage data as a byproduct of routing — no additional instrumentation.
+
+### Cost Optimization
 
 | Task Type | Example                            | Model Cost          |
 | --------- | ---------------------------------- | ------------------- |

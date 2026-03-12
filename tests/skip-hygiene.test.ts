@@ -22,12 +22,12 @@ const TESTS_DIR = path.resolve(__dirname);
 const ALLOWED_SKIPS: Array<{ file: string; pattern: string; reason: string }> = [
   {
     file: 'architecture.test.ts',
-    pattern: 'no module imports from a higher layer',
-    reason: 'Modules are stubs with no imports to validate (PLAN-001)',
+    pattern: 'no package imports from a higher layer',
+    reason: 'Some packages are stubs with no imports to validate (PLAN-001)',
   },
   {
     file: 'file-limits.test.ts',
-    pattern: 'every module has at least one test file',
+    pattern: 'every package has at least one test file',
     reason: 'Stubs do not need dedicated test files yet (PLAN-001)',
   },
   {

@@ -12,15 +12,15 @@ import * as path from 'node:path';
  */
 
 const ROOT = path.resolve(__dirname, '..');
-const SRC_DIR = path.join(ROOT, 'src');
+const PACKAGES_DIR = path.join(ROOT, 'packages');
 
-const MODULES = [
+const PACKAGES = [
   'types',
   'config',
   'telemetry',
-  'classifier',
-  'compactor',
-  'router',
+  'optimization',
+  'monitoring',
+  'cli',
   'api',
   'dashboard',
 ] as const;
@@ -28,7 +28,7 @@ const MODULES = [
 // ---------------------------------------------------------------------------
 // Shared file-content cache — avoids redundant fs.readFileSync calls across
 // tests in this file. Every test that reads CLAUDE.md, AGENTS.md, QUALITY.md,
-// or module AGENTS.md files should use these cached values.
+// or package AGENTS.md files should use these cached values.
 // ---------------------------------------------------------------------------
 
 /**
@@ -62,35 +62,37 @@ const PATHS = {
 } as const;
 
 describe('Consistency: AGENTS.md files', () => {
-  it('every module directory has an AGENTS.md', () => {
-    for (const mod of MODULES) {
-      const agentsPath = path.join(SRC_DIR, mod, 'AGENTS.md');
-      expect(fs.existsSync(agentsPath), `Missing AGENTS.md in src/${mod}/`).toBe(true);
+  it('every package directory has an AGENTS.md', () => {
+    for (const pkg of PACKAGES) {
+      const agentsPath = path.join(PACKAGES_DIR, pkg, 'AGENTS.md');
+      expect(fs.existsSync(agentsPath), `Missing AGENTS.md in packages/${pkg}/`).toBe(true);
     }
   });
 
   it('no AGENTS.md exceeds 80 lines', () => {
-    for (const mod of MODULES) {
-      const agentsPath = path.join(SRC_DIR, mod, 'AGENTS.md');
+    for (const pkg of PACKAGES) {
+      const agentsPath = path.join(PACKAGES_DIR, pkg, 'AGENTS.md');
       if (!fs.existsSync(agentsPath)) continue;
       const lines = cachedRead(agentsPath).split('\n').length;
-      expect(lines, `src/${mod}/AGENTS.md has ${lines} lines (max 80)`).toBeLessThanOrEqual(80);
+      expect(lines, `packages/${pkg}/AGENTS.md has ${lines} lines (max 80)`).toBeLessThanOrEqual(
+        80,
+      );
     }
   });
 
-  it('root AGENTS.md references every module', () => {
+  it('root AGENTS.md references every package', () => {
     const rootAgents = cachedRead(PATHS.agentsMd);
-    for (const mod of MODULES) {
-      expect(rootAgents, `Root AGENTS.md does not reference module "${mod}"`).toContain(mod);
+    for (const pkg of PACKAGES) {
+      expect(rootAgents, `Root AGENTS.md does not reference package "${pkg}"`).toContain(pkg);
     }
   });
 });
 
-describe('Consistency: module directories have index.ts', () => {
-  it('every module has an index.ts entry point', () => {
-    for (const mod of MODULES) {
-      const indexPath = path.join(SRC_DIR, mod, 'index.ts');
-      expect(fs.existsSync(indexPath), `Missing index.ts in src/${mod}/`).toBe(true);
+describe('Consistency: package directories have index.ts', () => {
+  it('every package has an src/index.ts entry point', () => {
+    for (const pkg of PACKAGES) {
+      const indexPath = path.join(PACKAGES_DIR, pkg, 'src', 'index.ts');
+      expect(fs.existsSync(indexPath), `Missing src/index.ts in packages/${pkg}/`).toBe(true);
     }
   });
 });
@@ -139,7 +141,7 @@ describe('Consistency: no forbidden project names', () => {
   }
 
   it('no file contains forbidden project names', () => {
-    const dirs = [path.join(ROOT, 'src'), path.join(ROOT, 'docs'), path.join(ROOT, 'tests')];
+    const dirs = [path.join(ROOT, 'packages'), path.join(ROOT, 'docs'), path.join(ROOT, 'tests')];
     const violations: string[] = [];
     for (const dir of dirs) {
       violations.push(...findForbiddenNames(dir, ['.ts', '.md', '.json']));
@@ -163,7 +165,7 @@ describe('Consistency: no forbidden project names', () => {
 describe('Consistency: doc cross-links', () => {
   /**
    * Extract markdown links from a file that point to local paths.
-   * Matches patterns like [text](docs/design/philosophy.md) or [text](src/types/AGENTS.md).
+   * Matches patterns like [text](docs/design/philosophy.md) or [text](packages/types/AGENTS.md).
    * Ignores external URLs (http/https).
    * @param filePath - Absolute path to the markdown file
    * @returns Array of { linkPath, resolvedPath } objects
@@ -199,24 +201,25 @@ describe('Consistency: doc cross-links', () => {
     expect(missing, `AGENTS.md has broken links: ${missing.join(', ')}`).toHaveLength(0);
   });
 
-  it('all links in module AGENTS.md files resolve to existing files', () => {
+  it('all links in package AGENTS.md files resolve to existing files', () => {
     const missing: string[] = [];
 
-    for (const mod of MODULES) {
-      const agentsPath = path.join(SRC_DIR, mod, 'AGENTS.md');
+    for (const pkg of PACKAGES) {
+      const agentsPath = path.join(PACKAGES_DIR, pkg, 'AGENTS.md');
       if (!fs.existsSync(agentsPath)) continue;
       const links = extractLocalLinks(agentsPath);
 
       for (const { linkPath, resolvedPath } of links) {
         if (!fs.existsSync(resolvedPath)) {
-          missing.push(`src/${mod}/AGENTS.md → ${linkPath}`);
+          missing.push(`packages/${pkg}/AGENTS.md → ${linkPath}`);
         }
       }
     }
 
-    expect(missing, `Module AGENTS.md files have broken links: ${missing.join(', ')}`).toHaveLength(
-      0,
-    );
+    expect(
+      missing,
+      `Package AGENTS.md files have broken links: ${missing.join(', ')}`,
+    ).toHaveLength(0);
   });
 });
 
@@ -258,65 +261,68 @@ describe('Consistency: knowledge store structure', () => {
   });
 });
 
-describe('Consistency: CLAUDE.md module map matches src/', () => {
+describe('Consistency: CLAUDE.md package map matches packages/', () => {
   /**
-   * Extract module names from the CLAUDE.md "Module Map" table.
-   * Matches rows like: | 0 | `src/types/` | ...
-   * @returns Array of module directory names
+   * Extract package names from the CLAUDE.md "Package Map" table.
+   * Matches rows like:
+   *   | 0 | `packages/types/` | ...
+   *   | 0 | `@greenclaw/types` | ...
+   *   | 0 | `src/types/` | ...  (legacy format)
+   * @returns Array of package directory names
    */
-  function extractModuleMapEntries(): string[] {
+  function extractPackageMapEntries(): string[] {
     const claudeMd = cachedRead(PATHS.claudeMd);
-    const modulePattern = /\|\s*\d+\s*\|\s*`src\/(\w+)\/`/g;
+    const packagePattern = /\|\s*\d+\s*\|\s*`?(?:packages\/|@greenclaw\/|src\/)(\w+)\/?`?/g;
     const entries: string[] = [];
     let match: RegExpExecArray | null;
-    while ((match = modulePattern.exec(claudeMd)) !== null) {
+    while ((match = packagePattern.exec(claudeMd)) !== null) {
       entries.push(match[1]!);
     }
     return entries;
   }
 
-  it('every src/ module directory appears in the CLAUDE.md module map', () => {
-    const mapEntries = extractModuleMapEntries();
+  it('every package directory appears in the CLAUDE.md package map', () => {
+    const mapEntries = extractPackageMapEntries();
     const missing: string[] = [];
-    for (const mod of MODULES) {
-      if (!mapEntries.includes(mod)) {
-        missing.push(mod);
+    for (const pkg of PACKAGES) {
+      if (!mapEntries.includes(pkg)) {
+        missing.push(pkg);
       }
     }
     expect(
       missing,
-      `Modules missing from CLAUDE.md module map: ${missing.join(', ')}. ` +
-        `Fix: add a row to the "Module Map" table in CLAUDE.md for each missing module.`,
+      `Packages missing from CLAUDE.md package map: ${missing.join(', ')}. ` +
+        `Fix: add a row to the "Package Map" table in CLAUDE.md for each missing package.`,
     ).toHaveLength(0);
   });
 
-  it('CLAUDE.md module map has no entries for directories that do not exist', () => {
-    const mapEntries = extractModuleMapEntries();
+  it('CLAUDE.md package map has no entries for directories that do not exist', () => {
+    const mapEntries = extractPackageMapEntries();
     const phantom: string[] = [];
     for (const entry of mapEntries) {
-      if (!fs.existsSync(path.join(SRC_DIR, entry))) {
+      if (!fs.existsSync(path.join(PACKAGES_DIR, entry))) {
         phantom.push(entry);
       }
     }
     expect(
       phantom,
-      `CLAUDE.md module map references non-existent directories: ${phantom.join(', ')}. ` +
-        `Fix: remove the stale row(s) from CLAUDE.md or create the missing src/ directory.`,
+      `CLAUDE.md package map references non-existent directories: ${phantom.join(', ')}. ` +
+        `Fix: remove the stale row(s) from CLAUDE.md or create the missing packages/ directory.`,
     ).toHaveLength(0);
   });
 });
 
-describe('Consistency: QUALITY.md covers all modules', () => {
+describe('Consistency: QUALITY.md covers all packages', () => {
   const VALID_GRADES = new Set(['A', 'B', 'C', 'D']);
 
   /**
-   * Parse the Module Quality table from QUALITY.md.
-   * @returns Map of module name → grade
+   * Parse the Module/Package Quality table from QUALITY.md.
+   * @returns Map of package name → grade
    */
   function parseQualityTable(): Map<string, string> {
     const content = cachedRead(PATHS.qualityMd);
     // Match rows like: | types/      | Stub           | N/A           | Complete | D     | ...
-    const rowPattern = /\|\s*(\w+)\/\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([A-Z])\s*\|/g;
+    const rowPattern = /\|\s*(\w+)\/?\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([A-Z])\s*\|/g;
     const grades = new Map<string, string>();
     let match: RegExpExecArray | null;
     while ((match = rowPattern.exec(content)) !== null) {
@@ -325,17 +331,17 @@ describe('Consistency: QUALITY.md covers all modules', () => {
     return grades;
   }
 
-  it('every module has a row in QUALITY.md', () => {
+  it('every package has a row in QUALITY.md', () => {
     const grades = parseQualityTable();
     const missing: string[] = [];
-    for (const mod of MODULES) {
-      if (!grades.has(mod)) {
-        missing.push(mod);
+    for (const pkg of PACKAGES) {
+      if (!grades.has(pkg)) {
+        missing.push(pkg);
       }
     }
     expect(
       missing,
-      `Modules missing from QUALITY.md: ${missing.join(', ')}. ` +
+      `Packages missing from QUALITY.md: ${missing.join(', ')}. ` +
         `Fix: add a row to the "Module Quality" table in docs/QUALITY.md.`,
     ).toHaveLength(0);
   });
@@ -343,9 +349,9 @@ describe('Consistency: QUALITY.md covers all modules', () => {
   it('all grades in QUALITY.md are valid (A/B/C/D)', () => {
     const grades = parseQualityTable();
     const invalid: string[] = [];
-    for (const [mod, grade] of grades) {
+    for (const [pkg, grade] of grades) {
       if (!VALID_GRADES.has(grade)) {
-        invalid.push(`${mod}/ has grade "${grade}"`);
+        invalid.push(`${pkg}/ has grade "${grade}"`);
       }
     }
     expect(
@@ -451,7 +457,7 @@ describe('Consistency: exec-plan lifecycle', () => {
       if (!entry.endsWith('.md')) continue;
       const status = extractPlanStatus(path.join(activeDir, entry));
       if (status && !status.toLowerCase().startsWith('active')) {
-        violations.push(`active/${entry} has status "${status}" (expected "Active …")`);
+        violations.push(`active/${entry} has status "${status}" (expected "Active ...")`);
       }
     }
     expect(
@@ -469,7 +475,7 @@ describe('Consistency: exec-plan lifecycle', () => {
       if (!entry.endsWith('.md')) continue;
       const status = extractPlanStatus(path.join(completedDir, entry));
       if (status && !status.toLowerCase().startsWith('completed')) {
-        violations.push(`completed/${entry} has status "${status}" (expected "Completed …")`);
+        violations.push(`completed/${entry} has status "${status}" (expected "Completed ...")`);
       }
     }
     expect(
@@ -570,7 +576,7 @@ describe('Consistency: doc backlinks (no orphan docs)', () => {
     expect(
       orphans,
       `Orphan design docs (not linked from any entry point): ${orphans.join(', ')}. ` +
-        `Fix: add a link from CLAUDE.md, docs/design/index.md, or a module AGENTS.md.`,
+        `Fix: add a link from CLAUDE.md, docs/design/index.md, or a package AGENTS.md.`,
     ).toHaveLength(0);
   });
 
@@ -618,7 +624,7 @@ describe('Consistency: doc backlinks (no orphan docs)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// AGENTS.md structure validation — every module AGENTS.md must have a
+// AGENTS.md structure validation — every package AGENTS.md must have a
 // consistent set of sections so agents can reliably parse them.
 // ---------------------------------------------------------------------------
 
@@ -631,17 +637,17 @@ describe('Consistency: AGENTS.md structure validation', () => {
     'Dependencies',
   ] as const;
 
-  it('every module AGENTS.md contains required sections', () => {
+  it('every package AGENTS.md contains required sections', () => {
     const violations: string[] = [];
 
-    for (const mod of MODULES) {
-      const agentsPath = path.join(SRC_DIR, mod, 'AGENTS.md');
+    for (const pkg of PACKAGES) {
+      const agentsPath = path.join(PACKAGES_DIR, pkg, 'AGENTS.md');
       if (!fs.existsSync(agentsPath)) continue;
       const content = fs.readFileSync(agentsPath, 'utf-8');
 
       for (const section of REQUIRED_SECTIONS) {
         if (!content.includes(section)) {
-          violations.push(`src/${mod}/AGENTS.md missing section: "${section}"`);
+          violations.push(`packages/${pkg}/AGENTS.md missing section: "${section}"`);
         }
       }
     }
@@ -649,23 +655,23 @@ describe('Consistency: AGENTS.md structure validation', () => {
     expect(
       violations,
       `AGENTS.md structure violations:\n  ${violations.join('\n  ')}\n` +
-        `Fix: every module AGENTS.md must contain: ${REQUIRED_SECTIONS.join(', ')}.`,
+        `Fix: every package AGENTS.md must contain: ${REQUIRED_SECTIONS.join(', ')}.`,
     ).toHaveLength(0);
   });
 
-  it('AGENTS.md section headings are consistent across modules', () => {
+  it('AGENTS.md section headings are consistent across packages', () => {
     const coreHeadings = ['What it owns', 'What it must NOT do', 'Key invariants'];
     const violations: string[] = [];
 
-    for (const mod of MODULES) {
-      const agentsPath = path.join(SRC_DIR, mod, 'AGENTS.md');
+    for (const pkg of PACKAGES) {
+      const agentsPath = path.join(PACKAGES_DIR, pkg, 'AGENTS.md');
       if (!fs.existsSync(agentsPath)) continue;
       const content = fs.readFileSync(agentsPath, 'utf-8');
       const headings = [...content.matchAll(/^###\s+(.+)$/gm)].map((m) => m[1]!.trim());
 
       for (const required of coreHeadings) {
         if (!headings.includes(required)) {
-          violations.push(`src/${mod}/AGENTS.md missing heading: "### ${required}"`);
+          violations.push(`packages/${pkg}/AGENTS.md missing heading: "### ${required}"`);
         }
       }
     }
@@ -673,7 +679,7 @@ describe('Consistency: AGENTS.md structure validation', () => {
     expect(
       violations,
       `Inconsistent AGENTS.md headings:\n  ${violations.join('\n  ')}\n` +
-        `Fix: ensure every module AGENTS.md has: ${coreHeadings.map((h) => `### ${h}`).join(', ')}.`,
+        `Fix: ensure every package AGENTS.md has: ${coreHeadings.map((h) => `### ${h}`).join(', ')}.`,
     ).toHaveLength(0);
   });
 });

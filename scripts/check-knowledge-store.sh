@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # GreenClaw — Knowledge-store-first pre-commit hook
 #
-# Uses the Claude CLI to verify that commits touching src/ include the
-# correct knowledge store updates (docs/, AGENTS.md, QUALITY.md, etc.).
+# Uses the Claude CLI to verify that commits touching packages/*/src/ include
+# the correct knowledge store updates (docs/, AGENTS.md, QUALITY.md, etc.).
 #
 # Bypass: SKIP_KNOWLEDGE_CHECK=1 git commit -m "..."
 
@@ -21,8 +21,8 @@ if [ -z "$STAGED_FILES" ]; then
   exit 0
 fi
 
-# ── Check if any src/ files are staged ─────────────────────────────
-SRC_FILES=$(echo "$STAGED_FILES" | grep '^src/' || true)
+# ── Check if any packages/*/src/ files are staged ─────────────────
+SRC_FILES=$(echo "$STAGED_FILES" | grep '^packages/.*/src/' || true)
 
 if [ -z "$SRC_FILES" ]; then
   # No source code changes — docs/tests/config commits pass freely.
@@ -49,10 +49,10 @@ verify that commits follow the "knowledge store first" rule.
 
 ## Rules (from CLAUDE.md)
 
-Every code change in src/ MUST have a corresponding knowledge store update.
+Every code change in packages/*/src/ MUST have a corresponding knowledge store update.
 The knowledge store includes:
 - docs/** (design docs, convention docs, exec plans, QUALITY.md, PRODUCT_SENSE.md)
-- src/*/AGENTS.md (module ownership docs, max 80 lines each)
+- packages/*/AGENTS.md (package ownership docs, max 80 lines each)
 - AGENTS.md (root)
 - CLAUDE.md
 - ARCHITECTURE.md
@@ -69,7 +69,7 @@ The knowledge store includes:
 | Config/infra | Update relevant convention doc |
 
 ### Exceptions that do NOT require doc updates
-- Pure whitespace/formatting changes in src/
+- Pure whitespace/formatting changes in packages/*/src/
 - Import reordering with no logic change
 - Adding/updating type-only exports with no behavior change
 - Single-line trivial fixes (typo in a string literal, off-by-one, etc.)

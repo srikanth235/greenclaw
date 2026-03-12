@@ -7,25 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@dqbd/tiktoken':
-        specifier: ^1.0.15
-        version: 1.0.22
-      '@hono/node-server':
-        specifier: ^1.13.0
-        version: 1.19.11(hono@4.12.7)
-      better-sqlite3:
-        specifier: ^12.6.2
-        version: 12.6.2
-      hono:
-        specifier: ^4.6.0
-        version: 4.12.7
-      pino:
-        specifier: ^10.3.1
-        version: 10.3.1
-      zod:
-        specifier: ^3.23.0
-        version: 3.25.76
     devDependencies:
       '@types/better-sqlite3':
         specifier: ^7.6.13
@@ -61,10 +42,129 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@25.4.0)
 
-packages:
+  packages/api:
+    dependencies:
+      '@greenclaw/config':
+        specifier: workspace:*
+        version: link:../config
+      '@greenclaw/monitoring':
+        specifier: workspace:*
+        version: link:../monitoring
+      '@greenclaw/optimization':
+        specifier: workspace:*
+        version: link:../optimization
+      '@greenclaw/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+      '@greenclaw/types':
+        specifier: workspace:*
+        version: link:../types
+      '@hono/node-server':
+        specifier: ^1.13.0
+        version: 1.19.11(hono@4.12.7)
+      hono:
+        specifier: ^4.6.0
+        version: 4.12.7
 
-  '@dqbd/tiktoken@1.0.22':
-    resolution: {integrity: sha512-RYhO8xeHkMNX5Ixqf4M1Ve3siCYJY/dI0yLnlX4M4oIEDOvjMIQ+E+3OUpAaZcWTaMtQJzGcDAghYfllpx3i/w==}
+  packages/cli:
+    dependencies:
+      '@greenclaw/config':
+        specifier: workspace:*
+        version: link:../config
+      '@greenclaw/monitoring':
+        specifier: workspace:*
+        version: link:../monitoring
+      '@greenclaw/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+      '@greenclaw/types':
+        specifier: workspace:*
+        version: link:../types
+
+  packages/config:
+    dependencies:
+      '@greenclaw/types':
+        specifier: workspace:*
+        version: link:../types
+      zod:
+        specifier: ^3.23.0
+        version: 3.25.76
+
+  packages/dashboard:
+    dependencies:
+      '@greenclaw/monitoring':
+        specifier: workspace:*
+        version: link:../monitoring
+      '@greenclaw/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+      '@greenclaw/types':
+        specifier: workspace:*
+        version: link:../types
+      hono:
+        specifier: ^4.6.0
+        version: 4.12.7
+
+  packages/monitoring:
+    dependencies:
+      '@greenclaw/config':
+        specifier: workspace:*
+        version: link:../config
+      '@greenclaw/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+      '@greenclaw/types':
+        specifier: workspace:*
+        version: link:../types
+      better-sqlite3:
+        specifier: ^12.6.2
+        version: 12.6.2
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@25.4.0)
+
+  packages/optimization:
+    dependencies:
+      '@greenclaw/config':
+        specifier: workspace:*
+        version: link:../config
+      '@greenclaw/types':
+        specifier: workspace:*
+        version: link:../types
+
+  packages/telemetry:
+    dependencies:
+      '@greenclaw/config':
+        specifier: workspace:*
+        version: link:../config
+      '@greenclaw/types':
+        specifier: workspace:*
+        version: link:../types
+      better-sqlite3:
+        specifier: ^12.6.2
+        version: 12.6.2
+      pino:
+        specifier: ^10.3.1
+        version: 10.3.1
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@25.4.0)
+
+  packages/types:
+    dependencies:
+      zod:
+        specifier: ^3.23.0
+        version: 3.25.76
+
+packages:
 
   '@es-joy/jsdoccomment@0.46.0':
     resolution: {integrity: sha512-C3Axuq1xd/9VqFZpW4YAzOx5O9q/LP46uIQy/iNDpHG3fmPa6TBtvfglMCs3RBiBxAIi0Go97r8+jvTt55XMyQ==}
@@ -1585,8 +1685,6 @@ packages:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
 snapshots:
-
-  '@dqbd/tiktoken@1.0.22': {}
 
   '@es-joy/jsdoccomment@0.46.0':
     dependencies:
