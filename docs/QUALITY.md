@@ -77,4 +77,12 @@ breadth before depth.
   (3) added UNIQUE(rule_id, period_start) constraint on alert_events
   and switched to INSERT OR IGNORE for atomic deduplication.
 
+- 2026-03-12: Follow-up PR review fixes — corrected malformed `npx greenclaw`
+  skill commands and tightened `alerts set` semantic validation so invalid
+  metric/unit/period/model combinations are rejected before persistence.
+
+- 2026-03-12: Tooling fix — root lint and staged ESLint checks now use
+  `pnpm exec eslint` so clean checkouts do not accidentally resolve a global
+  ESLint 9 binary against the repo's legacy `.eslintrc.cjs` config.
+
 Last updated: 2026-03-12

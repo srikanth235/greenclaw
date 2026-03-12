@@ -21,6 +21,52 @@ function getArg(args: string[], name: string): string | undefined {
 }
 
 /**
+ * Validate semantic relationships between alert flags once individual
+ * values have passed schema checks.
+ * @param metric - Parsed metric value
+ * @param unit - Parsed threshold unit
+ * @param period - Parsed period value
+ * @param model - Optional model filter
+ * @returns Human-readable error text, or null if valid
+ */
+function validateAlertSemantics(
+  metric: 'daily_tokens' | 'daily_cost' | 'weekly_cost' | 'per_model_cost',
+  unit: 'tokens' | 'usd',
+  period: 'day' | 'week' | 'month',
+  model: string | null,
+): string | null {
+  if (metric === 'per_model_cost') {
+    if (!model) return 'Error: --metric per_model_cost requires --model <model>\n';
+    if (unit !== 'usd') return 'Error: --metric per_model_cost requires --unit usd\n';
+    return null;
+  }
+
+  if (model) {
+    return 'Error: --model is only supported with --metric per_model_cost\n';
+  }
+
+  if (metric === 'daily_tokens') {
+    if (unit !== 'tokens') return 'Error: --metric daily_tokens requires --unit tokens\n';
+    if (period !== 'day') return 'Error: --metric daily_tokens requires --period day\n';
+    return null;
+  }
+
+  if (unit !== 'usd') {
+    return `Error: --metric ${metric} requires --unit usd\n`;
+  }
+
+  if (metric === 'daily_cost' && period !== 'day') {
+    return 'Error: --metric daily_cost requires --period day\n';
+  }
+
+  if (metric === 'weekly_cost' && period !== 'week') {
+    return 'Error: --metric weekly_cost requires --period week\n';
+  }
+
+  return null;
+}
+
+/**
  * Run the alerts subcommand.
  * @param args - CLI arguments after 'alerts'
  */
@@ -40,7 +86,8 @@ export function runAlertsCommand(args: string[]): void {
       const threshold = getArg(args, '--threshold');
       const unit = getArg(args, '--unit');
       const period = getArg(args, '--period');
-      const model = getArg(args, '--model') ?? null;
+      const modelArg = getArg(args, '--model');
+      const model = modelArg && modelArg.trim() !== '' ? modelArg : null;
 
       if (!name || !metric || !threshold || !unit || !period) {
         process.stderr.write(
@@ -80,6 +127,18 @@ export function runAlertsCommand(args: string[]): void {
         process.stderr.write(
           `Error: invalid --threshold "${threshold}". Must be a non-negative number\n`,
         );
+        process.exitCode = 1;
+        return;
+      }
+
+      const semanticError = validateAlertSemantics(
+        metricResult.data,
+        unitResult.data,
+        periodResult.data,
+        model,
+      );
+      if (semanticError) {
+        process.stderr.write(semanticError);
         process.exitCode = 1;
         return;
       }

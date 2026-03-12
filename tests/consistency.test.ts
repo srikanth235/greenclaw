@@ -59,6 +59,7 @@ const PATHS = {
   qualityMd: path.join(ROOT, 'docs', 'QUALITY.md'),
   plansMd: path.join(ROOT, 'docs', 'PLANS.md'),
   designIndex: path.join(ROOT, 'docs', 'design', 'index.md'),
+  greenclawSkill: path.join(ROOT, 'skill', 'greenclaw', 'SKILL.md'),
 } as const;
 
 describe('Consistency: AGENTS.md files', () => {
@@ -258,6 +259,23 @@ describe('Consistency: knowledge store structure', () => {
   it('root AGENTS.md stays under 200 lines', () => {
     const lines = cachedRead(PATHS.agentsMd).split('\n').length;
     expect(lines, `Root AGENTS.md has ${lines} lines (max 200)`).toBeLessThanOrEqual(200);
+  });
+});
+
+describe('Consistency: skill command syntax', () => {
+  it('greenclaw skill examples invoke the CLI with a spaced subcommand', () => {
+    const skill = cachedRead(PATHS.greenclawSkill);
+    const malformed = skill.match(/npx\s+greenclaw(?:usage|alerts|traces)\b/g) ?? [];
+    expect(
+      malformed,
+      `Malformed greenclaw commands found in skill/greenclaw/SKILL.md: ${malformed.join(', ')}`,
+    ).toHaveLength(0);
+
+    const runnable = skill.match(/npx\s+greenclaw\s+(usage|alerts|traces)\b/g) ?? [];
+    expect(
+      runnable.length,
+      'skill/greenclaw/SKILL.md should document runnable CLI commands',
+    ).toBeGreaterThan(0);
   });
 });
 

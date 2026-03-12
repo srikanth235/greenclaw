@@ -25,8 +25,11 @@ Layer 4. CLI entry point for usage analytics, alerting, and trace queries.
 - DB lifecycle: create store, use, close in finally block
 - `alerts set` validates input against Zod schemas from `@greenclaw/types`
   before persisting — rejects invalid metric/unit/period/threshold values
+- `alerts set` also enforces cross-field alert semantics: required `--model`
+  for per-model rules, matching unit/period for each metric, and no stray model
+  filter on non-model rules
 - The `greenclaw` bin is exposed at the workspace root via root
-  `package.json` `"bin"` field, so `pnpm exec greenclaw` works
+  `package.json` `"bin"` field, so `npx greenclaw` works after install/build
 
 ### Dependencies
 

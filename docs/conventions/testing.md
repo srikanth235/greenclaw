@@ -23,6 +23,7 @@ pnpm test:watch    # Run in watch mode
 | `tests/proxy-contracts.test.ts`    | Contract | Upstream passthrough, only-model-mutates, boot smoke test           |
 | `tests/classifier.fixture.test.ts` | Fixture  | Classifier accuracy (>=90% on 50 samples)                           |
 | `tests/golden.test.ts`             | Contract | API response shape validation                                       |
+| `packages/*/tests/**/*.test.ts`    | Unit     | Package-local behavior and CLI/business-rule regression coverage    |
 
 ## Test Categories
 
@@ -38,6 +39,7 @@ of the codebase itself.
 - Re-export hygiene (no deep imports across module boundaries)
 - Consistency checks (AGENTS.md, index.ts, naming guardrails)
 - Doc cross-link validation (all links resolve to real files)
+- Skill docs that invoke local CLI tools keep runnable command syntax
 - Doc backlinks (no orphan docs in design/, conventions/, exec-plans/)
 - AGENTS.md structure validation (required sections + consistent headings)
 - Convention coverage (every convention listed in CLAUDE.md)
@@ -75,6 +77,8 @@ Tests that validate proxy behavior invariants against mock upstreams.
 ### Unit Tests
 
 Module-specific tests for business logic. Each module may have its own test file.
+Package-local unit tests may live under `packages/*/tests/` when that keeps
+workspace package behavior isolated from unrelated root harnesses.
 
 ## Conventions
 
