@@ -11,7 +11,8 @@ Address high-priority items before adding new features.
 | TD-002 | tiktoken WASM initialization overhead | compactor/ | Medium   | Open   | Lazy-load and cache the encoder instance             |
 | TD-003 | No integration test harness           | tests/     | Medium   | Open   | Need end-to-end proxy test with mock upstream        |
 | TD-004 | Dashboard is stub-only                | dashboard/ | Low      | Open   | Deferred to PLAN-005                                 |
-| TD-005 | No telemetry persistence              | api/       | High     | Open   | RequestTrace goes to stdout only, no queryable store |
+| TD-005 | No telemetry persistence              | telemetry/ | High     | In Progress | PLAN-006: SQLite store for RequestTrace                |
+| TD-006 | No local observability stack          | telemetry/ | Medium   | In Progress | PLAN-006: Pino + SQLite, no Docker — see harness-engineering.md |
 
 ## Resolved Debt
 

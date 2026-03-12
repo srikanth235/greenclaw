@@ -25,24 +25,28 @@ graph TD
     API -->|fetch: forward as-is| UP[Upstream Provider]
     UP -->|Response stream / JSON| API
     API -->|Pass-through response| OC
-    API -->|RequestTrace| DB[(Telemetry Store)]
-    DB --> DASH[dashboard/]
+    API -->|RequestTrace| TEL[telemetry/]
+    TEL -->|SQLite| DB[(data/telemetry.db)]
+    TEL --> DASH[dashboard/]
 
     subgraph GreenClaw Proxy
         API
         CL
         CO
         RO
+        TEL
         DB
         DASH
     end
 
     CFG[config/] -.->|Config| API
     CFG -.->|Config| RO
+    CFG -.->|Config| TEL
     TYP[types/] -.->|Schemas| CL
     TYP -.->|Schemas| CO
     TYP -.->|Schemas| RO
     TYP -.->|Schemas| API
+    TYP -.->|Schemas| TEL
 ```
 
 ## Dependency Layer Rules
@@ -51,11 +55,12 @@ Modules are organized in strict layers. A module may only import from modules at
 the same level or below. No upward imports are permitted.
 
 ```
-Layer 6 (top):  dashboard
-Layer 5:        api
-Layer 4:        router
-Layer 3:        compactor
-Layer 2:        classifier
+Layer 7 (top):  dashboard
+Layer 6:        api
+Layer 5:        router
+Layer 4:        compactor
+Layer 3:        classifier
+Layer 2:        telemetry
 Layer 1:        config
 Layer 0 (base): types
 ```

@@ -40,6 +40,7 @@ const TESTS_DIR = path.join(ROOT, 'tests');
 const MODULES = [
   'types',
   'config',
+  'telemetry',
   'classifier',
   'compactor',
   'router',

@@ -45,6 +45,37 @@ Make the application itself directly legible to agents:
 - These capabilities make performance and correctness prompts tractable
   (e.g. "ensure startup completes in under 800 ms").
 
+### Local observability stack architecture
+
+The full observability pattern uses an **ephemeral per-worktree stack**:
+
+```
+APP ──→ Victoria Logs   ──→ LogQL API   ──┐
+     ──→ Victoria Metrics ──→ PromQL API  ──┼──→ AGENT (query, correlate, reason)
+     ──→ Victoria Traces  ──→ TraceQL API ──┘        │
+                                                      ↓
+VECTOR (fan-out, local) ───────────────────→    Implement change (PR)
+                                                 + Restart app
+                                                      ↓
+                                              Re-run workload → Feedback loop → Test
+```
+
+Key properties:
+
+- **One stack per worktree** — the agent works on a fully isolated version of
+  the app including its logs and metrics, torn down once the task completes.
+- **Agents query directly** — LogQL for logs, PromQL for metrics, TraceQL for
+  traces. No human intermediary needed.
+- **Performance prompts become tractable** — e.g. "ensure service startup
+  completes in under 800 ms" or "no span in these four critical user journeys
+  exceeds two seconds".
+- **Feedback loop** — the agent implements a change, restarts the app, re-runs
+  the workload, and observes the result through the same query APIs.
+
+> **GreenClaw status**: We do **not** yet have a local observability stack.
+> `RequestTrace` goes to stdout only (see TD-005, TD-006). This is a
+> prerequisite for agent-driven performance optimisation work.
+
 ---
 
 ## 3. Repository Knowledge as System of Record

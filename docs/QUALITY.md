@@ -22,6 +22,7 @@ progresses. Use this document to identify gaps and prioritize work.
 | compactor/  | Stub           | N/A           | Complete | D     | Returns input unchanged             |
 | router/     | Stub           | N/A           | Complete | D     | Returns default provider model      |
 | api/        | Stub           | N/A           | Complete | D     | Hono app not yet wired              |
+| telemetry/  | Stub           | N/A           | Complete | D     | Pino + SQLite, PLAN-006             |
 | dashboard/  | Stub           | N/A           | Complete | D     | Built last per plan                 |
 
 ## Cross-Cutting Quality
@@ -57,6 +58,8 @@ breadth before depth.
 - 2026-03-12: Fixed a false negative in `tests/architecture.test.ts` where
   comment text containing `fetch` could suppress real `fetch()` violation
   detection in pure pipeline modules.
+- 2026-03-12: Fixed three P2 bugs in telemetry module — logger JSON key
+  mismatch, silent SQLite init failure, and timezone-aware time-range queries.
 
 - 2026-03-12: Added process.env restriction ESLint rule, no-unmanaged-skips
   harness test, deterministic knowledge-store CI gate, extended pure-module
