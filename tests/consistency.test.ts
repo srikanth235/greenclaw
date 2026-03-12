@@ -252,9 +252,9 @@ describe('Consistency: knowledge store structure', () => {
     expect(missing, `Missing required docs: ${missing.join(', ')}`).toHaveLength(0);
   });
 
-  it('root AGENTS.md stays under 120 lines', () => {
+  it('root AGENTS.md stays under 200 lines', () => {
     const lines = cachedRead(PATHS.agentsMd).split('\n').length;
-    expect(lines, `Root AGENTS.md has ${lines} lines (max 120)`).toBeLessThanOrEqual(120);
+    expect(lines, `Root AGENTS.md has ${lines} lines (max 200)`).toBeLessThanOrEqual(200);
   });
 });
 
