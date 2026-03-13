@@ -48,13 +48,15 @@ These harnesses must follow strict rules:
 
 ## First Concrete Harness
 
-The first planned LLM semantic harness is
+The first implemented LLM semantic harness is
 [PLAN-011](../exec-plans/active/PLAN-011-owner-doc-semantic-harness.md):
 
 - invariant family: owner-doc semantic consistency
-- scope: `packages/api`, `packages/config`, `packages/telemetry`
+- scope: every workspace package under `packages/`
 - question: does `packages/<pkg>/AGENTS.md` still truthfully describe package
   ownership, prohibitions, invariants, and dependency boundaries?
+- execution model: opt-in `codex exec` test, skipped unless
+  `GREENCLAW_ENABLE_LLM_HARNESS=1`
 
 ## Non-Goals
 

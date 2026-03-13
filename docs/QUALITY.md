@@ -42,6 +42,7 @@ progresses. Use this document to identify gaps and prioritize work.
 | Harness: skip hygiene      | Active     | A     | No unmanaged it.skip/describe.skip without allowlist      |
 | Harness: suppression hygiene | Active   | B     | TODO/ignore directives require linked PLAN/TD ownership    |
 | Harness: knowledge gate    | Active     | B     | Relevance gate: owner docs + package-specific companions  |
+| Harness: owner-doc semantics | Active (opt-in) | B | `codex exec` compares `packages/*/AGENTS.md` against bounded package-local source/test inputs |
 | Harness: side-effect ban   | Active     | A     | Timers, Math.random, Date.now banned in pure layers       |
 | Harness: telemetry contracts | Active   | B     | Logger JSON, trace shape, and SQLite schema parity checks  |
 | Harness: proxy contracts   | Active     | B     | Passthrough, only-model-mutates, health, SSE parity       |
@@ -132,5 +133,15 @@ breadth before depth.
   README Quick Start regained a real runtime path via `pnpm dev` / `pnpm start`,
   and the relevance gate now requires package owner docs instead of broad
   `docs/**` fallbacks.
+
+- 2026-03-13: Implemented PLAN-011 owner-doc semantic harness across every
+  workspace package. The LLM-backed check is opt-in via
+  `GREENCLAW_ENABLE_LLM_HARNESS=1`, uses bounded package-local file sets, and
+  package owner docs were tightened where the first pass exposed semantic drift.
+
+- 2026-03-13: Live PLAN-011 validation exposed semantic drift in package owner
+  docs and manifests. Fixed the stale config immutability claim and removed
+  unused workspace dependencies from `api`, `monitoring`, `telemetry`, and
+  `dashboard` package manifests so dependency boundaries match actual behavior.
 
 Last updated: 2026-03-13

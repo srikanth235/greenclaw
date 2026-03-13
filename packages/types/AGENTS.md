@@ -7,10 +7,10 @@ Layer 0. Shared Zod schemas and derived TypeScript types for all packages.
 ### What it owns
 
 - Alert analytics schemas (`AlertRuleSchema`, `AlertEventSchema`, etc.)
-- OpenAI-compatible request/response Zod schemas (planned)
-- `TaskTier` enum: `HEARTBEAT | SIMPLE | MODERATE | COMPLEX` (planned)
-- `RequestTrace` schema for telemetry (planned)
-- `ProviderModel` type (planned)
+- OpenAI-compatible request/response schemas and error envelopes
+- Shared routing primitives (`TaskTier`, `ProviderModel`)
+- Health response schema
+- Telemetry schemas (`RequestTrace`, tokens, cost, latency)
 
 ### What it must NOT do
 

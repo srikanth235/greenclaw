@@ -2,28 +2,26 @@
 
 ## Ownership
 
-Layer 5. Read-only cost telemetry dashboard.
+Layer 5. Dashboard status surface while the read-only UI is deferred.
 
 ### What it owns
 
-- Lightweight Hono routes for serving aggregated telemetry data
-- Telemetry aggregation queries (cost per tier, savings over time)
+- `getDashboardStatus()` placeholder export
+- The explicit deferred-status contract for dashboard work (`TD-004`)
 
 ### What it must NOT do
 
-- Mutate telemetry data — strictly read-only
-- Expose write endpoints or admin actions
+- Import from lower packages until the UI work starts
+- Expose routes or write APIs before the dashboard plan is active
 - Block or slow down the main proxy hot path
 
 ### Key invariants
 
 - Dashboard is non-critical — proxy functions without it
-- All data is derived from `RequestTrace` and usage analytics
-- No authentication required in v1 (local use only)
-- Built last — stub only during initial development phases
+- `getDashboardStatus()` returns `implemented: false`
+- The status reason points to `TD-004`
+- Built last — stub only until the telemetry-backed UI work starts
 
 ### Dependencies
 
-- `@greenclaw/types` (Layer 0)
-- `@greenclaw/monitoring` (Layer 3)
-- `@greenclaw/telemetry` (Layer 2)
+None yet. This package is currently a stub.

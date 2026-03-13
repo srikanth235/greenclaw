@@ -20,7 +20,6 @@
     "@greenclaw/config": "workspace:*",
     "@greenclaw/telemetry": "workspace:*",
     "@greenclaw/optimization": "workspace:*",
-    "@greenclaw/monitoring": "workspace:*",
     "@hono/node-server": "^1.13.0",
     "hono": "^4.6.0"
   }

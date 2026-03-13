@@ -21,7 +21,7 @@ Layer 4. CLI entry point for usage analytics, alerting, and trace queries.
 ### Key invariants
 
 - All output is JSON to stdout for agent/skill consumption
-- Human-readable formatting is the OpenClaw skill's job, not the CLI's
+- Human-readable formatting is the GreenClaw skill's job, not the CLI's
 - DB lifecycle: create store, use, close in finally block
 - `alerts set` validates input against Zod schemas from `@greenclaw/types`
   before persisting — rejects invalid metric/unit/period/threshold values

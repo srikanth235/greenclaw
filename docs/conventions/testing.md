@@ -22,6 +22,7 @@ pnpm test:watch    # Run in watch mode
 | `tests/suppression-hygiene.test.ts`| Harness  | No unmanaged source suppressions without linked PLAN/TD reference   |
 | `tests/knowledge-gate.test.ts`     | Harness  | Relevance gate: path-specific doc requirements for code changes     |
 | `tests/jsdoc-hygiene.test.ts`      | Harness  | Exported declarations and callable docs require JSDoc/tag coverage   |
+| `tests/owner-doc-semantic.test.ts` | Harness  | Opt-in LLM semantic check: `packages/*/AGENTS.md` vs package behavior |
 | `tests/proxy-contracts.test.ts`    | Contract | Upstream passthrough, only-model-mutates, boot smoke test           |
 | `tests/classifier.fixture.test.ts` | Fixture  | Classifier accuracy (>=90% on 50 samples)                           |
 | `tests/golden.test.ts`             | Contract | API response shape validation                                       |
@@ -89,9 +90,19 @@ bounded LLM harness is acceptable. Follow
 - use the same prompt/rubric every run
 - replace recurring LLM findings with deterministic tests when possible
 
-The first planned concrete harness is [PLAN-011](../exec-plans/active/PLAN-011-owner-doc-semantic-harness.md):
-owner-doc semantic consistency for `packages/api`, `packages/config`, and
-`packages/telemetry`.
+The first implemented concrete harness is
+[PLAN-011](../exec-plans/active/PLAN-011-owner-doc-semantic-harness.md):
+owner-doc semantic consistency for every workspace package. It is disabled by
+default and runs only when `GREENCLAW_ENABLE_LLM_HARNESS=1`.
+
+The harness contract is intentionally narrow:
+
+- compare one package at a time
+- use only `packages/<pkg>/AGENTS.md`, package-local source/tests, and a small
+  shared root context set
+- require a JSON verdict with concrete file evidence
+- fail only on factual contradictions or material owner-doc omissions
+- enforce a hard subprocess timeout so slow LLM calls cannot hang the suite
 
 ### Fixture / Eval Tests (skipped until implemented)
 

@@ -19,7 +19,13 @@ const TESTS_DIR = path.resolve(__dirname);
  * The test file is relative to tests/, the pattern is a substring
  * of the skipped test description.
  */
-const ALLOWED_SKIPS: Array<{ file: string; pattern: string; reason: string }> = [];
+const ALLOWED_SKIPS: Array<{ file: string; pattern: string; reason: string }> = [
+  {
+    file: 'owner-doc-semantic.test.ts',
+    pattern: 'Owner-doc semantic harness (set GREENCLAW_ENABLE_LLM_HARNESS=1 to enable)',
+    reason: 'PLAN-011: LLM harness is intentionally opt-in outside dedicated CI runs.',
+  },
+];
 
 /**
  * Find all test files in the tests/ directory.
