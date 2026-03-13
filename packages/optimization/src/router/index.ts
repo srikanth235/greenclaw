@@ -30,7 +30,7 @@ export function route(
 ): ProviderModel {
   if (!shouldAutoRoute(requestedModel)) {
     return {
-      provider: config.routingModels.COMPLEX.provider,
+      provider: config.routingModels[tier].provider,
       model: requestedModel,
     };
   }

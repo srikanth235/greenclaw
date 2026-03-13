@@ -26,30 +26,35 @@ export function startServer(options?: {
   hostname?: string;
   dependencies?: Partial<AppDependencies>;
 }): Promise<StartedServer> {
-  return new Promise((resolve) => {
-    const app = options?.app ?? createApp(options?.dependencies);
-    const server = serve(
-      {
-        fetch: app.fetch,
-        hostname: options?.hostname ?? '127.0.0.1',
-        port: options?.port ?? 0,
-      },
-      (info: AddressInfo) => {
-        resolve({
-          port: info.port,
-          server,
-          close: () =>
-            new Promise<void>((closeResolve, closeReject) => {
-              server.close((error) => {
-                if (error) {
-                  closeReject(error);
-                  return;
-                }
-                closeResolve();
-              });
-            }),
-        });
-      },
-    );
+  return new Promise((resolve, reject) => {
+    try {
+      const app = options?.app ?? createApp(options?.dependencies);
+      const server = serve(
+        {
+          fetch: app.fetch,
+          hostname: options?.hostname ?? '127.0.0.1',
+          port: options?.port ?? 0,
+        },
+        (info: AddressInfo) => {
+          resolve({
+            port: info.port,
+            server,
+            close: () =>
+              new Promise<void>((closeResolve, closeReject) => {
+                server.close((error) => {
+                  if (error) {
+                    closeReject(error);
+                    return;
+                  }
+                  closeResolve();
+                });
+              }),
+          });
+        },
+      );
+      server.on('error', reject);
+    } catch (error) {
+      reject(error);
+    }
   });
 }

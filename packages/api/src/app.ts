@@ -20,6 +20,27 @@ type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Respo
 
 type AppLogger = Pick<ReturnType<typeof createLogger>, 'info' | 'warn' | 'error'>;
 
+/** Default upstream request timeout in milliseconds (30 seconds). */
+const UPSTREAM_TIMEOUT_MS = 30_000;
+
+/**
+ * Headers that must not be forwarded to the upstream provider.
+ * Includes hop-by-hop headers (RFC 2616 §13.5.1) and sensitive headers.
+ */
+const STRIPPED_HEADERS = [
+  'content-length',
+  'host',
+  'connection',
+  'keep-alive',
+  'transfer-encoding',
+  'te',
+  'trailer',
+  'upgrade',
+  'proxy-authorization',
+  'proxy-authenticate',
+  'cookie',
+];
+
 /** Dependencies required to construct the GreenClaw app. */
 export interface AppDependencies {
   config: GreenClawConfig;
@@ -54,32 +75,35 @@ export function createDefaultDependencies(): AppDependencies {
  * @returns Hono application exposing proxy and health routes
  */
 export function createApp(input?: Partial<AppDependencies>): Hono {
-  const defaults = createDefaultDependencies();
-  const dependencies: AppDependencies = {
-    ...defaults,
-    ...input,
-    now: input?.now ?? defaults.now,
-    requestId: input?.requestId ?? defaults.requestId,
-    version: input?.version ?? defaults.version,
-  };
+  const allKeysProvided =
+    input?.config &&
+    input?.fetchImpl &&
+    input?.telemetryStore &&
+    input?.logger &&
+    input?.now &&
+    input?.requestId &&
+    input?.version;
+
+  const dependencies: AppDependencies = allKeysProvided
+    ? (input as AppDependencies)
+    : { ...createDefaultDependencies(), ...input };
 
   const app = new Hono();
-  const startedAt = dependencies.now?.() ?? Date.now();
+  const startedAt = dependencies.now();
   let tracesEmitted = 0;
 
   app.get('/health', (context) => {
     const response = HealthResponseSchema.parse({
       status: 'ok',
-      version: dependencies.version ?? '0.1.0',
-      uptime: Math.floor(((dependencies.now?.() ?? Date.now()) - startedAt) / 1000),
+      version: dependencies.version,
+      uptime: Math.floor((dependencies.now() - startedAt) / 1000),
       traces_emitted: tracesEmitted,
     });
     return context.json(response, 200);
   });
 
   app.post('/v1/chat/completions', async (context) => {
-    const requestId =
-      context.req.header('x-request-id') ?? dependencies.requestId?.() ?? randomUUID();
+    const requestId = context.req.header('x-request-id') ?? dependencies.requestId();
     const rawBody = await context.req.text();
     const requestUrl = new URL(context.req.url);
 
@@ -152,17 +176,23 @@ export function createApp(input?: Partial<AppDependencies>): Hono {
 
     const request = parsedRequest.data;
     const taskTier = classify(request.messages, request.model);
-    const compactedMessages = compact(request.messages, Number.POSITIVE_INFINITY);
+    const compactResult = compact(request.messages, Number.POSITIVE_INFINITY);
     const routed = route(taskTier, dependencies.config, request.model);
     const forwardedBody = JSON.stringify({
       ...request,
-      messages: compactedMessages,
+      messages: compactResult.messages,
       model: routed.model,
     });
 
     try {
       const headers = new Headers(context.req.raw.headers);
-      headers.delete('content-length');
+      for (const name of STRIPPED_HEADERS) {
+        headers.delete(name);
+      }
+
+      const timeoutSignal = AbortSignal.timeout(UPSTREAM_TIMEOUT_MS);
+      const clientSignal = context.req.raw.signal;
+      const signal = clientSignal ? AbortSignal.any([clientSignal, timeoutSignal]) : timeoutSignal;
 
       const upstreamResponse = await dependencies.fetchImpl(
         `${dependencies.config.upstreamBaseUrl}${requestUrl.pathname}${requestUrl.search}`,
@@ -170,7 +200,7 @@ export function createApp(input?: Partial<AppDependencies>): Hono {
           method: context.req.method,
           headers,
           body: forwardedBody,
-          signal: context.req.raw.signal,
+          signal,
         },
       );
 
@@ -184,7 +214,7 @@ export function createApp(input?: Partial<AppDependencies>): Hono {
           taskTier,
           upstreamStatus: upstreamResponse.status,
           error: null,
-          compactionApplied: compactedMessages !== request.messages,
+          compactionApplied: compactResult.applied,
         },
         () => {
           tracesEmitted += 1;
@@ -207,7 +237,7 @@ export function createApp(input?: Partial<AppDependencies>): Hono {
           taskTier,
           upstreamStatus: null,
           error: detail,
-          compactionApplied: compactedMessages !== request.messages,
+          compactionApplied: compactResult.applied,
         },
         () => {
           tracesEmitted += 1;

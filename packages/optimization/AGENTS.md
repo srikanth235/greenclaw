@@ -7,8 +7,8 @@ Layer 3. Task classification, context compaction, and model routing.
 ### What it owns
 
 - **classifier/**: `classify(messages, model) → TaskTier` — heuristic rules
-- **compactor/**: `compact(messages, tokenLimit) → ChatMessage[]` — context reduction
-- **router/**: `route(tier, config) → ProviderModel` — tier-to-model mapping
+- **compactor/**: `compact(messages, tokenLimit) → CompactResult` — context reduction with applied flag
+- **router/**: `route(tier, config, requestedModel) → ProviderModel` — tier-to-model mapping; provider derived from classified tier
 
 ### What it must NOT do
 

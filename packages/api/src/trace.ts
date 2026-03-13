@@ -59,8 +59,18 @@ export function emitTrace(
     error: input.error,
   };
 
-  dependencies.telemetryStore.insertTrace(trace);
-  afterInsert();
+  try {
+    dependencies.telemetryStore.insertTrace(trace);
+    afterInsert();
+  } catch (insertError) {
+    dependencies.logger.error(
+      {
+        request_id: input.requestId,
+        data: { error: insertError instanceof Error ? insertError.message : String(insertError) },
+      },
+      'Failed to persist trace',
+    );
+  }
   if (input.error) {
     dependencies.logger.warn(
       {

@@ -51,6 +51,8 @@ describe('optimization', () => {
 
   it('keeps compaction as a pass-through until summarization rules exist', () => {
     const messages = [{ role: 'user', content: 'hello' }];
-    expect(compact(messages, 10)).toBe(messages);
+    const result = compact(messages, 10);
+    expect(result.messages).toBe(messages);
+    expect(result.applied).toBe(false);
   });
 });
