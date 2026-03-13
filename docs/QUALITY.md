@@ -96,4 +96,8 @@ breadth before depth.
   declarations. The harness now fails on missing exported JSDoc and missing
   `@param` / `@returns` tags for exported callables.
 
+- 2026-03-13: CI fix — knowledge-gate test failed because `actions/checkout@v4`
+  defaults to `fetch-depth: 1` (shallow clone), so `main` branch was unavailable
+  for `git diff`. Fixed by setting `fetch-depth: 0` in `.github/workflows/ci.yml`.
+
 Last updated: 2026-03-13
