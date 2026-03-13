@@ -30,6 +30,4 @@ Layer 3. Usage analytics and budget alerting for end users.
 ### Dependencies
 
 - `@greenclaw/types` (Layer 0) — alert schemas
-
-This package works against an injected SQLite handle. It interoperates with the
-telemetry store but does not import `@greenclaw/telemetry` directly.
+- `@greenclaw/telemetry` (Layer 2) — getDb() for shared DB access

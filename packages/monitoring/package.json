@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@greenclaw/types": "workspace:*",
+    "@greenclaw/telemetry": "workspace:*",
     "better-sqlite3": "^12.6.2"
   },
   "devDependencies": {
