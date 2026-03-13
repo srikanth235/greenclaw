@@ -5,18 +5,9 @@ import { describe, expect, it } from 'vitest';
  * Relevance gate — path-specific doc requirements.
  *
  * When code or config changes relative to main, the gate requires
- * that the *right* documentation was also updated — not just "any"
+ * that the right documentation was also updated — not just "any"
  * knowledge-store file.
- *
- * This replaces the previous gate which checked `src/` (a directory
- * that does not exist in the monorepo layout).
  */
-
-// ---------------------------------------------------------------------------
-// Rule table: each entry maps a changed-path pattern to a set of required
-// companion doc patterns. If any file matching `source` changed, at least
-// one file matching one of the `requiredDocs` patterns must also have changed.
-// ---------------------------------------------------------------------------
 
 interface GateRule {
   /** Human-readable label for error messages. */
@@ -30,12 +21,12 @@ interface GateRule {
 }
 
 /**
- * Helper: returns true if `file` is inside `packages/<pkg>/AGENTS.md`.
+ * Helper: returns true if `file` is the owner doc for a package.
  * @param pkg - Package name
  * @returns Predicate function
  */
 function pkgAgents(pkg: string): (file: string) => boolean {
-  return (f) => f === `packages/${pkg}/AGENTS.md`;
+  return (file) => file === `packages/${pkg}/AGENTS.md`;
 }
 
 /**
@@ -50,63 +41,62 @@ function exactDoc(file: string): { label: string; matches: (changed: string) => 
   };
 }
 
+/**
+ * Match any code/config/test/package metadata change owned by a package.
+ * @param pkg - Package name
+ * @returns Predicate function
+ */
+function pkgOwnedSurface(pkg: string): (file: string) => boolean {
+  return (file) =>
+    file.startsWith(`packages/${pkg}/`) &&
+    file !== `packages/${pkg}/AGENTS.md` &&
+    !file.startsWith(`packages/${pkg}/dist/`);
+}
+
 const GATE_RULES: GateRule[] = [
-  // -- Every package: src/ changes require that package's AGENTS.md --
   ...['types', 'config', 'telemetry', 'optimization', 'monitoring', 'cli', 'api', 'dashboard'].map(
     (pkg): GateRule => ({
-      label: `packages/${pkg}/src/`,
-      source: (f) => f.startsWith(`packages/${pkg}/src/`),
-      requiredAll: [
-        {
-          label: `packages/${pkg}/AGENTS.md`,
-          matches: pkgAgents(pkg),
-        },
-      ],
+      label: `packages/${pkg}/`,
+      source: pkgOwnedSurface(pkg),
+      requiredAll: [{ label: `packages/${pkg}/AGENTS.md`, matches: pkgAgents(pkg) }],
     }),
   ),
-
-  // -- config/ additionally requires .env.example --
   {
-    label: 'packages/config/src/',
-    source: (f) => f.startsWith('packages/config/src/'),
+    label: 'packages/config/',
+    source: pkgOwnedSurface('config'),
     requiredAll: [exactDoc('.env.example')],
   },
-
-  // -- telemetry/ additionally requires observability docs --
   {
-    label: 'packages/telemetry/src/',
-    source: (f) => f.startsWith('packages/telemetry/src/'),
+    label: 'packages/telemetry/',
+    source: pkgOwnedSurface('telemetry'),
     requiredAll: [exactDoc('docs/conventions/observability.md')],
   },
-
-  // -- api/ additionally requires a shared behavior doc --
   {
-    label: 'packages/api/src/',
-    source: (f) => f.startsWith('packages/api/src/'),
+    label: 'packages/api/',
+    source: pkgOwnedSurface('api'),
     requiredAny: [
+      exactDoc('README.md'),
       exactDoc('ARCHITECTURE.md'),
       exactDoc('docs/conventions/errors.md'),
       exactDoc('docs/conventions/observability.md'),
       exactDoc('docs/conventions/security.md'),
     ],
   },
-
-  // -- CLI, root config, CI: require README or CONTRIBUTING --
   {
-    label: 'CLI/config/CI changes',
-    source: (f) =>
-      f.startsWith('packages/cli/src/') ||
-      f === 'package.json' ||
-      f === 'biome.json' ||
-      f.startsWith('.husky/') ||
-      f.startsWith('.github/workflows/'),
-    requiredAny: [exactDoc('README.md'), exactDoc('CONTRIBUTING.md')],
+    label: 'CLI/root config/CI changes',
+    source: (file) =>
+      file.startsWith('packages/cli/') ||
+      file === 'package.json' ||
+      file === 'biome.json' ||
+      file.startsWith('.github/workflows/') ||
+      file.startsWith('.husky/'),
+    requiredAny: [
+      exactDoc('README.md'),
+      exactDoc('CONTRIBUTING.md'),
+      exactDoc('docs/conventions/testing.md'),
+    ],
   },
 ];
-
-// ---------------------------------------------------------------------------
-// Git helpers (unchanged from previous implementation)
-// ---------------------------------------------------------------------------
 
 /**
  * Resolve the base ref to diff against.
@@ -156,12 +146,28 @@ function getChangedFiles():
       encoding: 'utf-8',
     }).trim();
 
-    const diff = execSync(`git diff --name-only ${mergeBase}...HEAD`, {
+    const branchDiff = execSync(`git diff --name-only ${mergeBase}...HEAD`, {
+      encoding: 'utf-8',
+    }).trim();
+    const stagedDiff = execSync('git diff --name-only --cached', {
+      encoding: 'utf-8',
+    }).trim();
+    const worktreeDiff = execSync('git diff --name-only', {
+      encoding: 'utf-8',
+    }).trim();
+    const untracked = execSync('git ls-files --others --exclude-standard', {
       encoding: 'utf-8',
     }).trim();
 
-    const files = diff ? diff.split('\n').filter(Boolean) : [];
-    return { files, skipped: false };
+    const files = [
+      ...branchDiff.split('\n'),
+      ...stagedDiff.split('\n'),
+      ...worktreeDiff.split('\n'),
+      ...untracked.split('\n'),
+    ].filter(Boolean);
+
+    const dedupedFiles = [...new Set(files)].sort();
+    return { files: dedupedFiles, skipped: false };
   } catch (err) {
     if (err instanceof Error && err.message.startsWith('Cannot resolve base branch')) {
       throw err;
@@ -169,10 +175,6 @@ function getChangedFiles():
     return { files: [], skipped: true, reason: 'git unavailable' };
   }
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe('Knowledge Gate: path-specific doc requirements', () => {
   it('changed code/config paths have their required companion docs updated', () => {
@@ -211,7 +213,7 @@ describe('Knowledge Gate: path-specific doc requirements', () => {
       `Code/config changed but required companion docs were not updated.\n` +
         `Unsatisfied rules:\n  ${violations.join('\n  ')}\n\n` +
         `Changed files:\n  ${changedFiles.join('\n  ')}\n\n` +
-        `See CLAUDE.md "Knowledge Store First" for the full workflow.`,
+        `See AGENTS.md "Knowledge Store First" for the full workflow.`,
     ).toHaveLength(0);
   });
 });

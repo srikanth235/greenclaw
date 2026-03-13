@@ -14,15 +14,14 @@ pnpm test:watch    # Run in watch mode
 | Test File                          | Category | Purpose                                                             |
 | ---------------------------------- | -------- | ------------------------------------------------------------------- |
 | `tests/architecture.test.ts`       | Harness  | Layer deps, pure-function layers, circular deps, deep import guard  |
-| `tests/consistency.test.ts`        | Harness  | Structural discovery (AGENTS.md, naming, module map, doc backlinks, |
-|                                    |          | plan lifecycle) + semantic doc-contracts (README, env, status docs) |
+| `tests/consistency.test.ts`        | Harness  | Structural discovery + deterministic repo-truth parity checks       |
 | `tests/file-limits.test.ts`        | Harness  | Source files ≤300 lines, test-file-per-module                       |
 | `tests/module-boundaries.test.ts`  | Harness  | No hardcoded models, no PII in logs, Zod source-of-truth            |
 | `tests/skip-hygiene.test.ts`       | Harness  | No unmanaged `it.skip`/`describe.skip` without allowlisted reason   |
 | `tests/suppression-hygiene.test.ts`| Harness  | No unmanaged source suppressions without linked PLAN/TD reference   |
-| `tests/knowledge-gate.test.ts`     | Harness  | Relevance gate: path-specific doc requirements for code changes     |
+| `tests/knowledge-gate.test.ts`     | Harness  | Relevance gate: path-specific code/config changes require docs      |
 | `tests/jsdoc-hygiene.test.ts`      | Harness  | Exported declarations and callable docs require JSDoc/tag coverage   |
-| `tests/owner-doc-semantic.test.ts` | Harness  | Opt-in LLM semantic check: `packages/*/AGENTS.md` vs package behavior |
+| `tests/owner-doc-semantic.test.ts` | Harness  | Opt-in semantic check: `packages/*/AGENTS.md` vs package behavior   |
 | `tests/proxy-contracts.test.ts`    | Contract | Upstream passthrough, only-model-mutates, boot smoke test           |
 | `tests/classifier.fixture.test.ts` | Fixture  | Classifier accuracy (>=90% on 50 samples)                           |
 | `tests/golden.test.ts`             | Contract | API response shape validation                                       |
@@ -44,7 +43,7 @@ of the codebase itself.
 - Doc cross-link validation (all links resolve to real files)
 - Skill docs that invoke local CLI tools keep runnable command syntax
 - Doc backlinks (no orphan docs in design/, conventions/, exec-plans/)
-- AGENTS.md structure validation (required sections)
+- AGENTS.md structure validation (required sections + consistent headings)
 - Convention coverage (every convention listed in CLAUDE.md)
 - Design doc freshness (valid statuses in design index)
 - Knowledge store structure (required docs exist)
@@ -61,22 +60,33 @@ of the codebase itself.
 - Pure-module side-effect ban (timers, Math.random, Date.now in pure layers)
 - No unmanaged `it.skip`/`describe.skip` without allowlisted reason
 - No unmanaged `TODO`/`FIXME`/ignore directives without linked PLAN/TD
-- Relevance gate (packages/ changes require owner docs and package-specific companion docs)
+- Relevance gate (owner docs and package-specific companion docs)
 - AST-based JSDoc hygiene (`@param` / `@returns` on exported callables)
 - Telemetry logger JSON contract validation
 - Telemetry SQLite schema/index parity against observability docs
 - Trace-shape hygiene for stored telemetry fields
 
-#### Semantic doc-contract checks (in consistency.test.ts)
+#### Deterministic repo-truth parity checks (in `tests/consistency.test.ts`)
 
 These validate that documentation claims match executable truth:
 
-- README script parity: every `pnpm <script>` in README exists in package.json
+- README script parity: every `pnpm <script>` in README exists in root `package.json`
 - README runtime parity: Quick Start/startup claims map to a real runtime entrypoint
-- README tooling parity: lint/format tool names match actual devDependencies
-- Env var parity: `.env.example` vars match `env.*` / `process.env.*` reads in config/
-- Security-secret exceptions: non-config env vars in `.env.example` must be documented in security.md
-- Status-doc boundaries: volatile prose only in QUALITY.md, PLANS.md, active plans, and debt tracker
+- README tooling parity: lint/format tool names match installed tooling
+- Env var parity: `.env.example` matches `env.*` / `process.env.*` reads in `config/`
+- Security env parity: non-config env vars in `.env.example` are documented in `security.md`
+- Quality-grade policy: package A-grades require semantic PASS notes
+
+#### Claim classification
+
+GreenClaw uses three claim classes:
+
+- descriptive current-state claims: semantic checks are acceptable
+- normative behavioral guarantees: prefer deterministic executable tests
+- deferred or aspirational claims: keep them in plans/ADRs, not package invariants
+
+If a semantic harness repeatedly finds the same drift, replace it with a normal
+deterministic harness.
 
 #### LLM semantic harnesses
 
@@ -84,42 +94,19 @@ When deterministic checks cannot express a repo-truth invariant cleanly, a
 bounded LLM harness is acceptable. Follow
 [knowledge-store.md](knowledge-store.md):
 
-- deterministic parity first; LLMs are for residual semantic checks
-- compare a named set of repo files or PR changes, not the whole codebase
-- require `PASS` / `FAIL` plus concrete file references
-- use the same prompt/rubric every run
-- replace recurring LLM findings with deterministic tests when possible
+- deterministic parity first; semantic harnesses cover the residual gap
+- compare a named set of repo files, not the whole codebase
+- require `PASS` / `FAIL` plus concrete file evidence
+- use the same prompt and response schema every run
+- treat present-tense unimplemented guarantees as failures
 
-The first implemented concrete harness is
+The first implemented semantic harness is
 [PLAN-011](../exec-plans/active/PLAN-011-owner-doc-semantic-harness.md):
 owner-doc semantic consistency for every workspace package. It is disabled by
 default and runs only when `GREENCLAW_ENABLE_LLM_HARNESS=1`.
 
-The harness contract is intentionally narrow:
-
-- compare one package at a time
-- use only `packages/<pkg>/AGENTS.md`, package-local source/tests, and a small
-  shared root context set
-- use `gpt-5` with low reasoning effort by default; this is a bounded semantic
-  diff, not a flagship-model task
-- require a JSON verdict with concrete file evidence
-- fail only on factual contradictions or material owner-doc omissions
-- enforce a hard subprocess timeout so slow LLM calls cannot hang the suite
-
-### Fixture / Eval Tests (skipped until implemented)
-
-Tests that evaluate the quality of a module's output against a labeled dataset.
-These use `it.skip` until the module has real logic (not stubs).
-
-- Classifier accuracy fixture: >=90% on `tests/fixtures/requests.json`
-
-### Contract Tests (skipped until implemented)
-
-Tests that validate proxy behavior invariants against mock upstreams.
-
-- Upstream passthrough parity (non-streaming success, error forwarding)
-- Only-model-mutates (GreenClaw changes only the `model` field)
-- Boot smoke test (`/health` returns documented shape on ephemeral port)
+Trusted CI may run this harness when Codex auth is configured. Test-only
+activation flags belong in testing docs and CI config, not in `.env.example`.
 
 ### Unit Tests
 
@@ -139,7 +126,8 @@ workspace package behavior isolated from unrelated root harnesses.
    false negatives.
 7. **Blocking by default**: New feasible harnesses should fail in CI as soon
    as they land. Use `it.skip` only when the target capability does not yet
-   exist, and register every skip in `tests/skip-hygiene.test.ts`.
+   exist or when a semantic harness is intentionally opt-in, and register every
+   skip in `tests/skip-hygiene.test.ts`.
 8. **Suppressions require an owner**: Source-level TODOs and ignore directives
    must carry a `PLAN-xxx` or `TD-xxx` reference on the same line so they can
    be retired deliberately.
@@ -152,6 +140,8 @@ workspace package behavior isolated from unrelated root harnesses.
   environment-coupled integration tests.
 - When a formerly skipped harness is activated, remove the corresponding
   allowlist entry and update `docs/QUALITY.md` in the same change.
+- When a semantic harness becomes trusted-CI eligible, wire its activation into
+  CI and update `docs/QUALITY.md` in the same change.
 
 ## Adding Tests for a New Module
 

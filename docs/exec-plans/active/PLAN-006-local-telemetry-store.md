@@ -15,7 +15,7 @@ and the dashboard module. No Docker. No external services.
 1. **Structured logging**
    - Pino replaces all future console-based logging
    - JSON output to stdout matches the format in observability.md
-   - Log level configurable via `LOG_LEVEL` env var (default: info)
+   - Log level configurable via `GREENCLAW_LOG_LEVEL` env var (default: info)
 
 2. **Telemetry persistence**
    - `request_traces` table in SQLite stores all RequestTrace records

@@ -27,7 +27,7 @@ CloudWatch, etc.) without parsing.
 | `info`  | Normal operations — request proxied, server started             |
 | `debug` | Detailed diagnostics — classification signals, compaction stats |
 
-`GREENCLAW_LOG_LEVEL` env var controls the minimum level emitted (default: `info`).
+`GREENCLAW_LOG_LEVEL` controls the minimum level emitted (default: `info`).
 
 ### Implementation
 
@@ -90,7 +90,8 @@ export const RequestTraceSchema = z.object({
 
 ## Invariants
 
-1. **Every request produces a trace** — success or failure. No silent drops.
+1. **Every non-health request attempts to produce a trace** — success or
+   failure. No silent drops on handled request paths.
 2. **Traces are emitted before the response** — if the response write fails,
    the trace still exists.
 3. **No PII in traces** — API keys, user content, and message bodies are

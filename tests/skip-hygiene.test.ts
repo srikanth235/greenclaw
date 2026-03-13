@@ -23,7 +23,7 @@ const ALLOWED_SKIPS: Array<{ file: string; pattern: string; reason: string }> = 
   {
     file: 'owner-doc-semantic.test.ts',
     pattern: 'Owner-doc semantic harness (set GREENCLAW_ENABLE_LLM_HARNESS=1 to enable)',
-    reason: 'PLAN-011: LLM harness is intentionally opt-in outside dedicated CI runs.',
+    reason: 'PLAN-011: semantic harness is opt-in locally and runs only in trusted CI.',
   },
 ];
 

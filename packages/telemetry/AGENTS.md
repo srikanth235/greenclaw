@@ -25,10 +25,11 @@ Layer 2. Structured logging (Pino) and telemetry persistence (SQLite).
 3. Logger uses `messageKey: 'message'`, custom `timestamp` key, strips `pid`/`hostname`
 4. Timestamps are normalized to UTC ISO-8601 on insert and query
 5. No PII in log output or stored traces
-6. The telemetry DB path is provided by callers, typically from `config/`
+6. DB file location is caller-supplied; runtime wiring typically passes the
+   config-owned `GREENCLAW_TELEMETRY_DB` value
 7. Shared `RequestTrace` types come from `@greenclaw/types`, not local duplicates
 8. SQLite schema and indexes must stay in parity with `docs/conventions/observability.md`
 
 ### Dependencies
 
-- `@greenclaw/types` (Layer 0) — shared `RequestTrace` schema and types
+- `@greenclaw/types` (Layer 0) — shared `RequestTrace` and telemetry shapes

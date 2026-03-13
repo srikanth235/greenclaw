@@ -21,11 +21,12 @@ Layer 3. Task classification, context compaction, and model routing.
 
 - All functions are deterministic: same input → same output
 - No timers, Math.random, Date.now, or fetch
-- Compactor never drops the system prompt or most recent user message
+- Compactor is currently a pass-through and preserves every input message
 - Router never hardcodes model names — all mappings come from config
-- Classifier errs upward on uncertainty; never downgrade a request when the
-  observed signals indicate a higher tier
-- HEARTBEAT signals override all other routing logic and force the cheapest tier
+- Classifier biases upward on uncertainty by defaulting unmatched requests to
+  `MODERATE`
+- HEARTBEAT signals force HEARTBEAT classification; auto-routed requests then
+  use the configured cheapest HEARTBEAT model
 
 ### Dependencies
 

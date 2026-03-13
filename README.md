@@ -8,16 +8,20 @@ As an OpenClaw user spending $200+/month on LLM inference, most of that cost com
 
 ## How It Works
 
-GreenClaw acts as a transparent proxy. OpenClaw already supports multiple providers and handles provider-specific API formats natively. GreenClaw doesn't re-implement any of that — it simply:
+GreenClaw currently proxies the OpenAI-compatible
+`POST /v1/chat/completions` surface. It doesn't re-map provider response
+formats — it simply:
 
-1. **Intercepts** requests from OpenClaw (any provider format)
+1. **Intercepts** chat-completions requests from OpenClaw
 2. **Classifies** the task complexity (HEARTBEAT / SIMPLE / MODERATE / COMPLEX)
-3. **Compacts** conversation context if it exceeds a token budget
+3. **Compacts** conversation context when compaction rules are active
 4. **Routes** the model to a cheaper one appropriate for the task tier
-5. **Forwards** the request as-is to the upstream provider
+5. **Forwards** the request to the configured upstream provider
 6. **Observes** cost, token consumption, tier distribution, and savings
 
-No provider-specific logic. No response format mapping. Just classification, compaction, routing, and forwarding.
+GreenClaw validates the OpenAI-compatible request shape, forwards successful
+upstream responses unchanged, and only rewrites optimization-owned request
+fields (`model`, and `messages` when compaction changes them).
 
 ### Four-Tier Routing
 

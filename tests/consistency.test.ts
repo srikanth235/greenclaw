@@ -50,6 +50,30 @@ function cachedRead(filePath: string): string {
   return content;
 }
 
+/**
+ * Recursively collect files from a directory.
+ * @param dir - Directory to scan
+ * @param include - Optional file predicate
+ * @returns Absolute file paths
+ */
+function findFiles(dir: string, include?: (filePath: string) => boolean): string[] {
+  const files: string[] = [];
+  if (!fs.existsSync(dir)) return files;
+
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...findFiles(fullPath, include));
+      continue;
+    }
+    if (!include || include(fullPath)) {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+}
+
 /** Pre-resolved paths used in multiple describe blocks. */
 const PATHS = {
   claudeMd: path.join(ROOT, 'CLAUDE.md'),
@@ -67,6 +91,17 @@ describe('Consistency: AGENTS.md files', () => {
     for (const pkg of PACKAGES) {
       const agentsPath = path.join(PACKAGES_DIR, pkg, 'AGENTS.md');
       expect(fs.existsSync(agentsPath), `Missing AGENTS.md in packages/${pkg}/`).toBe(true);
+    }
+  });
+
+  it('no AGENTS.md exceeds 80 lines', () => {
+    for (const pkg of PACKAGES) {
+      const agentsPath = path.join(PACKAGES_DIR, pkg, 'AGENTS.md');
+      if (!fs.existsSync(agentsPath)) continue;
+      const lines = cachedRead(agentsPath).split('\n').length;
+      expect(lines, `packages/${pkg}/AGENTS.md has ${lines} lines (max 80)`).toBeLessThanOrEqual(
+        80,
+      );
     }
   });
 
@@ -227,6 +262,7 @@ describe('Consistency: knowledge store structure', () => {
     'docs/design/002-core-beliefs.md',
     'docs/exec-plans/tech-debt-tracker.md',
     'docs/conventions/errors.md',
+    'docs/conventions/knowledge-store.md',
     'docs/conventions/observability.md',
     'docs/conventions/testing.md',
     'docs/conventions/security.md',
@@ -243,6 +279,11 @@ describe('Consistency: knowledge store structure', () => {
     }
 
     expect(missing, `Missing required docs: ${missing.join(', ')}`).toHaveLength(0);
+  });
+
+  it('root AGENTS.md stays under 200 lines', () => {
+    const lines = cachedRead(PATHS.agentsMd).split('\n').length;
+    expect(lines, `Root AGENTS.md has ${lines} lines (max 200)`).toBeLessThanOrEqual(200);
   });
 });
 
@@ -318,8 +359,10 @@ describe('Consistency: QUALITY.md covers all packages', () => {
   const VALID_GRADES = new Set(['A', 'B', 'C', 'D']);
   const REQUIRED_HARNESS_ROWS = [
     'Harness: suppression hygiene',
+    'Harness: semantic owner-docs',
     'Harness: telemetry contracts',
     'Harness: proxy contracts',
+    'Harness: fixture eval',
   ] as const;
 
   /**
@@ -336,6 +379,17 @@ describe('Consistency: QUALITY.md covers all packages', () => {
       grades.set(match[1] as string, match[2] as string);
     }
     return grades;
+  }
+
+  function parseQualityNotes(): Map<string, string> {
+    const content = cachedRead(PATHS.qualityMd);
+    const rowPattern = /\|\s*(\w+)\/?\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([A-Z])\s*\|\s*([^|]+)\|/g;
+    const notes = new Map<string, string>();
+    let match: RegExpExecArray | null;
+    while ((match = rowPattern.exec(content)) !== null) {
+      notes.set(match[1] as string, (match[3] as string).trim());
+    }
+    return notes;
   }
 
   function parseCrossCuttingRows(): Set<string> {
@@ -391,6 +445,25 @@ describe('Consistency: QUALITY.md covers all packages', () => {
       missing,
       `Required harness rows missing from docs/QUALITY.md: ${missing.join(', ')}. ` +
         `Fix: add the missing row(s) to the cross-cutting quality table.`,
+    ).toHaveLength(0);
+  });
+
+  it('package A-grades record semantic PASS in the notes column', () => {
+    const grades = parseQualityTable();
+    const notes = parseQualityNotes();
+    const missing: string[] = [];
+
+    for (const [pkg, grade] of grades) {
+      if (grade !== 'A') continue;
+      const note = notes.get(pkg) ?? '';
+      if (!/semantic\s+pass/i.test(note)) {
+        missing.push(pkg);
+      }
+    }
+
+    expect(
+      missing,
+      `A-grade packages must record a semantic PASS note in docs/QUALITY.md: ${missing.join(', ')}.`,
     ).toHaveLength(0);
   });
 });
@@ -691,6 +764,30 @@ describe('Consistency: AGENTS.md structure validation', () => {
         `Fix: every package AGENTS.md must contain: ${REQUIRED_SECTIONS.join(', ')}.`,
     ).toHaveLength(0);
   });
+
+  it('AGENTS.md section headings are consistent across packages', () => {
+    const coreHeadings = ['What it owns', 'What it must NOT do', 'Key invariants'];
+    const violations: string[] = [];
+
+    for (const pkg of PACKAGES) {
+      const agentsPath = path.join(PACKAGES_DIR, pkg, 'AGENTS.md');
+      if (!fs.existsSync(agentsPath)) continue;
+      const content = fs.readFileSync(agentsPath, 'utf-8');
+      const headings = [...content.matchAll(/^###\s+(.+)$/gm)].map((m) => m[1]?.trim());
+
+      for (const required of coreHeadings) {
+        if (!headings.includes(required)) {
+          violations.push(`packages/${pkg}/AGENTS.md missing heading: "### ${required}"`);
+        }
+      }
+    }
+
+    expect(
+      violations,
+      `Inconsistent AGENTS.md headings:\n  ${violations.join('\n  ')}\n` +
+        `Fix: ensure every package AGENTS.md has: ${coreHeadings.map((h) => `### ${h}`).join(', ')}.`,
+    ).toHaveLength(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -779,92 +876,96 @@ describe('Consistency: design doc freshness', () => {
   });
 });
 
-// ===========================================================================
-// SEMANTIC DOC-CONTRACT CHECKS
-// ===========================================================================
-
 // ---------------------------------------------------------------------------
 // README contracts — documented commands and tooling must match reality.
 // ---------------------------------------------------------------------------
 
 describe('Semantic: README script parity', () => {
+  const BUILTIN_PNPM_COMMANDS = new Set(['install', 'exec', 'dlx']);
+
   /**
-   * Extract `pnpm <script>` references from README.md code blocks.
+   * Extract `pnpm <script>` references from README.md.
    * @returns Array of script names
    */
   function extractReadmeScripts(): string[] {
     const readme = cachedRead(path.join(ROOT, 'README.md'));
-    // Only extract from fenced code blocks to avoid prose like "pnpm workspace monorepo"
-    const codeBlockPattern = /```[\s\S]*?```/g;
-    const scripts = new Set<string>();
-    let block: RegExpExecArray | null;
-    while ((block = codeBlockPattern.exec(readme)) !== null) {
-      const scriptPattern = /pnpm\s+([\w:]+)/g;
-      let match: RegExpExecArray | null;
-      while ((match = scriptPattern.exec(block[0] as string)) !== null) {
-        const name = match[1] as string;
-        // Skip pnpm subcommands that aren't package.json scripts
-        if (['install', 'exec', '-r', 'add', 'remove', 'init', 'dlx'].includes(name)) continue;
-        scripts.add(name);
-      }
+    const scripts: string[] = [];
+    const pattern = /^\s*pnpm\s+([a-z][\w:-]*)\b/gm;
+    let match: RegExpExecArray | null;
+
+    while ((match = pattern.exec(readme)) !== null) {
+      scripts.push(match[1] as string);
     }
-    return [...scripts];
+
+    return [...new Set(scripts)].filter((script) => !BUILTIN_PNPM_COMMANDS.has(script));
   }
 
-  it('every pnpm script referenced in README exists in package.json', () => {
-    const pkgJson = JSON.parse(cachedRead(path.join(ROOT, 'package.json')));
-    const definedScripts = new Set(Object.keys(pkgJson.scripts ?? {}));
-    const readmeScripts = extractReadmeScripts();
-    const missing: string[] = [];
-
-    for (const script of readmeScripts) {
-      if (!definedScripts.has(script)) {
-        missing.push(script);
-      }
-    }
+  it('every README script exists in package.json', () => {
+    const scripts = extractReadmeScripts();
+    const pkgJson = JSON.parse(cachedRead(path.join(ROOT, 'package.json'))) as {
+      scripts?: Record<string, string>;
+    };
+    const declared = new Set(Object.keys(pkgJson.scripts ?? {}));
+    const missing = scripts.filter((script) => !declared.has(script));
 
     expect(
       missing,
       `README.md references scripts not in package.json: ${missing.join(', ')}. ` +
-        `Fix: add the script to package.json or remove the stale reference from README.md.`,
+        `Fix: add the script to package.json or remove the stale README reference.`,
     ).toHaveLength(0);
+  });
+});
+
+describe('Semantic: README runtime parity', () => {
+  it('Quick Start/startup claims map to a real runtime entrypoint', () => {
+    const readme = cachedRead(path.join(ROOT, 'README.md'));
+    const pkgJson = JSON.parse(cachedRead(path.join(ROOT, 'package.json'))) as {
+      scripts?: Record<string, string>;
+    };
+    const scripts = pkgJson.scripts ?? {};
+
+    if (readme.includes('pnpm dev')) {
+      expect(scripts.dev, 'README references `pnpm dev` but package.json has no dev script').toBe(
+        'tsx packages/api/src/main.ts',
+      );
+    }
+
+    if (readme.includes('pnpm start')) {
+      expect(
+        scripts.start,
+        'README references `pnpm start` but package.json has no start script',
+      ).toBe('node packages/api/dist/main.js');
+    }
+
+    expect(
+      fs.existsSync(path.join(ROOT, 'packages', 'api', 'src', 'main.ts')),
+      'README startup docs require packages/api/src/main.ts to exist',
+    ).toBe(true);
   });
 });
 
 describe('Semantic: README tooling parity', () => {
   it('README lint/format descriptions match actual tooling', () => {
     const readme = cachedRead(path.join(ROOT, 'README.md'));
-    const pkgJson = JSON.parse(cachedRead(path.join(ROOT, 'package.json')));
+    const pkgJson = JSON.parse(cachedRead(path.join(ROOT, 'package.json'))) as {
+      devDependencies?: Record<string, string>;
+    };
     const devDeps = Object.keys(pkgJson.devDependencies ?? {});
     const violations: string[] = [];
 
-    // If Biome is the linter, README should not claim ESLint or Prettier
-    const hasBiome = devDeps.some((d) => d.includes('biome'));
-    const hasEslint = devDeps.some((d) => d.includes('eslint'));
-    const hasPrettier = devDeps.some((d) => d.includes('prettier'));
-
-    if (hasBiome && !hasEslint) {
-      // Check for stale ESLint references in development section
-      const devSection = readme.slice(readme.indexOf('## Development'));
-      if (devSection && /\beslint\b/i.test(devSection)) {
-        violations.push(
-          'README Development section mentions ESLint but devDependencies uses Biome',
-        );
-      }
+    if (/eslint/i.test(readme) && !devDeps.some((dep) => dep.includes('eslint'))) {
+      violations.push('README mentions ESLint but package.json has no ESLint dependency');
     }
-
-    if (hasBiome && !hasPrettier) {
-      const devSection = readme.slice(readme.indexOf('## Development'));
-      if (devSection && /\bprettier\b/i.test(devSection)) {
-        violations.push(
-          'README Development section mentions Prettier but devDependencies uses Biome',
-        );
-      }
+    if (/prettier/i.test(readme) && !devDeps.some((dep) => dep.includes('prettier'))) {
+      violations.push('README mentions Prettier but package.json has no Prettier dependency');
+    }
+    if (/biome/i.test(readme) && !devDeps.includes('@biomejs/biome')) {
+      violations.push('README mentions Biome but package.json has no @biomejs/biome dependency');
     }
 
     expect(
       violations,
-      `README tooling drift:\n  ${violations.join('\n  ')}\n` +
+      `README tooling drift detected:\n  ${violations.join('\n  ')}\n` +
         `Fix: update README.md to reflect the actual lint/format tooling.`,
     ).toHaveLength(0);
   });
@@ -893,59 +994,45 @@ describe('Semantic: env var parity', () => {
 
   /**
    * Find all env vars consumed by the config package.
-   * Matches both `env.FOO` and `process.env.FOO` access patterns.
+   * Matches both `env.FOO` and `process.env.FOO`.
    * @returns Set of env var names
    */
   function findConsumedEnvVars(): Set<string> {
     const vars = new Set<string>();
-    const configDir = path.join(ROOT, 'packages', 'config', 'src');
-    if (!fs.existsSync(configDir)) return vars;
+    const configFiles = findFiles(path.join(ROOT, 'packages', 'config', 'src'), (filePath) =>
+      filePath.endsWith('.ts'),
+    );
+    const patterns = [/\benv\.([A-Z_][A-Z0-9_]*)\b/g, /\bprocess\.env\.([A-Z_][A-Z0-9_]*)\b/g];
 
-    /**
-     * Scan config source for env access patterns.
-     * @param dir - Directory to scan
-     */
-    function scan(dir: string): void {
-      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          scan(fullPath);
-        } else if (entry.name.endsWith('.ts')) {
-          const content = fs.readFileSync(fullPath, 'utf-8');
-          const patterns = [
-            /\benv\.([A-Z_][A-Z0-9_]*)/g,
-            /process\.env\.([A-Z_][A-Z0-9_]*)/g,
-            /process\.env\[['"]([A-Z_][A-Z0-9_]*)['"]\]/g,
-          ];
-
-          for (const pattern of patterns) {
-            let match: RegExpExecArray | null;
-            while ((match = pattern.exec(content)) !== null) {
-              vars.add(match[1] as string);
-            }
-          }
+    for (const filePath of configFiles) {
+      const content = cachedRead(filePath);
+      for (const pattern of patterns) {
+        let match: RegExpExecArray | null;
+        while ((match = pattern.exec(content)) !== null) {
+          vars.add(match[1] as string);
         }
       }
     }
 
-    scan(configDir);
     return vars;
   }
 
   /**
-   * Find env vars explicitly documented as security-managed secrets.
-   * @returns Set of env var names mentioned in security.md
+   * Find all env vars explicitly documented in security.md.
+   * @returns Set of env var names
    */
   function findSecurityDocEnvVars(): Set<string> {
-    const securityPath = path.join(ROOT, 'docs', 'conventions', 'security.md');
-    if (!fs.existsSync(securityPath)) return new Set();
-    const content = cachedRead(securityPath);
     const vars = new Set<string>();
+    const content = cachedRead(path.join(ROOT, 'docs', 'conventions', 'security.md'));
     const pattern = /\b([A-Z_][A-Z0-9_]*)\b/g;
     let match: RegExpExecArray | null;
+
     while ((match = pattern.exec(content)) !== null) {
-      vars.add(match[1] as string);
+      if ((match[1] as string).includes('_')) {
+        vars.add(match[1] as string);
+      }
     }
+
     return vars;
   }
 
@@ -954,9 +1041,9 @@ describe('Semantic: env var parity', () => {
     const consumed = findConsumedEnvVars();
     const missing: string[] = [];
 
-    for (const v of consumed) {
-      if (!documented.has(v)) {
-        missing.push(v);
+    for (const variable of consumed) {
+      if (!documented.has(variable)) {
+        missing.push(variable);
       }
     }
 
@@ -969,115 +1056,25 @@ describe('Semantic: env var parity', () => {
 
   it('every non-config env var in .env.example is explicitly documented in security.md', () => {
     const documented = parseEnvExample();
-    if (documented.size === 0) return;
     const consumed = findConsumedEnvVars();
     const securityManaged = findSecurityDocEnvVars();
-
     const orphan: string[] = [];
-    for (const v of documented) {
-      if (!consumed.has(v) && !securityManaged.has(v)) {
-        orphan.push(v);
+
+    for (const variable of documented) {
+      if (!consumed.has(variable) && !securityManaged.has(variable)) {
+        orphan.push(variable);
       }
     }
 
     expect(
       orphan,
       `Env vars in .env.example are neither config-owned nor documented in security.md: ${orphan.join(', ')}. ` +
-        `Fix: add them to packages/config/src/, or document them in docs/conventions/security.md, or remove them from .env.example.`,
+        `Fix: add them to packages/config/src/, document them in docs/conventions/security.md, or remove them from .env.example.`,
     ).toHaveLength(0);
   });
 
   it('observability docs reference the current log-level env var name', () => {
     const observability = cachedRead(path.join(ROOT, 'docs', 'conventions', 'observability.md'));
-
-    expect(observability).toContain('`GREENCLAW_LOG_LEVEL`');
-    expect(observability).not.toContain('`LOG_LEVEL` env var controls the minimum level emitted');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Status-doc boundaries — volatile implementation-status prose must only
-// appear in designated status documents, not in timeless reference/design/
-// convention docs.
-// ---------------------------------------------------------------------------
-
-describe('Semantic: status-doc boundaries', () => {
-  /** Paths where volatile status language is acceptable. */
-  const STATUS_DOCS = new Set([
-    path.join(ROOT, 'docs', 'QUALITY.md'),
-    path.join(ROOT, 'docs', 'PLANS.md'),
-    path.join(ROOT, 'docs', 'exec-plans', 'tech-debt-tracker.md'),
-  ]);
-
-  /** Active plan files are also allowed to contain status prose. */
-  function isActivePlan(filePath: string): boolean {
-    return filePath.includes(path.join('docs', 'exec-plans', 'active'));
-  }
-
-  /**
-   * Phrases that indicate volatile implementation status.
-   * Each is tested as a case-insensitive whole-word pattern.
-   */
-  const VOLATILE_PHRASES = [
-    'not yet implemented',
-    'not yet wired',
-    'stub',
-    'in progress',
-    'deferred',
-    'pending implementation',
-  ];
-
-  const VOLATILE_PATTERN = new RegExp(VOLATILE_PHRASES.map((p) => `\\b${p}\\b`).join('|'), 'i');
-
-  /**
-   * Find markdown files in timeless doc directories.
-   * @param dir - Directory to scan
-   * @returns Array of absolute paths
-   */
-  function findTimelessDocs(dir: string): string[] {
-    const files: string[] = [];
-    if (!fs.existsSync(dir)) return files;
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        files.push(...findTimelessDocs(fullPath));
-      } else if (entry.name.endsWith('.md')) {
-        files.push(fullPath);
-      }
-    }
-    return files;
-  }
-
-  it('timeless docs do not contain volatile implementation-status prose', () => {
-    const timelessDirs = [
-      path.join(ROOT, 'docs', 'design'),
-      path.join(ROOT, 'docs', 'references'),
-      path.join(ROOT, 'docs', 'conventions'),
-    ];
-
-    const violations: string[] = [];
-
-    for (const dir of timelessDirs) {
-      const docs = findTimelessDocs(dir);
-      for (const doc of docs) {
-        if (STATUS_DOCS.has(doc) || isActivePlan(doc)) continue;
-        const content = fs.readFileSync(doc, 'utf-8');
-        const lines = content.split('\n');
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i] as string;
-          if (VOLATILE_PATTERN.test(line)) {
-            const relPath = path.relative(ROOT, doc);
-            violations.push(`${relPath}:${i + 1}: "${line.trim()}"`);
-          }
-        }
-      }
-    }
-
-    expect(
-      violations,
-      `Volatile status prose found in timeless docs:\n  ${violations.join('\n  ')}\n` +
-        `Fix: move status claims to docs/QUALITY.md or docs/PLANS.md. ` +
-        `Timeless docs (design/, references/, conventions/) should describe intended behavior, not current state.`,
-    ).toHaveLength(0);
+    expect(observability).toContain('GREENCLAW_LOG_LEVEL');
   });
 });

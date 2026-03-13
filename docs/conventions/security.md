@@ -1,19 +1,16 @@
 # GreenClaw — Security Conventions
 
-## API Key Authentication
+## Runtime Secret Surface
 
-GreenClaw requires a `GREENCLAW_API_KEY` environment variable. Incoming requests
-must include this key for authentication. Missing or invalid keys return a
-`401 authentication_error` response.
-
-## Upstream Provider Keys
-
-Upstream API keys are stored as environment variables and used by the proxy to
-authenticate with upstream providers:
+GreenClaw currently documents only upstream-provider credentials as runtime
+secrets:
 
 - `UPSTREAM_OPENAI_API_KEY`
 - `UPSTREAM_ANTHROPIC_API_KEY`
 - `UPSTREAM_OPENROUTER_API_KEY`
+
+These variables are part of the operational secret surface even when a local
+development setup uses a mock upstream instead of real provider auth.
 
 ### Rules
 
@@ -35,12 +32,12 @@ contain personally identifiable information:
 - No user identifiers beyond the request correlation ID
 - Only metadata: model names, token counts, cost estimates, latency, tier
 
-See [observability.md](conventions/observability.md) for the full RequestTrace
+See [observability.md](observability.md) for the full RequestTrace
 schema and invariants.
 
 ## Error Sanitization
 
-GreenClaw-generated errors use a controlled shape (see [errors.md](conventions/errors.md)):
+GreenClaw-generated errors use a controlled shape (see [errors.md](errors.md)):
 
 ```json
 {
@@ -52,16 +49,15 @@ GreenClaw-generated errors use a controlled shape (see [errors.md](conventions/e
 }
 ```
 
-Upstream provider errors are forwarded unchanged — GreenClaw does not parse,
-wrap, or inspect them. This avoids accidentally leaking information through
-error transformation.
+Upstream provider errors are forwarded unchanged. GreenClaw-generated errors
+must stay free of credential values or internal topology details.
 
 ## Environment Variable Management
 
-- All secrets live in `.env` (git-ignored) with defaults in `.env.example`
+- All secrets live in `.env` (git-ignored) with placeholders in `.env.example`
 - `.env.example` contains placeholder values, never real keys
-- Config module validates all required env vars at startup and fails fast
-  with clear error messages if any are missing
+- Non-config secret env vars must be documented here if they appear in
+  `.env.example`
 
 ## Streaming Security
 

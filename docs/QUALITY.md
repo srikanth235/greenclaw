@@ -12,25 +12,30 @@ progresses. Use this document to identify gaps and prioritize work.
 | C     | Implemented: core logic works but incomplete coverage       |
 | D     | Stub: not yet implemented                                   |
 
+Package A-grades require:
+
+- deterministic coverage for the package's normative behavioral guarantees
+- latest owner-doc semantic verdict recorded as PASS in the notes column
+
 ## Package Quality
 
 | Package       | Implementation | Tests         | Docs     | Grade | Notes                                |
 | ------------- | -------------- | ------------- | -------- | ----- | ------------------------------------ |
-| types/        | Partial        | N/A           | Complete | C     | Alert Zod schemas implemented        |
-| config/       | Stub           | N/A           | Complete | D     | Env var loading not yet implemented  |
+| types/        | Functional     | Basic         | Complete | B     | Alert, proxy, and telemetry schemas exported from Zod |
+| config/       | Functional     | Basic         | Complete | C     | Env parsing + tier defaults; reparses env per call |
 | telemetry/    | Functional     | Comprehensive | Complete | B     | Pino + SQLite + getDb() accessor     |
-| optimization/ | Functional     | Basic          | Complete | C     | Classifier, compactor (CompactResult), router (tier-aware provider) |
-| monitoring/   | Functional     | Pending       | Complete | C     | UsageStore + alert CRUD + evaluation |
+| optimization/ | Functional     | Basic         | Complete | C     | Deterministic classifier/router; compactor still pass-through |
+| monitoring/   | Functional     | Basic         | Complete | C     | UsageStore + alert CRUD + evaluation |
 | cli/          | Functional     | Pending       | Complete | C     | usage/alerts/traces subcommands      |
 | api/          | Functional     | Comprehensive | Complete | B     | Proxy with header sanitization, timeout, error handling |
-| dashboard/    | Stub           | N/A           | Complete | D     | Built last per plan                  |
+| dashboard/    | Stub           | Basic         | Complete | D     | Placeholder status export only       |
 
 ## Cross-Cutting Quality
 
 | Domain                     | Status     | Grade | Notes                                                     |
 | -------------------------- | ---------- | ----- | --------------------------------------------------------- |
 | Architecture enforcement   | Active     | B     | Layer deps, pure-function-layers, circular dep detection  |
-| Consistency checks         | Active     | A     | Structural discovery + semantic doc-contracts              |
+| Consistency checks         | Active     | A     | AGENTS.md sync, naming, module map, QUALITY, PLANS        |
 | Harness: doc integrity     | Active     | A     | Doc backlinks, AGENTS.md structure, convention coverage   |
 | Harness: file limits       | Active     | B     | Source file max 300 lines + test-file-per-module          |
 | Harness: module boundaries | Active     | B     | No deep imports, no hardcoded models, no PII in logs      |
@@ -41,15 +46,16 @@ progresses. Use this document to identify gaps and prioritize work.
 | Harness: JSDoc hygiene     | Active     | B     | AST harness blocks missing exported JSDoc and callable tags |
 | Harness: skip hygiene      | Active     | A     | No unmanaged it.skip/describe.skip without allowlist      |
 | Harness: suppression hygiene | Active   | B     | TODO/ignore directives require linked PLAN/TD ownership    |
-| Harness: knowledge gate    | Active     | B     | Relevance gate: owner docs + package-specific companions  |
-| Harness: owner-doc semantics | Active (opt-in) | B | `codex exec` compares `packages/*/AGENTS.md` against bounded package-local source/test inputs |
+| Harness: knowledge gate    | Active     | B     | Path-specific owner-doc and companion-doc relevance gate  |
+| Harness: semantic owner-docs | Active   | B     | Trusted-CI / opt-in Codex check for `packages/*/AGENTS.md` |
 | Harness: side-effect ban   | Active     | A     | Timers, Math.random, Date.now banned in pure layers       |
 | Harness: telemetry contracts | Active   | B     | Logger JSON, trace shape, and SQLite schema parity checks  |
 | Harness: proxy contracts   | Active     | B     | Passthrough, only-model-mutates, health, SSE parity       |
-| Error conventions          | Documented | B     | Schema defined, not yet implemented in api/               |
+| Harness: fixture eval      | Active     | B     | Classifier accuracy dataset is active and blocking        |
+| Error conventions          | Documented | C     | Docs updated to current API behavior; broader error map deferred |
 | Observability              | Active     | B     | Shared RequestTrace schema, persistence, and query contracts |
 | Security                   | Active     | B     | Header sanitization, upstream timeout, trace error isolation |
-| CI pipeline                | Partial    | B     | Lint + typecheck + test, no integration tests yet         |
+| CI pipeline                | Partial    | B     | Deterministic suite is always on; semantic lane requires Codex auth |
 
 ## Tracking Gaps
 
@@ -114,39 +120,13 @@ breadth before depth.
   (10) removed redundant null guards in app.ts, (11) exported traceToRow
   from @greenclaw/telemetry public API.
 
-- 2026-03-13: CI fix — knowledge-gate test failed because `actions/checkout@v4`
-  defaults to `fetch-depth: 1` (shallow clone), so `main` branch was unavailable
-  for `git diff`. Fixed by setting `fetch-depth: 0` in `.github/workflows/ci.yml`.
+- 2026-03-13: Added knowledge-store claim taxonomy, deterministic repo-truth
+  parity checks, path-specific knowledge gate rules, semantic owner-doc
+  harness scaffolding, and trusted-CI semantic lane wiring. Tightened stale
+  owner docs, README/tooling/runtime docs, and runtime bootstrap parity.
 
-- 2026-03-13: Knowledge gate was a no-op — checked `src/` prefix but all code
-  lives under `packages/*/src/`. Rewrote as relevance gate with path-specific
-  doc requirements (PLAN-010). Added semantic doc-contract checks: README
-  script/tooling parity, env var parity, status-doc boundaries. Removed
-  low-signal structural checks (line-count limits, heading consistency).
-  Fixed README ESLint/Prettier → Biome drift and orphan LOG_LEVEL in
-  .env.example.
-
-- 2026-03-13: PR #7 review follow-up — fixed the first semantic harness gaps:
-  env-var parity now reads `env.*` / `process.env.*` from config instead of
-  scanning for `process.env` only, `.env.example` now covers the full config
-  env surface with security-secret exceptions documented in security.md,
-  README Quick Start regained a real runtime path via `pnpm dev` / `pnpm start`,
-  and the relevance gate now requires package owner docs instead of broad
-  `docs/**` fallbacks.
-
-- 2026-03-13: Implemented PLAN-011 owner-doc semantic harness across every
-  workspace package. The LLM-backed check is opt-in via
-  `GREENCLAW_ENABLE_LLM_HARNESS=1`, uses bounded package-local file sets, and
-  package owner docs were tightened where the first pass exposed semantic drift.
-
-- 2026-03-13: Live PLAN-011 validation exposed semantic drift in package owner
-  docs and manifests. Fixed the stale config immutability claim and removed
-  unused workspace dependencies from `api`, `monitoring`, `telemetry`, and
-  `dashboard` package manifests so dependency boundaries match actual behavior.
-
-- 2026-03-13: Tuned PLAN-011 runtime defaults to use a smaller Codex-supported
-  OpenAI model for bounded owner-doc semantic checks. The harness now targets
-  `gpt-5` with low reasoning effort instead of `gpt-5.4` to reduce latency and
-  transport failures.
+- 2026-03-13: Semantic owner-doc follow-up — corrected `types/` and
+  `telemetry/` dependency/configurability claims and made `config.loadConfig()`
+  return a deep-frozen object so the immutability invariant is mechanically true.
 
 Last updated: 2026-03-13

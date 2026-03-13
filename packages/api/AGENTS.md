@@ -25,6 +25,7 @@ Layer 4. Hono application serving the transparent proxy.
 
 - Every valid chat-completions request follows the pipeline:
   classify → compact → route → forward
+- Invalid JSON and schema failures return 400 before upstream forwarding
 - Streaming SSE chunks are forwarded byte-for-byte, not parsed
 - Every non-health request attempts to emit a `RequestTrace`
 - Health endpoint returns 200 with `status`, `version`, `uptime`, and

@@ -29,15 +29,15 @@ importers:
       vitest:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.19.15)
+      zod:
+        specifier: ^3.23.0
+        version: 3.25.76
 
   packages/api:
     dependencies:
       '@greenclaw/config':
         specifier: workspace:*
         version: link:../config
-      '@greenclaw/monitoring':
-        specifier: workspace:*
-        version: link:../monitoring
       '@greenclaw/optimization':
         specifier: workspace:*
         version: link:../optimization
@@ -78,26 +78,10 @@ importers:
         specifier: ^3.23.0
         version: 3.25.76
 
-  packages/dashboard:
-    dependencies:
-      '@greenclaw/monitoring':
-        specifier: workspace:*
-        version: link:../monitoring
-      '@greenclaw/telemetry':
-        specifier: workspace:*
-        version: link:../telemetry
-      '@greenclaw/types':
-        specifier: workspace:*
-        version: link:../types
-      hono:
-        specifier: ^4.6.0
-        version: 4.12.7
+  packages/dashboard: {}
 
   packages/monitoring:
     dependencies:
-      '@greenclaw/config':
-        specifier: workspace:*
-        version: link:../config
       '@greenclaw/telemetry':
         specifier: workspace:*
         version: link:../telemetry
@@ -126,9 +110,6 @@ importers:
 
   packages/telemetry:
     dependencies:
-      '@greenclaw/config':
-        specifier: workspace:*
-        version: link:../config
       '@greenclaw/types':
         specifier: workspace:*
         version: link:../types

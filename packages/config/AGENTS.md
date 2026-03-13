@@ -22,7 +22,7 @@ Layer 1. Single source of truth for all GreenClaw runtime configuration.
 - Config schema is Zod; the `Config` type is `z.infer<>` derived
 - All env vars have sensible defaults or fail fast with clear error messages
 - `loadConfig()` reparses the provided env bag on each call
-- Callers should treat the returned config object as immutable runtime state
+- `loadConfig()` returns a deep-frozen config object for runtime safety
 
 ### Dependencies
 

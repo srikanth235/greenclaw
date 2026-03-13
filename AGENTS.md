@@ -63,7 +63,7 @@ before writing or modifying application code.**
 - **Terminology** — product and domain language stays canonical.
 - **Cross-doc consistency** — repeated claims must agree semantically.
 
-Deep policy and LLM semantic-check guidance live in
+Deep policy, claim classes, and LLM semantic-check guidance live in
 [docs/conventions/knowledge-store.md](docs/conventions/knowledge-store.md).
 
 ## Start Here
@@ -108,7 +108,7 @@ Enforced by `tests/architecture.test.ts`.
 | Document                                              | Scope                                                         |
 | ----------------------------------------------------- | ------------------------------------------------------------- |
 | [errors.md](docs/conventions/errors.md)               | Error shape, upstream passthrough, error types by HTTP status |
-| [knowledge-store.md](docs/conventions/knowledge-store.md) | Knowledge-doc invariants, semantic guard rails, LLM check rules |
+| [knowledge-store.md](docs/conventions/knowledge-store.md) | Knowledge-doc invariants, claim classes, semantic guard rails |
 | [observability.md](docs/conventions/observability.md) | Structured logging, RequestTrace schema, health endpoint      |
 | [testing.md](docs/conventions/testing.md)             | Test categories, harness tests, adding new tests              |
 | [security.md](docs/conventions/security.md)           | API key handling, PII rules, error sanitization               |
@@ -126,7 +126,7 @@ Enforced by `tests/architecture.test.ts`.
 | [PLAN-008](docs/exec-plans/active/PLAN-008-biome-migration.md)       | Active | Migrate ESLint + Prettier to Biome v2              |
 | [PLAN-009](docs/exec-plans/active/PLAN-009-harness-expansion.md)     | Active | Harness expansion and contract activation          |
 | [PLAN-010](docs/exec-plans/active/PLAN-010-semantic-repo-truth.md)   | Active | Semantic repo-truth guards                         |
-| [PLAN-011](docs/exec-plans/active/PLAN-011-owner-doc-semantic-harness.md) | Active | Owner-doc semantic consistency harness             |
+| [PLAN-011](docs/exec-plans/active/PLAN-011-owner-doc-semantic-harness.md) | Active | Owner-doc semantic consistency and claim enforcement |
 
 ## References
 

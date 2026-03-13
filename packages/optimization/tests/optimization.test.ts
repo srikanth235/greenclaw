@@ -38,6 +38,12 @@ describe('optimization', () => {
     expect(complexTier).toBe('COMPLEX');
   });
 
+  it('biases uncertain prompts upward to MODERATE', () => {
+    const tier = classify([{ role: 'user', content: 'Please take a look.' }], 'gpt-4.1');
+
+    expect(tier).toBe('MODERATE');
+  });
+
   it('routes auto models through the configured tier mapping and preserves explicit models', () => {
     const config = loadConfig({});
 
@@ -50,9 +56,17 @@ describe('optimization', () => {
   });
 
   it('keeps compaction as a pass-through until summarization rules exist', () => {
-    const messages = [{ role: 'user', content: 'hello' }];
+    const messages = [
+      { role: 'system', content: 'system guardrail' },
+      { role: 'user', content: 'older message' },
+      { role: 'assistant', content: 'response' },
+      { role: 'user', content: 'latest message' },
+    ];
     const result = compact(messages, 10);
+
     expect(result.messages).toBe(messages);
     expect(result.applied).toBe(false);
+    expect(result.messages[0]).toEqual(messages[0]);
+    expect(result.messages[result.messages.length - 1]).toEqual(messages[messages.length - 1]);
   });
 });

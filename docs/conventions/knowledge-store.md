@@ -7,62 +7,62 @@ claims that must remain discoverable, current, and mechanically defensible.
 
 | Invariant | Expectation | Preferred enforcement |
 | --------- | ----------- | --------------------- |
-| Discoverability | Every durable knowledge artifact is reachable from a stable entry point, linked correctly, and indexed where expected | Deterministic tests |
-| Ownership | Every code surface has an owner doc, and implementation changes update that owner doc in the same change | Deterministic tests |
-| Executable parity | Commands, env vars, runtime behavior, schemas, and operational claims in docs match code/config | Deterministic parity tests first |
-| Status locality | Volatile implementation status lives only in status docs (`QUALITY`, `PLANS`, active plans, debt tracker) | Deterministic tests |
-| Terminology | Product names, package names, and domain terms stay canonical across code and docs | Deterministic tests |
-| Progressive disclosure | `AGENTS.md` files remain maps that point to deeper sources of truth rather than duplicating manuals | Lightweight deterministic checks + review |
-| Decision provenance | Non-obvious behavior and architecture changes point back to an ADR, plan, or owner doc | Deterministic checks where possible |
-| Cross-doc consistency | Repeated claims across multiple docs are semantically aligned and do not contradict each other | Bounded LLM semantic checks |
+| Discoverability | Durable knowledge artifacts are linked, indexed, and reachable from stable entry points | Deterministic tests |
+| Ownership | Code surfaces change with their owner docs in the same change | Deterministic tests |
+| Executable parity | Commands, env vars, runtime behavior, and operational claims match code/config | Deterministic parity tests first |
+| Status locality | Volatile progress and rollout status live only in status docs (`QUALITY`, `PLANS`, active plans, debt tracker) | Deterministic tests |
+| Terminology | Product names, package names, and domain terms stay canonical | Deterministic tests |
+| Progressive disclosure | `AGENTS.md` files remain maps, not manuals | Lightweight deterministic checks + review |
+| Decision provenance | Non-obvious behavior points back to a plan, ADR, or owner doc | Deterministic checks where possible |
+| Cross-doc consistency | Repeated claims across docs do not contradict each other | Bounded semantic checks |
+
+## Claim Classes
+
+Every durable repo claim should fall into exactly one class:
+
+1. **Descriptive** — current-state truth about what the code does now.
+   These are good candidates for semantic doc-vs-code checks.
+2. **Normative** — current behavioral guarantees the code is expected to honor.
+   These must have deterministic executable enforcement whenever feasible.
+3. **Deferred** — future intent, rollout sequencing, or planned work.
+   These belong in plans/ADRs, not as present-tense package invariants.
+
+If a present-tense owner-doc invariant is not implemented yet, that is semantic
+drift, not harmless aspiration.
 
 ## Enforcement Ladder
 
 1. Prefer deterministic checks when the invariant can be expressed as exact
-   parity, reachability, or path-to-doc coupling.
-2. Promote repeated semantic drift into deterministic parity tests whenever the
-   repo exposes a stable executable source of truth.
-3. Use LLM-backed checks only for bounded semantic comparisons that cannot be
-   expressed reliably as exact string or schema parity.
+   parity, reachability, path-to-doc coupling, or an executable contract.
+2. Promote repeated semantic findings into deterministic tests whenever the repo
+   exposes a stable source of truth.
+3. Use LLM-backed checks only for bounded repo-local comparisons that cannot be
+   expressed reliably as exact parity.
 
 ## LLM Semantic Harness Rules
 
-LLM integration is appropriate when the question is semantic, repo-local, and
-bounded. Good examples:
+LLM integration is acceptable only when the question is semantic, repo-local,
+and tightly bounded.
 
-- whether an owner doc still accurately describes package boundaries
-- whether repeated claims across README/conventions/AGENTS conflict in meaning
-- whether a user-facing explanation still matches runtime behavior even when no
-  single deterministic signal fully captures the claim
+1. **Repo-local only** — inputs come from checked-in files or the PR diff.
+2. **Bounded scope** — compare a named file set or claim family, not the whole repo.
+3. **Strict verdict shape** — `PASS` / `FAIL` plus concrete file evidence.
+4. **Fixed framing** — stable prompt, stable file selection, stable rubric.
+5. **Escalation path** — recurring findings must be promoted into normal harnesses.
 
-These harnesses must follow strict rules:
+## Quality Linkage
 
-1. **Repo-local only** — inputs come from the repository or PR diff, not the web
-2. **Bounded scope** — compare a named set of files/claims, not the whole repo
-3. **Verdict shape** — return `PASS` / `FAIL` plus concrete file references and
-   the conflicting claim
-4. **Deterministic framing** — fixed prompt, fixed file set, fixed evaluation
-   rubric; no open-ended style review
-5. **Escalation path** — if an LLM check finds a recurring pattern that can be
-   expressed deterministically, replace it with a normal harness
+`docs/QUALITY.md` is the status surface for semantic drift:
 
-## First Concrete Harness
-
-The first implemented LLM semantic harness is
-[PLAN-011](../exec-plans/active/PLAN-011-owner-doc-semantic-harness.md):
-
-- invariant family: owner-doc semantic consistency
-- scope: every workspace package under `packages/`
-- question: does `packages/<pkg>/AGENTS.md` still truthfully describe package
-  ownership, prohibitions, invariants, and dependency boundaries?
-- execution model: opt-in `codex exec` test, skipped unless
-  `GREENCLAW_ENABLE_LLM_HARNESS=1`
+- package A-grades require deterministic coverage for normative guarantees
+- package A-grades also require the latest owner-doc semantic verdict to be PASS
+- repeated semantic failures must lower the documented grade or reopen the gap
 
 ## Non-Goals
 
-LLM semantic checks are not for:
+Semantic checks are not for:
 
-- taste-only writing feedback
-- generic architecture review
+- style or tone feedback
+- open-ended architecture review
+- inventing new requirements not grounded in repository truth
 - replacing deterministic checks that already express the invariant well
-- inventing new requirements that are not grounded in repository truth

@@ -16,7 +16,7 @@
 ## Files Expected to Change
 
 | File | Change |
-|------|--------|
+| ---- | ------ |
 | `tests/knowledge-gate.test.ts` | Require package AGENTS docs and package-specific companion docs |
 | `tests/consistency.test.ts` | Replace no-op env scan, tighten README/env contracts |
 | `packages/api/src/main.ts` | Add thin runtime entrypoint for `pnpm dev` / `pnpm start` |

@@ -26,4 +26,22 @@ describe('config', () => {
     expect(config.upstreamBaseUrl).toBe('http://127.0.0.1:8080');
     expect(config.routingModels.COMPLEX.model).toBe('gpt-4o');
   });
+
+  it('reparses the provided env bag on every call', () => {
+    const env = { GREENCLAW_PORT: '9090' };
+
+    expect(loadConfig(env).port).toBe(9090);
+
+    env.GREENCLAW_PORT = '8181';
+
+    expect(loadConfig(env).port).toBe(8181);
+  });
+
+  it('returns a deep-frozen config object', () => {
+    const config = loadConfig({});
+
+    expect(Object.isFrozen(config)).toBe(true);
+    expect(Object.isFrozen(config.routingModels)).toBe(true);
+    expect(Object.isFrozen(config.routingModels.SIMPLE)).toBe(true);
+  });
 });
