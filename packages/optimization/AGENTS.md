@@ -23,6 +23,9 @@ Layer 3. Task classification, context compaction, and model routing.
 - No timers, Math.random, Date.now, or fetch
 - Compactor never drops the system prompt or most recent user message
 - Router never hardcodes model names — all mappings come from config
+- Classifier errs upward on uncertainty; never downgrade a request when the
+  observed signals indicate a higher tier
+- HEARTBEAT signals override all other routing logic and force the cheapest tier
 
 ### Dependencies
 

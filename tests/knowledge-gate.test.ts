@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest';
 /**
  * Deterministic knowledge-store CI gate.
  *
- * If any file under src/ has changed relative to the main branch,
+ * If any package source file under packages/<pkg>/src/ has changed relative to the
+ * main branch,
  * at least one knowledge-store file must also have changed. This
  * enforces the "document before implement" workflow without relying
  * on a local LLM hook.
@@ -93,8 +94,10 @@ function getChangedFiles():
   }
 }
 
-describe('Knowledge Gate: src/ changes require docs/ changes', () => {
-  it('if src/ files changed, at least one knowledge-store file also changed', () => {
+const IMPLEMENTATION_PATHS = [/^packages\/[^/]+\/src\//, /^src\//];
+
+describe('Knowledge Gate: package source changes require docs/ changes', () => {
+  it('if implementation files changed, at least one knowledge-store file also changed', () => {
     const result = getChangedFiles();
 
     // Legitimate skip (on main, or git unavailable in non-CI context)
@@ -103,16 +106,24 @@ describe('Knowledge Gate: src/ changes require docs/ changes', () => {
     const { files: changedFiles } = result;
     if (changedFiles.length === 0) return;
 
-    const srcChanges = changedFiles.filter((f) => f.startsWith('src/'));
-    if (srcChanges.length === 0) return; // No src/ changes, nothing to enforce
+    const implementationChanges = changedFiles.filter((f) =>
+      IMPLEMENTATION_PATHS.some((pattern) => pattern.test(f)),
+    );
+    if (implementationChanges.length === 0) return;
 
     const knowledgeChanges = changedFiles.filter((f) => KNOWLEDGE_PATTERNS.some((p) => p.test(f)));
 
     expect(
       knowledgeChanges.length,
-      `src/ files changed but no knowledge-store files were updated.\n` +
-        `Changed src/ files:\n  ${srcChanges.join('\n  ')}\n\n` +
-        `Fix: update at least one knowledge-store file alongside src/ changes:\n` +
+      `Implementation files changed but no knowledge-store files were updated.\n` +
+        `Changed implementation files:\n  ${implementationChanges.join('\n  ')}\n\n` +
+        `Accepted knowledge-store paths:\n` +
+        `  - docs/**\n` +
+        `  - **/AGENTS.md\n` +
+        `  - CLAUDE.md\n` +
+        `  - ARCHITECTURE.md\n` +
+        `  - CONTRIBUTING.md\n\n` +
+        `Fix: update at least one knowledge-store file alongside implementation changes:\n` +
         `  - Module's AGENTS.md for behavior changes\n` +
         `  - docs/QUALITY.md for bug fixes\n` +
         `  - docs/exec-plans/ for new features\n` +

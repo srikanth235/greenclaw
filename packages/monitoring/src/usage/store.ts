@@ -3,6 +3,7 @@
  * @module @greenclaw/monitoring/usage/store
  */
 
+import { AlertRuleSchema } from '@greenclaw/types';
 import type Database from 'better-sqlite3';
 import {
   type AlertEvent,
@@ -110,7 +111,7 @@ export function createUsageStore(db: Database.Database | null): UsageStore {
         enabled: number;
         created_at: string;
       }>;
-      return rows.map((r) => ({ ...r, enabled: r.enabled === 1 }));
+      return rows.map((row) => AlertRuleSchema.parse({ ...row, enabled: row.enabled === 1 }));
     },
 
     setRule(rule: AlertRule): void {
@@ -139,7 +140,7 @@ export function createUsageStore(db: Database.Database | null): UsageStore {
     },
 
     checkAlerts(): AlertEvent[] {
-      const rules = db.prepare('SELECT * FROM alert_rules WHERE enabled = 1').all() as Array<{
+      const rows = db.prepare('SELECT * FROM alert_rules WHERE enabled = 1').all() as Array<{
         id: string;
         name: string;
         metric: string;
@@ -150,6 +151,9 @@ export function createUsageStore(db: Database.Database | null): UsageStore {
         enabled: number;
         created_at: string;
       }>;
+      const rules = rows.map((row) =>
+        AlertRuleSchema.parse({ ...row, enabled: row.enabled === 1 }),
+      );
       const triggered: AlertEvent[] = [];
 
       for (const rule of rules) {

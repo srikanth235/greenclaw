@@ -1,6 +1,13 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { traceToRow } from '../packages/telemetry/src/row.js';
+import {
+  ChatCompletionChunkSchema,
+  ChatCompletionResponseSchema,
+  ErrorResponseSchema,
+  RequestTraceSchema,
+} from '../packages/types/src/index.js';
 
 /**
  * Golden file tests — validate that API response shapes match the
@@ -9,9 +16,6 @@ import { describe, expect, it } from 'vitest';
  * Golden files live in tests/fixtures/golden-responses.json and define
  * the canonical shape of every response type GreenClaw emits.
  *
- * Currently skipped because Zod schemas are stubs. Once types/ is
- * implemented, these tests import the schemas and validate the golden
- * files against them.
  */
 
 const GOLDEN_PATH = path.resolve(__dirname, 'fixtures', 'golden-responses.json');
@@ -35,22 +39,38 @@ describe('Golden file: response shape contracts', () => {
     expect(golden).toHaveProperty('request_trace');
   });
 
-  it.skip('chat_completion_response matches ChatCompletionResponseSchema', () => {
-    // TODO: import { ChatCompletionResponseSchema } from '../src/types/index.js';
-    // const result = ChatCompletionResponseSchema.safeParse(golden.chat_completion_response);
-    // expect(result.success, `Schema validation failed: ${JSON.stringify(result.error?.issues)}`).toBe(true);
+  it('chat_completion_response matches ChatCompletionResponseSchema', () => {
+    const result = ChatCompletionResponseSchema.safeParse(golden.chat_completion_response);
+    expect(
+      result.success,
+      `Schema validation failed: ${JSON.stringify(result.error?.issues)}`,
+    ).toBe(true);
   });
 
-  it.skip('error_response matches ErrorResponseSchema', () => {
-    // TODO: import { ErrorResponseSchema } from '../src/types/index.js';
-    // const result = ErrorResponseSchema.safeParse(golden.error_response);
-    // expect(result.success, `Schema validation failed: ${JSON.stringify(result.error?.issues)}`).toBe(true);
+  it('chat_completion_response_streaming_chunk matches ChatCompletionChunkSchema', () => {
+    const result = ChatCompletionChunkSchema.safeParse(
+      golden.chat_completion_response_streaming_chunk,
+    );
+    expect(
+      result.success,
+      `Schema validation failed: ${JSON.stringify(result.error?.issues)}`,
+    ).toBe(true);
   });
 
-  it.skip('request_trace matches RequestTraceSchema', () => {
-    // TODO: import { RequestTraceSchema } from '../src/types/index.js';
-    // const result = RequestTraceSchema.safeParse(golden.request_trace);
-    // expect(result.success, `Schema validation failed: ${JSON.stringify(result.error?.issues)}`).toBe(true);
+  it('error_response matches ErrorResponseSchema', () => {
+    const result = ErrorResponseSchema.safeParse(golden.error_response);
+    expect(
+      result.success,
+      `Schema validation failed: ${JSON.stringify(result.error?.issues)}`,
+    ).toBe(true);
+  });
+
+  it('request_trace matches RequestTraceSchema', () => {
+    const result = RequestTraceSchema.safeParse(golden.request_trace);
+    expect(
+      result.success,
+      `Schema validation failed: ${JSON.stringify(result.error?.issues)}`,
+    ).toBe(true);
   });
 
   it('chat_completion_response has required OpenAI-compatible fields', () => {
@@ -96,5 +116,34 @@ describe('Golden file: response shape contracts', () => {
     expect(trace).toHaveProperty('tokens');
     expect(trace).toHaveProperty('estimated_cost');
     expect(trace).toHaveProperty('latency_ms');
+  });
+
+  it('RequestTraceSchema stays aligned with the telemetry row mapping', () => {
+    const parsed = RequestTraceSchema.parse(golden.request_trace);
+    const row = traceToRow(parsed);
+
+    expect(Object.keys(row).sort()).toEqual([
+      'compaction_applied',
+      'cost_original_usd',
+      'cost_routed_usd',
+      'cost_savings_usd',
+      'error',
+      'id',
+      'latency_classify_ms',
+      'latency_compact_ms',
+      'latency_route_ms',
+      'latency_total_ms',
+      'latency_upstream_ms',
+      'original_model',
+      'request_id',
+      'routed_model',
+      'routed_provider',
+      'task_tier',
+      'timestamp',
+      'tokens_completion',
+      'tokens_prompt',
+      'tokens_total',
+      'upstream_status',
+    ]);
   });
 });

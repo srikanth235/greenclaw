@@ -19,63 +19,7 @@ const TESTS_DIR = path.resolve(__dirname);
  * The test file is relative to tests/, the pattern is a substring
  * of the skipped test description.
  */
-const ALLOWED_SKIPS: Array<{ file: string; pattern: string; reason: string }> = [
-  {
-    file: 'architecture.test.ts',
-    pattern: 'no package imports from a higher layer',
-    reason: 'Some packages are stubs with no imports to validate (PLAN-001)',
-  },
-  {
-    file: 'file-limits.test.ts',
-    pattern: 'every package has at least one test file',
-    reason: 'Stubs do not need dedicated test files yet (PLAN-001)',
-  },
-  {
-    file: 'classifier.fixture.test.ts',
-    pattern: 'achieves ≥90% accuracy',
-    reason: 'Classifier is stubbed — returns expected_tier (PLAN-001)',
-  },
-  {
-    file: 'golden.test.ts',
-    pattern: 'ChatCompletionResponseSchema',
-    reason: 'Zod schemas in types/ not yet implemented (PLAN-001)',
-  },
-  {
-    file: 'golden.test.ts',
-    pattern: 'ErrorResponseSchema',
-    reason: 'Zod schemas in types/ not yet implemented (PLAN-001)',
-  },
-  {
-    file: 'golden.test.ts',
-    pattern: 'RequestTraceSchema',
-    reason: 'Zod schemas in types/ not yet implemented (PLAN-001)',
-  },
-  {
-    file: 'proxy-contracts.test.ts',
-    pattern: 'forwards upstream JSON response unchanged',
-    reason: 'api/ module is a stub — proxy not yet implemented (PLAN-001)',
-  },
-  {
-    file: 'proxy-contracts.test.ts',
-    pattern: 'forwards upstream error responses unchanged',
-    reason: 'api/ module is a stub — proxy not yet implemented (PLAN-001)',
-  },
-  {
-    file: 'proxy-contracts.test.ts',
-    pattern: 'preserves all request fields except model',
-    reason: 'api/ module is a stub — proxy not yet implemented (PLAN-001)',
-  },
-  {
-    file: 'proxy-contracts.test.ts',
-    pattern: 'does not modify non-model fields',
-    reason: 'api/ module is a stub — proxy not yet implemented (PLAN-001)',
-  },
-  {
-    file: 'proxy-contracts.test.ts',
-    pattern: '/health returns documented shape',
-    reason: 'api/ module is a stub — server not yet implemented (PLAN-001)',
-  },
-];
+const ALLOWED_SKIPS: Array<{ file: string; pattern: string; reason: string }> = [];
 
 /**
  * Find all test files in the tests/ directory.

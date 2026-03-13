@@ -1,49 +1,11 @@
 /**
  * Telemetry type definitions.
- * Local to this module until src/types/ implements RequestTrace via Zod.
- * These mirror the schema documented in docs/conventions/observability.md.
  * @module telemetry/types
  */
 
-/** Token counts for a proxied request. */
-export interface TraceTokens {
-  prompt: number;
-  completion: number;
-  total: number;
-}
+import type { RequestTrace } from '@greenclaw/types';
 
-/** Cost estimates for a proxied request. */
-export interface TraceCost {
-  original_usd: number;
-  routed_usd: number;
-  savings_usd: number;
-}
-
-/** Latency breakdown in milliseconds. */
-export interface TraceLatency {
-  classify: number;
-  compact: number;
-  route: number;
-  upstream: number;
-  total: number;
-}
-
-/** A single request trace record. */
-export interface RequestTrace {
-  id: string;
-  timestamp: string;
-  request_id: string;
-  original_model: string;
-  routed_model: string;
-  routed_provider: string;
-  task_tier: string;
-  compaction_applied: boolean;
-  tokens: TraceTokens;
-  estimated_cost: TraceCost;
-  latency_ms: TraceLatency;
-  upstream_status: number | null;
-  error: string | null;
-}
+export type { RequestTrace, TraceCost, TraceLatency, TraceTokens } from '@greenclaw/types';
 
 /** Aggregated telemetry statistics. */
 export interface TelemetryStats {

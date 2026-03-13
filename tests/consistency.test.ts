@@ -332,6 +332,11 @@ describe('Consistency: CLAUDE.md package map matches packages/', () => {
 
 describe('Consistency: QUALITY.md covers all packages', () => {
   const VALID_GRADES = new Set(['A', 'B', 'C', 'D']);
+  const REQUIRED_HARNESS_ROWS = [
+    'Harness: suppression hygiene',
+    'Harness: telemetry contracts',
+    'Harness: proxy contracts',
+  ] as const;
 
   /**
    * Parse the Module/Package Quality table from QUALITY.md.
@@ -347,6 +352,17 @@ describe('Consistency: QUALITY.md covers all packages', () => {
       grades.set(match[1] as string, match[2] as string);
     }
     return grades;
+  }
+
+  function parseCrossCuttingRows(): Set<string> {
+    const content = cachedRead(PATHS.qualityMd);
+    const rowPattern = /^\|\s*([^|]+?)\s*\|\s*(?:Active|Documented|Partial)\s*\|\s*[A-D]\s*\|/gm;
+    const rows = new Set<string>();
+    let match: RegExpExecArray | null;
+    while ((match = rowPattern.exec(content)) !== null) {
+      rows.add((match[1] as string).trim());
+    }
+    return rows;
   }
 
   it('every package has a row in QUALITY.md', () => {
@@ -376,6 +392,21 @@ describe('Consistency: QUALITY.md covers all packages', () => {
       invalid,
       `Invalid grades in QUALITY.md: ${invalid.join(', ')}. ` +
         `Fix: grades must be one of A, B, C, D.`,
+    ).toHaveLength(0);
+  });
+
+  it('QUALITY.md includes required harness domain rows', () => {
+    const rows = parseCrossCuttingRows();
+    const missing: string[] = [];
+    for (const required of REQUIRED_HARNESS_ROWS) {
+      if (!rows.has(required)) {
+        missing.push(required);
+      }
+    }
+    expect(
+      missing,
+      `Required harness rows missing from docs/QUALITY.md: ${missing.join(', ')}. ` +
+        `Fix: add the missing row(s) to the cross-cutting quality table.`,
     ).toHaveLength(0);
   });
 });

@@ -2,8 +2,10 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { Writable } from 'node:stream';
+import { RequestTraceSchema } from '@greenclaw/types';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createLogger } from '../src/logger.js';
+import { rowToTrace, traceToRow } from '../src/row.js';
 import { createStore, type RequestTrace, type TelemetryStore } from '../src/store.js';
 
 // ---------------------------------------------------------------------------
@@ -11,6 +13,8 @@ import { createStore, type RequestTrace, type TelemetryStore } from '../src/stor
 // ---------------------------------------------------------------------------
 
 let counter = 0;
+const ROOT = path.resolve(__dirname, '../../..');
+const OBSERVABILITY_DOC = path.join(ROOT, 'docs', 'conventions', 'observability.md');
 
 /**
  * Create a mock RequestTrace with sensible defaults and optional overrides.
@@ -35,6 +39,75 @@ function mockTrace(overrides: Partial<RequestTrace> = {}): RequestTrace {
     error: null,
     ...overrides,
   };
+}
+
+/**
+ * Parse the documented request_traces columns from observability.md.
+ * @returns Ordered list of documented column names
+ */
+function documentedColumns(): string[] {
+  const content = fs.readFileSync(OBSERVABILITY_DOC, 'utf-8');
+  const blockMatch = content.match(/CREATE TABLE IF NOT EXISTS request_traces \(([\s\S]*?)\n\);/);
+  if (!blockMatch?.[1]) return [];
+
+  return blockMatch[1]
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/,$/, ''))
+    .map((line) => line.match(/^([a-z_]+)/)?.[1] ?? '')
+    .filter(Boolean);
+}
+
+/**
+ * Parse the documented request_traces indexes from observability.md.
+ * @returns Map of index name to indexed column
+ */
+function documentedIndexes(): Map<string, string> {
+  const content = fs.readFileSync(OBSERVABILITY_DOC, 'utf-8');
+  const indexes = new Map<string, string>();
+  const regex = /CREATE INDEX IF NOT EXISTS (\w+) ON request_traces\((\w+)\);/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(content)) !== null) {
+    const [, name, column] = match;
+    if (name && column) {
+      indexes.set(name, column);
+    }
+  }
+
+  return indexes;
+}
+
+/**
+ * Collect nested object keys for hygiene checks.
+ * @param value - Value to inspect
+ * @returns Set of keys found anywhere in the object graph
+ */
+function collectKeys(value: unknown): Set<string> {
+  const keys = new Set<string>();
+
+  if (!value || typeof value !== 'object') {
+    return keys;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      for (const key of collectKeys(item)) {
+        keys.add(key);
+      }
+    }
+    return keys;
+  }
+
+  for (const [key, nested] of Object.entries(value)) {
+    keys.add(key);
+    for (const childKey of collectKeys(nested)) {
+      keys.add(childKey);
+    }
+  }
+
+  return keys;
 }
 
 // ---------------------------------------------------------------------------
@@ -206,6 +279,60 @@ describe('Telemetry: Store', () => {
     expect(results).toHaveLength(1);
     expect(results[0]?.timestamp).toBe('2026-03-12T10:00:00.000Z');
   });
+
+  it('matches the documented SQLite schema and indexes', () => {
+    const db = store.getDb();
+    expect(db).not.toBeNull();
+    if (!db) return;
+
+    const columns = db.prepare('PRAGMA table_info(request_traces)').all() as Array<{
+      name: string;
+    }>;
+    const actualColumns = columns.map((column) => column.name);
+    expect(actualColumns).toEqual(documentedColumns());
+
+    const indexRows = db.prepare('PRAGMA index_list(request_traces)').all() as Array<{
+      name: string;
+      origin: string;
+    }>;
+    const actualIndexes = new Map<string, string>();
+
+    for (const row of indexRows) {
+      if (row.origin === 'pk') continue;
+      const info = db.prepare(`PRAGMA index_info(${row.name})`).all() as Array<{ name: string }>;
+      actualIndexes.set(row.name, info[0]?.name ?? '');
+    }
+
+    expect(actualIndexes).toEqual(documentedIndexes());
+  });
+
+  it('stored traces do not expose body-like or secret-like fields', () => {
+    const trace = mockTrace();
+    const row = traceToRow(trace);
+    const restored = rowToTrace(row);
+    const banned = new Set([
+      'messages',
+      'content',
+      'authorization',
+      'api_key',
+      'token',
+      'password',
+    ]);
+
+    for (const key of collectKeys(restored)) {
+      expect(banned.has(key), `Unexpected trace field "${key}" present in stored shape`).toBe(
+        false,
+      );
+    }
+
+    for (const key of Object.keys(row)) {
+      expect(banned.has(key), `Unexpected SQLite row field "${key}" present in stored shape`).toBe(
+        false,
+      );
+    }
+
+    expect(RequestTraceSchema.safeParse(restored).success).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -228,7 +355,7 @@ describe('Telemetry: Logger', () => {
     expect(logger.bindings().name).toBe('test-app');
   });
 
-  it('emits JSON with "timestamp" and "message" keys, no pid/hostname', async () => {
+  it('emits JSON with required keys from createLogger(), no pid/hostname', async () => {
     const chunks: string[] = [];
     const dest = new Writable({
       write(chunk: Buffer, _enc: string, cb: () => void) {
@@ -236,35 +363,21 @@ describe('Telemetry: Logger', () => {
         cb();
       },
     });
-    const logger = createLogger({ level: 'info' });
-    // Pino uses the destination from the constructor; create a new one with our dest
-    const testLogger = logger.child({}, { level: 'info' });
-    // Use pino directly to test the formatters with a custom destination
-    const pino = await import('pino');
-    const captureLogger = pino.default(
-      {
-        level: 'info',
-        messageKey: 'message',
-        timestamp: () => `,"timestamp":"${new Date().toISOString()}"`,
-        base: { name: 'greenclaw' },
-        formatters: { level: (label: string) => ({ level: label }) },
-      },
-      dest,
-    );
-    captureLogger.info('test message');
-    // Flush pino
+    const logger = createLogger({ level: 'info', destination: dest });
+    logger.info('test message');
+
     await new Promise<void>((resolve) => {
       dest.end(() => resolve());
     });
     expect(chunks.length).toBeGreaterThan(0);
     const record = JSON.parse(chunks[0] as string) as Record<string, unknown>;
+    expect(record).toHaveProperty('level', 'info');
     expect(record).toHaveProperty('timestamp');
     expect(record).toHaveProperty('message', 'test message');
+    expect(record).toHaveProperty('name', 'greenclaw');
     expect(record).not.toHaveProperty('time');
     expect(record).not.toHaveProperty('msg');
     expect(record).not.toHaveProperty('pid');
     expect(record).not.toHaveProperty('hostname');
-    // Suppress unused variable warnings
-    void testLogger;
   });
 });

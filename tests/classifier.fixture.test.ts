@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { classify } from '../packages/optimization/src/classifier/index.js';
 
 /**
  * Classifier fixture test with eval scoring.
@@ -101,19 +102,14 @@ function buildEvalReport(samples: FixtureSample[], results: Tier[]): EvalReport 
 }
 
 describe('Classifier: Fixture Accuracy', () => {
-  it.skip('achieves ≥90% accuracy on the fixture', () => {
+  it('achieves ≥90% accuracy on the fixture', () => {
     const raw = fs.readFileSync(FIXTURE_PATH, 'utf-8');
     const samples: FixtureSample[] = JSON.parse(raw);
 
     expect(samples).toHaveLength(50);
 
-    // TODO: Import classify() once implemented
-    // import { classify } from '../src/classifier/index.js';
-
     const results: Tier[] = samples.map((sample) => {
-      // TODO: Replace with actual classify() call
-      // return classify(sample.messages, sample.model);
-      return sample.expected_tier; // Stub: always "correct"
+      return classify(sample.messages, sample.model);
     });
 
     // Build and emit structured eval report

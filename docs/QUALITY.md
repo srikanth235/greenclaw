@@ -40,11 +40,13 @@ progresses. Use this document to identify gaps and prioritize work.
 | Harness: process.env gate  | Active     | A     | Biome `noProcessEnv` bans `process.env` outside config/   |
 | Harness: JSDoc hygiene     | Active     | B     | AST harness blocks missing exported JSDoc and callable tags |
 | Harness: skip hygiene      | Active     | A     | No unmanaged it.skip/describe.skip without allowlist      |
+| Harness: suppression hygiene | Active   | B     | TODO/ignore directives require linked PLAN/TD ownership    |
 | Harness: knowledge gate    | Active     | A     | Deterministic CI: packages/ changes require docs/ changes |
 | Harness: side-effect ban   | Active     | A     | Timers, Math.random, Date.now banned in pure layers       |
-| Harness: proxy contracts   | Documented | D     | Passthrough, only-model-mutates, boot smoke (skipped)     |
+| Harness: telemetry contracts | Active   | B     | Logger JSON, trace shape, and SQLite schema parity checks  |
+| Harness: proxy contracts   | Active     | B     | Passthrough, only-model-mutates, health, SSE parity       |
 | Error conventions          | Documented | B     | Schema defined, not yet implemented in api/               |
-| Observability              | Documented | D     | RequestTrace schema defined, no persistence yet           |
+| Observability              | Active     | B     | Shared RequestTrace schema, persistence, and query contracts |
 | Security                   | Documented | C     | Conventions written, implementation pending               |
 | CI pipeline                | Partial    | B     | Lint + typecheck + test, no integration tests yet         |
 
@@ -95,5 +97,9 @@ breadth before depth.
   `tests/jsdoc-hygiene.test.ts` only warned and under-scanned exported
   declarations. The harness now fails on missing exported JSDoc and missing
   `@param` / `@returns` tags for exported callables.
+
+- 2026-03-13: Added PLAN-009 harness expansion work: package-aware knowledge
+  gate, suppression hygiene, telemetry contract checks, shared request/health
+  schemas, and live proxy/classifier contract activation.
 
 Last updated: 2026-03-13
