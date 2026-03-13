@@ -40,8 +40,8 @@ pnpm install
 cp .env.example .env
 # Edit .env with your upstream API keys
 
-# Start the proxy
-pnpm dev
+# Build all packages
+pnpm build
 ```
 
 GreenClaw starts on `http://localhost:9090`.
@@ -115,8 +115,8 @@ pnpm build          # Compile all packages (tsc)
 pnpm typecheck      # Type check without emitting
 pnpm test           # Run tests (vitest)
 pnpm test:watch     # Run tests in watch mode
-pnpm lint           # Lint with zero warnings (eslint)
-pnpm format         # Format with Prettier
+pnpm lint           # Lint and format check (Biome)
+pnpm lint:fix       # Auto-fix lint and format issues (Biome)
 ```
 
 ### Tech Stack
@@ -126,6 +126,7 @@ pnpm format         # Format with Prettier
 - **HTTP**: Hono
 - **Package Manager**: pnpm (workspace monorepo)
 - **Testing**: Vitest
+- **Linting/Formatting**: Biome
 - **Logging**: Pino (structured JSON)
 - **Storage**: better-sqlite3
 

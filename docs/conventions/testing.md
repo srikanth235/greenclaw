@@ -14,13 +14,13 @@ pnpm test:watch    # Run in watch mode
 | Test File                          | Category | Purpose                                                             |
 | ---------------------------------- | -------- | ------------------------------------------------------------------- |
 | `tests/architecture.test.ts`       | Harness  | Layer deps, pure-function layers, circular deps, deep import guard  |
-| `tests/consistency.test.ts`        | Harness  | AGENTS.md sync, naming, module map, QUALITY, PLANS, doc backlinks,  |
-|                                    |          | AGENTS.md structure, convention coverage, plan lifecycle, freshness |
+| `tests/consistency.test.ts`        | Harness  | Structural discovery (AGENTS.md, naming, module map, doc backlinks, |
+|                                    |          | plan lifecycle) + semantic doc-contracts (README, env, status docs) |
 | `tests/file-limits.test.ts`        | Harness  | Source files ≤300 lines, test-file-per-module                       |
 | `tests/module-boundaries.test.ts`  | Harness  | No hardcoded models, no PII in logs, Zod source-of-truth            |
 | `tests/skip-hygiene.test.ts`       | Harness  | No unmanaged `it.skip`/`describe.skip` without allowlisted reason   |
 | `tests/suppression-hygiene.test.ts`| Harness  | No unmanaged source suppressions without linked PLAN/TD reference   |
-| `tests/knowledge-gate.test.ts`     | Harness  | Deterministic CI gate: src/ changes require docs/ changes           |
+| `tests/knowledge-gate.test.ts`     | Harness  | Relevance gate: path-specific doc requirements for code changes     |
 | `tests/jsdoc-hygiene.test.ts`      | Harness  | Exported declarations and callable docs require JSDoc/tag coverage   |
 | `tests/proxy-contracts.test.ts`    | Contract | Upstream passthrough, only-model-mutates, boot smoke test           |
 | `tests/classifier.fixture.test.ts` | Fixture  | Classifier accuracy (>=90% on 50 samples)                           |
@@ -43,11 +43,11 @@ of the codebase itself.
 - Doc cross-link validation (all links resolve to real files)
 - Skill docs that invoke local CLI tools keep runnable command syntax
 - Doc backlinks (no orphan docs in design/, conventions/, exec-plans/)
-- AGENTS.md structure validation (required sections + consistent headings)
+- AGENTS.md structure validation (required sections)
 - Convention coverage (every convention listed in CLAUDE.md)
 - Design doc freshness (valid statuses in design index)
 - Knowledge store structure (required docs exist)
-- CLAUDE.md module map matches actual `src/` directories
+- CLAUDE.md module map matches actual `packages/` directories
 - QUALITY.md has a row for every module, grades are valid (A/B/C/D)
 - PLANS.md index matches plan files on disk
 - Exec-plan lifecycle (active/completed status matches directory)
@@ -60,11 +60,20 @@ of the codebase itself.
 - Pure-module side-effect ban (timers, Math.random, Date.now in pure layers)
 - No unmanaged `it.skip`/`describe.skip` without allowlisted reason
 - No unmanaged `TODO`/`FIXME`/ignore directives without linked PLAN/TD
-- Knowledge-store CI gate (src/ changes require docs/ changes)
+- Relevance gate (packages/ changes require path-specific doc updates)
 - AST-based JSDoc hygiene (`@param` / `@returns` on exported callables)
 - Telemetry logger JSON contract validation
 - Telemetry SQLite schema/index parity against observability docs
 - Trace-shape hygiene for stored telemetry fields
+
+#### Semantic doc-contract checks (in consistency.test.ts)
+
+These validate that documentation claims match executable truth:
+
+- README script parity: every `pnpm <script>` in README exists in package.json
+- README tooling parity: lint/format tool names match actual devDependencies
+- Env var parity: `.env.example` vars match `process.env` reads in config/
+- Status-doc boundaries: volatile prose only in QUALITY.md, PLANS.md, active plans, and debt tracker
 
 ### Fixture / Eval Tests (skipped until implemented)
 

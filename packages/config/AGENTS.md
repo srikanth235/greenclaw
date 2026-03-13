@@ -10,7 +10,7 @@ Layer 1. Single source of truth for all GreenClaw runtime configuration.
 - Provider registry (upstream LLM endpoints and API keys)
 - Model-to-tier mapping (which models serve which tiers)
 - Token thresholds (when to trigger compaction)
-- Port, log level, and other operational settings
+- Port (`GREENCLAW_PORT`), log level, and other operational settings
 
 ### What it must NOT do
 

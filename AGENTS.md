@@ -112,6 +112,7 @@ Enforced by `tests/architecture.test.ts`.
 | [PLAN-007](docs/exec-plans/active/PLAN-007-usage-analytics.md)       | Active | Monorepo + usage analytics + budget alerting       |
 | [PLAN-008](docs/exec-plans/active/PLAN-008-biome-migration.md)       | Active | Migrate ESLint + Prettier to Biome v2              |
 | [PLAN-009](docs/exec-plans/active/PLAN-009-harness-expansion.md)     | Active | Harness expansion and contract activation          |
+| [PLAN-010](docs/exec-plans/active/PLAN-010-semantic-repo-truth.md)   | Active | Semantic repo-truth guards                         |
 
 ## References
 
