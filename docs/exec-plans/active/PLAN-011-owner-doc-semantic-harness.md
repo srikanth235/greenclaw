@@ -1,11 +1,11 @@
-# PLAN-011 — Owner-Doc Semantic Harness
+# PLAN-011 — Owner-Doc Semantic Harness and Claim Enforcement
 
 **Status**: Active — Week 1
-**Goal**: Add one bounded LLM-backed semantic harness that checks whether package owner docs (`packages/<pkg>/AGENTS.md`) still match actual package behavior across every workspace package.
+**Goal**: Add one bounded LLM-backed semantic harness for package owner docs and use its first findings to tighten claim classification, deterministic parity, and repo-truth enforcement around those docs.
 
 ## Invariant Family
 
-This plan targets one invariant family only:
+This plan primarily targets one invariant family:
 
 **Owner-doc semantic consistency** — a package `AGENTS.md` must accurately
 describe what the package owns, what it must not do, its key invariants, and
@@ -13,6 +13,14 @@ its dependency boundaries.
 
 The harness must also fail when a present-tense owner-doc guarantee is only
 aspirational in code/tests.
+
+The first follow-up work from this harness also clarifies how the repository
+classifies claims:
+
+- descriptive claims should be checked semantically against current code
+- normative guarantees should be promoted into deterministic tests when stable
+- aspirational or future work belongs in plans/design docs, not package
+  invariants
 
 ## Harness Design
 
@@ -84,6 +92,24 @@ The prompt must instruct the model to:
 - Use a fixed prompt, fixed file selection, and machine-validated JSON
 - Use `gpt-5` with low reasoning effort by default
 
+## Follow-Up Scope
+
+This plan also captures the first round of repo-truth follow-up work that
+landed immediately after the initial harness:
+
+- harden schema validation and exact package scoping in
+  `tests/owner-doc-semantic.test.ts`
+- tighten deterministic parity checks for README/runtime/env/tooling drift in
+  `tests/consistency.test.ts`
+- tighten path-to-doc relevance in `tests/knowledge-gate.test.ts`
+- document claim classes and deterministic-first promotion rules in
+  `docs/conventions/knowledge-store.md` and
+  `docs/conventions/testing.md`
+- link semantic drift expectations to package grades in `docs/QUALITY.md`
+
+`PLAN-010` remains the merged record for the broader repo-truth guard work that
+preceded this harness-specific follow-up.
+
 ## Acceptance Criteria
 
 1. The harness runs one semantic comparison per workspace package using a
@@ -92,7 +118,13 @@ The prompt must instruct the model to:
 3. Findings are package-scoped to the owner doc under review.
 4. The harness fails on contradictions and aspirational-present-tense claims,
    not on style.
-5. `docs/conventions/testing.md` documents the harness and activation model.
+5. `docs/conventions/knowledge-store.md` and
+   `docs/conventions/testing.md` distinguish descriptive claims, normative
+   guarantees, and aspirational work.
+6. `tests/consistency.test.ts` and `tests/knowledge-gate.test.ts` enforce the
+   deterministic parity and relevance rules added in this follow-up.
+7. `docs/QUALITY.md` documents how semantic drift affects package-grade
+   expectations.
 
 ## Files Expected to Change
 
@@ -100,18 +132,24 @@ The prompt must instruct the model to:
 | ---- | ------ |
 | `tests/owner-doc-semantic.test.ts` | Add bounded LLM semantic harness |
 | `tests/skip-hygiene.test.ts` | Register the intentional opt-in skip |
-| `docs/conventions/testing.md` | Document the harness and trusted-CI model |
+| `docs/conventions/testing.md` | Document the harness, trusted-CI model, and deterministic-first promotion rules |
+| `docs/conventions/knowledge-store.md` | Document claim classes and the enforcement ladder |
 | `packages/*/AGENTS.md` | Tighten owner-doc wording where drift is found |
-| `docs/QUALITY.md` | Track semantic owner-doc coverage |
+| `tests/consistency.test.ts` | Add deterministic parity checks for repo-truth drift |
+| `tests/knowledge-gate.test.ts` | Tighten path-to-doc relevance requirements |
+| `docs/QUALITY.md` | Track semantic owner-doc coverage and grade expectations |
 
 ## Known Risks
 
 - LLM variance can create noisy failures if the prompt is not tightly bounded.
 - Large file sets dilute signal; package inputs must stay package-local.
 - Semantic findings should be promoted into deterministic tests when feasible.
+- Claim taxonomy can become vague if docs mix present truth, guarantees, and
+  future intent in the same section.
 
 ## Out of Scope
 
 - README semantic review
 - Open-ended whole-repo review
 - Automatic PR comments from the harness
+- Automatic mutation of `docs/QUALITY.md` grades based on harness results
