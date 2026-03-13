@@ -113,4 +113,8 @@ breadth before depth.
   (10) removed redundant null guards in app.ts, (11) exported traceToRow
   from @greenclaw/telemetry public API.
 
+- 2026-03-13: CI fix — knowledge-gate test failed because `actions/checkout@v4`
+  defaults to `fetch-depth: 1` (shallow clone), so `main` branch was unavailable
+  for `git diff`. Fixed by setting `fetch-depth: 0` in `.github/workflows/ci.yml`.
+
 Last updated: 2026-03-13
