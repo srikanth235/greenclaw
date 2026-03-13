@@ -52,7 +52,7 @@ and the dashboard module. No Docker. No external services.
 | `docs/PLANS.md`                   | Add PLAN-006 to Active Plans                       |
 | `docs/conventions/observability.md` | SQLite schema, Pino details, graceful degradation |
 | `docs/exec-plans/tech-debt-tracker.md` | TD-005/TD-006 → In Progress                  |
-| `.eslintrc.cjs`                   | Add telemetry to LAYERS array                      |
+| `biome.json`                      | Layer enforcement overrides include telemetry      |
 | `tests/architecture.test.ts`      | Add telemetry to LAYER_ORDER                       |
 | `tests/consistency.test.ts`       | Add telemetry to MODULES                           |
 | `tests/file-limits.test.ts`       | Add telemetry to MODULES                           |

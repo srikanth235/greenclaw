@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { describe, expect, it } from 'vitest';
 
 /**
  * Dependency layer enforcement.
@@ -177,7 +177,7 @@ describe('Architecture: Pure Function Layers', () => {
         const content = fs.readFileSync(filePath, 'utf-8');
         const lines = content.split('\n');
         for (let i = 0; i < lines.length; i++) {
-          const trimmed = lines[i]!.trim();
+          const trimmed = lines[i]?.trim();
           if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')) {
             continue;
           }
@@ -332,8 +332,8 @@ describe('Architecture: Re-export Hygiene (no deep imports)', () => {
         const deepImportRegex = /(?:import|from)\s+['"]@greenclaw\/([\w-]+)\/([^'"]+)['"]/g;
         let match: RegExpExecArray | null;
         while ((match = deepImportRegex.exec(content)) !== null) {
-          const targetPackage = match[1]!;
-          const deepPath = match[2]!;
+          const targetPackage = match[1] as string;
+          const deepPath = match[2] as string;
           // Only flag cross-package deep imports, not within the same package
           if (
             targetPackage !== packageName &&

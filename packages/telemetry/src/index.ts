@@ -6,10 +6,10 @@
 export { createLogger, type LoggerOptions } from './logger.js';
 export { createStore } from './store.js';
 export type {
-  TelemetryStore,
-  TelemetryStats,
   RequestTrace,
-  TraceTokens,
+  TelemetryStats,
+  TelemetryStore,
   TraceCost,
   TraceLatency,
+  TraceTokens,
 } from './types.js';

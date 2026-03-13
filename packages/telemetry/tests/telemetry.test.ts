@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
-import * as path from 'node:path';
 import * as os from 'node:os';
+import * as path from 'node:path';
 import { Writable } from 'node:stream';
-import { createStore, type RequestTrace, type TelemetryStore } from '../src/store.js';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createLogger } from '../src/logger.js';
+import { createStore, type RequestTrace, type TelemetryStore } from '../src/store.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -64,7 +64,7 @@ describe('Telemetry: Store', () => {
     store.insertTrace(trace);
     const results = store.queryByTimeRange('2026-03-12T00:00:00Z', '2026-03-13T00:00:00Z');
     expect(results).toHaveLength(1);
-    expect(results[0]!.id).toBe(trace.id);
+    expect(results[0]?.id).toBe(trace.id);
   });
 
   it('queries by task tier', () => {
@@ -103,7 +103,7 @@ describe('Telemetry: Store', () => {
 
     const slow = store.querySlowRequests(1000);
     expect(slow).toHaveLength(1);
-    expect(slow[0]!.latency_ms.total).toBe(2000);
+    expect(slow[0]?.latency_ms.total).toBe(2000);
   });
 
   it('returns aggregated stats', () => {
@@ -124,8 +124,8 @@ describe('Telemetry: Store', () => {
 
     const stats = store.getStats();
     expect(stats.totalTraces).toBe(2);
-    expect(stats.tracesByTier['SIMPLE']).toBe(1);
-    expect(stats.tracesByTier['COMPLEX']).toBe(1);
+    expect(stats.tracesByTier.SIMPLE).toBe(1);
+    expect(stats.tracesByTier.COMPLEX).toBe(1);
     expect(stats.avgLatencyMs).toBe(300);
     expect(stats.totalSavingsUsd).toBeCloseTo(0.048, 3);
   });
@@ -152,8 +152,8 @@ describe('Telemetry: Store', () => {
   it('preserves nullable fields through round-trip', () => {
     store.insertTrace(mockTrace({ upstream_status: null, error: 'timeout' }));
     const results = store.queryByTimeRange('2026-01-01T00:00:00Z', '2027-01-01T00:00:00Z');
-    expect(results[0]!.upstream_status).toBeNull();
-    expect(results[0]!.error).toBe('timeout');
+    expect(results[0]?.upstream_status).toBeNull();
+    expect(results[0]?.error).toBe('timeout');
   });
 
   it('falls back to no-op store on invalid path', () => {
@@ -178,7 +178,7 @@ describe('Telemetry: Store', () => {
       process.stderr.write = origWrite;
     }
     expect(chunks).toHaveLength(1);
-    const parsed = JSON.parse(chunks[0]!) as { level: string; message: string };
+    const parsed = JSON.parse(chunks[0] as string) as { level: string; message: string };
     expect(parsed.level).toBe('warn');
     expect(parsed.message).toContain('Telemetry store init failed');
   });
@@ -204,7 +204,7 @@ describe('Telemetry: Store', () => {
     // Query with UTC range that covers the normalized instant
     const results = store.queryByTimeRange('2026-03-12T09:00:00Z', '2026-03-12T11:00:00Z');
     expect(results).toHaveLength(1);
-    expect(results[0]!.timestamp).toBe('2026-03-12T10:00:00.000Z');
+    expect(results[0]?.timestamp).toBe('2026-03-12T10:00:00.000Z');
   });
 });
 
@@ -257,7 +257,7 @@ describe('Telemetry: Logger', () => {
       dest.end(() => resolve());
     });
     expect(chunks.length).toBeGreaterThan(0);
-    const record = JSON.parse(chunks[0]!) as Record<string, unknown>;
+    const record = JSON.parse(chunks[0] as string) as Record<string, unknown>;
     expect(record).toHaveProperty('timestamp');
     expect(record).toHaveProperty('message', 'test message');
     expect(record).not.toHaveProperty('time');

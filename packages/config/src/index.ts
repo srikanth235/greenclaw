@@ -17,7 +17,7 @@ export interface GreenClawConfig {
  */
 export function loadConfig(): GreenClawConfig {
   return {
-    telemetryDbPath: process.env['GREENCLAW_TELEMETRY_DB'] ?? 'data/telemetry.db',
+    telemetryDbPath: process.env.GREENCLAW_TELEMETRY_DB ?? 'data/telemetry.db',
   };
 }
 

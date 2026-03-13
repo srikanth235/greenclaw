@@ -6,21 +6,21 @@
  * @module telemetry/store
  */
 
-import Database from 'better-sqlite3';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import Database from 'better-sqlite3';
+import { type FlatRow, rowToTrace, toUtcIso, traceToRow } from './row.js';
 import type { RequestTrace, TelemetryStats, TelemetryStore } from './types.js';
-import { type FlatRow, toUtcIso, traceToRow, rowToTrace } from './row.js';
 
+export type { FlatRow } from './row.js';
 export type {
   RequestTrace,
-  TraceTokens,
-  TraceCost,
-  TraceLatency,
   TelemetryStats,
   TelemetryStore,
+  TraceCost,
+  TraceLatency,
+  TraceTokens,
 } from './types.js';
-export type { FlatRow } from './row.js';
 
 const CREATE_TABLE_SQL = `
 CREATE TABLE IF NOT EXISTS request_traces (
@@ -114,11 +114,11 @@ export function createStore(dbPath: string): TelemetryStore {
   } catch (err: unknown) {
     const detail = err instanceof Error ? err.message : String(err);
     process.stderr.write(
-      JSON.stringify({
+      `${JSON.stringify({
         level: 'warn',
         timestamp: new Date().toISOString(),
         message: `Telemetry store init failed: ${detail}. Falling back to no-op store.`,
-      }) + '\n',
+      })}\n`,
     );
     return createNoOpStore();
   }

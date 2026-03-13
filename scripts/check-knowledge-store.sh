@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # GreenClaw — Knowledge-store-first pre-commit hook
 #
-# Uses the Claude CLI to verify that commits touching packages/*/src/ include
+# Uses the Codex CLI to verify that commits touching packages/*/src/ include
 # the correct knowledge store updates (docs/, AGENTS.md, QUALITY.md, etc.).
 #
 # Bypass: SKIP_KNOWLEDGE_CHECK=1 git commit -m "..."
@@ -29,11 +29,11 @@ if [ -z "$SRC_FILES" ]; then
   exit 0
 fi
 
-# ── Verify claude CLI is available ─────────────────────────────────
-if ! command -v claude &>/dev/null; then
+# ── Verify codex CLI is available ─────────────────────────────────
+if ! command -v codex &>/dev/null; then
   echo ""
-  echo "[knowledge-store] ERROR: claude CLI not found."
-  echo "  The knowledge-store-first hook requires the Claude CLI."
+  echo "[knowledge-store] ERROR: codex CLI not found."
+  echo "  The knowledge-store-first hook requires the Codex CLI."
   echo "  Install it or bypass with: SKIP_KNOWLEDGE_CHECK=1 git commit ..."
   echo ""
   exit 1
@@ -99,13 +99,12 @@ $STAGED_FILES
 $STAGED_DIFF
 \`\`\`"
 
-# ── Call Claude CLI ───────────────────────────────────────────────
-echo "[knowledge-store] Verifying knowledge store updates with Claude..."
+# ── Call Codex CLI ────────────────────────────────────────────────
+echo "[knowledge-store] Verifying knowledge store updates with Codex..."
 
-RESPONSE=$(echo "$PROMPT" | claude -p --model haiku 2>&1) || {
+RESPONSE=$(echo "$PROMPT" | codex exec -m gpt-5.4 --sandbox read-only - 2>/dev/null) || {
   echo ""
-  echo "[knowledge-store] ERROR: Claude CLI call failed."
-  echo "  Output: $RESPONSE"
+  echo "[knowledge-store] ERROR: Codex CLI call failed."
   echo "  Fix the issue or bypass with: SKIP_KNOWLEDGE_CHECK=1 git commit ..."
   echo ""
   exit 1

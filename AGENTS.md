@@ -110,6 +110,7 @@ Enforced by `tests/architecture.test.ts`.
 | [PLAN-001](docs/exec-plans/active/PLAN-001-proxy-skeleton.md)        | Active | Transparent passthrough proxy with instrumentation |
 | [PLAN-006](docs/exec-plans/active/PLAN-006-local-telemetry-store.md) | Active | Local observability stack (Pino + SQLite)          |
 | [PLAN-007](docs/exec-plans/active/PLAN-007-usage-analytics.md)       | Active | Monorepo + usage analytics + budget alerting       |
+| [PLAN-008](docs/exec-plans/active/PLAN-008-biome-migration.md)       | Active | Migrate ESLint + Prettier to Biome v2              |
 
 ## References
 

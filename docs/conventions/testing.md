@@ -20,6 +20,7 @@ pnpm test:watch    # Run in watch mode
 | `tests/module-boundaries.test.ts`  | Harness  | No hardcoded models, no PII in logs, Zod source-of-truth            |
 | `tests/skip-hygiene.test.ts`       | Harness  | No unmanaged `it.skip`/`describe.skip` without allowlisted reason   |
 | `tests/knowledge-gate.test.ts`     | Harness  | Deterministic CI gate: src/ changes require docs/ changes           |
+| `tests/jsdoc-hygiene.test.ts`      | Harness  | Exported functions/classes must have JSDoc comments                  |
 | `tests/proxy-contracts.test.ts`    | Contract | Upstream passthrough, only-model-mutates, boot smoke test           |
 | `tests/classifier.fixture.test.ts` | Fixture  | Classifier accuracy (>=90% on 50 samples)                           |
 | `tests/golden.test.ts`             | Contract | API response shape validation                                       |
@@ -54,7 +55,7 @@ of the codebase itself.
 - No hardcoded model names outside config/
 - No PII/secrets in log calls
 - Zod source-of-truth enforcement in types/
-- No `process.env` outside config/ (ESLint `no-restricted-syntax`)
+- No `process.env` outside config/ (Biome `noProcessEnv`)
 - Pure-module side-effect ban (timers, Math.random, Date.now in pure layers)
 - No unmanaged `it.skip`/`describe.skip` without allowlisted reason
 - Knowledge-store CI gate (src/ changes require docs/ changes)

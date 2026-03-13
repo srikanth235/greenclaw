@@ -1,0 +1,225 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.6/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": ["**", "!dist", "!node_modules", "!pnpm-lock.yaml", "!.claude"]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "lineEnding": "lf"
+  },
+  "javascript": {
+    "formatter": {
+      "semicolons": "always",
+      "quoteStyle": "single",
+      "trailingCommas": "all",
+      "arrowParentheses": "always"
+    }
+  },
+  "json": {
+    "formatter": {
+      "trailingCommas": "none"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "suspicious": {
+        "noExplicitAny": "error",
+        "noAssignInExpressions": "off"
+      },
+      "correctness": {
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error"
+      },
+      "style": {
+        "noProcessEnv": "error",
+        "noNonNullAssertion": "error"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["packages/config/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noProcessEnv": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/tests/**", "tests/**", "scripts/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noProcessEnv": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/*/src/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/types/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@greenclaw/config": "Layer violation: types (L0) cannot import config (L1). See ARCHITECTURE.md.",
+                  "@greenclaw/telemetry": "Layer violation: types (L0) cannot import telemetry (L2). See ARCHITECTURE.md.",
+                  "@greenclaw/optimization": "Layer violation: types (L0) cannot import optimization (L3). See ARCHITECTURE.md.",
+                  "@greenclaw/monitoring": "Layer violation: types (L0) cannot import monitoring (L3). See ARCHITECTURE.md.",
+                  "@greenclaw/cli": "Layer violation: types (L0) cannot import cli (L4). See ARCHITECTURE.md.",
+                  "@greenclaw/api": "Layer violation: types (L0) cannot import api (L4). See ARCHITECTURE.md.",
+                  "@greenclaw/dashboard": "Layer violation: types (L0) cannot import dashboard (L5). See ARCHITECTURE.md."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/config/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@greenclaw/telemetry": "Layer violation: config (L1) cannot import telemetry (L2). See ARCHITECTURE.md.",
+                  "@greenclaw/optimization": "Layer violation: config (L1) cannot import optimization (L3). See ARCHITECTURE.md.",
+                  "@greenclaw/monitoring": "Layer violation: config (L1) cannot import monitoring (L3). See ARCHITECTURE.md.",
+                  "@greenclaw/cli": "Layer violation: config (L1) cannot import cli (L4). See ARCHITECTURE.md.",
+                  "@greenclaw/api": "Layer violation: config (L1) cannot import api (L4). See ARCHITECTURE.md.",
+                  "@greenclaw/dashboard": "Layer violation: config (L1) cannot import dashboard (L5). See ARCHITECTURE.md."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/telemetry/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@greenclaw/optimization": "Layer violation: telemetry (L2) cannot import optimization (L3). See ARCHITECTURE.md.",
+                  "@greenclaw/monitoring": "Layer violation: telemetry (L2) cannot import monitoring (L3). See ARCHITECTURE.md.",
+                  "@greenclaw/cli": "Layer violation: telemetry (L2) cannot import cli (L4). See ARCHITECTURE.md.",
+                  "@greenclaw/api": "Layer violation: telemetry (L2) cannot import api (L4). See ARCHITECTURE.md.",
+                  "@greenclaw/dashboard": "Layer violation: telemetry (L2) cannot import dashboard (L5). See ARCHITECTURE.md."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/optimization/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@greenclaw/cli": "Layer violation: optimization (L3) cannot import cli (L4). See ARCHITECTURE.md.",
+                  "@greenclaw/api": "Layer violation: optimization (L3) cannot import api (L4). See ARCHITECTURE.md.",
+                  "@greenclaw/dashboard": "Layer violation: optimization (L3) cannot import dashboard (L5). See ARCHITECTURE.md."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/monitoring/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@greenclaw/cli": "Layer violation: monitoring (L3) cannot import cli (L4). See ARCHITECTURE.md.",
+                  "@greenclaw/api": "Layer violation: monitoring (L3) cannot import api (L4). See ARCHITECTURE.md.",
+                  "@greenclaw/dashboard": "Layer violation: monitoring (L3) cannot import dashboard (L5). See ARCHITECTURE.md."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/cli/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@greenclaw/dashboard": "Layer violation: cli (L4) cannot import dashboard (L5). See ARCHITECTURE.md."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/api/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@greenclaw/dashboard": "Layer violation: api (L4) cannot import dashboard (L5). See ARCHITECTURE.md."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["*.cjs"],
+      "linter": {
+        "enabled": false
+      }
+    }
+  ]
+}

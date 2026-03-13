@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runAlertsCommand } from '../src/commands/alerts.js';
 
 let tempDir = '';
@@ -33,7 +33,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  delete process.env['GREENCLAW_TELEMETRY_DB'];
+  delete process.env.GREENCLAW_TELEMETRY_DB;
   process.exitCode = undefined;
   if (tempDir) {
     fs.rmSync(tempDir, { recursive: true, force: true });
@@ -43,7 +43,7 @@ afterEach(() => {
 
 describe('runAlertsCommand', () => {
   it('rejects per-model cost alerts without a model filter', () => {
-    process.env['GREENCLAW_TELEMETRY_DB'] = createDbPath();
+    process.env.GREENCLAW_TELEMETRY_DB = createDbPath();
 
     runAlertsCommand([
       'set',
@@ -64,7 +64,7 @@ describe('runAlertsCommand', () => {
   });
 
   it('rejects mismatched unit and period for daily cost alerts', () => {
-    process.env['GREENCLAW_TELEMETRY_DB'] = createDbPath();
+    process.env.GREENCLAW_TELEMETRY_DB = createDbPath();
 
     runAlertsCommand([
       'set',
@@ -86,7 +86,7 @@ describe('runAlertsCommand', () => {
   });
 
   it('rejects stray model filters on non-model metrics', () => {
-    process.env['GREENCLAW_TELEMETRY_DB'] = createDbPath();
+    process.env.GREENCLAW_TELEMETRY_DB = createDbPath();
 
     runAlertsCommand([
       'set',
@@ -109,7 +109,7 @@ describe('runAlertsCommand', () => {
   });
 
   it('creates a valid per-model cost rule', () => {
-    process.env['GREENCLAW_TELEMETRY_DB'] = createDbPath();
+    process.env.GREENCLAW_TELEMETRY_DB = createDbPath();
 
     runAlertsCommand([
       'set',

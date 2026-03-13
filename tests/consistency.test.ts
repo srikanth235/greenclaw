@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { describe, expect, it } from 'vitest';
 
 /**
  * Consistency checks — periodic validation that documentation,
@@ -102,7 +102,7 @@ describe('Consistency: no forbidden project names', () => {
   // Build the forbidden pattern via concatenation so this test file
   // does not match its own regex scan.
   const FORBIDDEN = new RegExp(
-    ['Claw', 'Proxy'].join('') + '|' + ['Inference', 'Proxy'].join(''),
+    `${['Claw', 'Proxy'].join('')}|${['Inference', 'Proxy'].join('')}`,
     'i',
   );
 
@@ -178,7 +178,7 @@ describe('Consistency: doc cross-links', () => {
     let match: RegExpExecArray | null;
 
     while ((match = linkRegex.exec(content)) !== null) {
-      const linkPath = match[1]!;
+      const linkPath = match[1] as string;
       // Skip external URLs and anchors
       if (linkPath.startsWith('http') || linkPath.startsWith('#')) continue;
       const resolvedPath = path.resolve(path.dirname(filePath), linkPath);
@@ -294,7 +294,7 @@ describe('Consistency: CLAUDE.md package map matches packages/', () => {
     const entries: string[] = [];
     let match: RegExpExecArray | null;
     while ((match = packagePattern.exec(claudeMd)) !== null) {
-      entries.push(match[1]!);
+      entries.push(match[1] as string);
     }
     return entries;
   }
@@ -344,7 +344,7 @@ describe('Consistency: QUALITY.md covers all packages', () => {
     const grades = new Map<string, string>();
     let match: RegExpExecArray | null;
     while ((match = rowPattern.exec(content)) !== null) {
-      grades.set(match[1]!, match[2]!);
+      grades.set(match[1] as string, match[2] as string);
     }
     return grades;
   }
@@ -392,7 +392,7 @@ describe('Consistency: PLANS.md index matches exec-plans on disk', () => {
     const links: string[] = [];
     let match: RegExpExecArray | null;
     while ((match = linkPattern.exec(content)) !== null) {
-      links.push(match[1]!);
+      links.push(match[1] as string);
     }
     return links;
   }
@@ -464,7 +464,7 @@ describe('Consistency: exec-plan lifecycle', () => {
   function extractPlanStatus(filePath: string): string | null {
     const content = cachedRead(filePath);
     const match = content.match(/\*\*Status\*\*:\s*(.+)/);
-    return match ? match[1]!.trim() : null;
+    return match ? match[1]?.trim() : null;
   }
 
   it('plans in active/ have Active status', () => {
@@ -546,7 +546,7 @@ describe('Consistency: doc backlinks (no orphan docs)', () => {
       const content = fs.readFileSync(entryFile, 'utf-8');
       let match: RegExpExecArray | null;
       while ((match = linkRegex.exec(content)) !== null) {
-        const linkPath = match[1]!;
+        const linkPath = match[1] as string;
         if (linkPath.startsWith('http') || linkPath.startsWith('#')) continue;
         const resolved = path.resolve(path.dirname(entryFile), linkPath);
         reachable.add(resolved);
@@ -685,7 +685,7 @@ describe('Consistency: AGENTS.md structure validation', () => {
       const agentsPath = path.join(PACKAGES_DIR, pkg, 'AGENTS.md');
       if (!fs.existsSync(agentsPath)) continue;
       const content = fs.readFileSync(agentsPath, 'utf-8');
-      const headings = [...content.matchAll(/^###\s+(.+)$/gm)].map((m) => m[1]!.trim());
+      const headings = [...content.matchAll(/^###\s+(.+)$/gm)].map((m) => m[1]?.trim());
 
       for (const required of coreHeadings) {
         if (!headings.includes(required)) {
@@ -774,7 +774,7 @@ describe('Consistency: design doc freshness', () => {
     let match: RegExpExecArray | null;
 
     while ((match = rowPattern.exec(content)) !== null) {
-      const status = match[1]!;
+      const status = match[1] as string;
       if (!VALID_STATUSES.includes(status)) {
         invalid.push(`status "${status}" is not one of: ${VALID_STATUSES.join(', ')}`);
       }

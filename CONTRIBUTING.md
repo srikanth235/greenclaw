@@ -45,7 +45,7 @@ full enforcement rules.
 3. Run `pnpm typecheck && pnpm lint && pnpm test` before committing.
 4. Root scripts and hooks must invoke repository-pinned CLIs via `pnpm exec`
    when they rely on local tool versions. Do not depend on globally installed
-   `eslint`, `prettier`, or similar binaries.
+   `biome` or similar binaries.
 
 ## Adding a new module
 
@@ -66,7 +66,8 @@ full enforcement rules.
 ## JSDoc requirements
 
 All exported functions, types, and classes require JSDoc comments with
-`@param` and `@returns` tags. ESLint enforces this.
+`@param` and `@returns` tags. The `tests/jsdoc-hygiene.test.ts` harness
+enforces this.
 
 ```typescript
 /**
@@ -111,11 +112,11 @@ full type table and examples.
 
 Pre-commit hooks run automatically:
 
-1. **Knowledge-store check** — uses `claude -p` to verify that all required
+1. **Knowledge-store check** — uses the Codex CLI to verify that all required
    doc updates are present when `src/` files are staged. See
    [docs/conventions/commits.md](docs/conventions/commits.md) for details.
    Bypass with `SKIP_KNOWLEDGE_CHECK=1`.
-2. **lint-staged** — ESLint + Prettier on staged files.
+2. **Biome** — auto-fix lint + format on staged files (`biome check --write --unsafe --staged`), then re-stage fixed files. A second pass enforces **zero warnings and zero errors** — any remaining diagnostics block the commit.
 3. **Tests** — `pnpm test`.
 
 Hook commands must resolve tools from this workspace, not from the user's

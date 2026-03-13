@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * GreenClaw CLI — usage analytics, alerting, and trace queries.
  *
@@ -20,9 +21,9 @@
  * @module @greenclaw/cli
  */
 
-import { runUsageCommand } from './commands/usage.js';
 import { runAlertsCommand } from './commands/alerts.js';
 import { runTracesCommand } from './commands/traces.js';
+import { runUsageCommand } from './commands/usage.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -35,7 +36,7 @@ if (command === 'usage') {
   runTracesCommand(args.slice(1));
 } else {
   process.stdout.write(
-    JSON.stringify(
+    `${JSON.stringify(
       {
         commands: {
           'usage summary': 'Aggregated usage for a period',
@@ -51,6 +52,6 @@ if (command === 'usage') {
       },
       null,
       2,
-    ) + '\n',
+    )}\n`,
   );
 }

@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { describe, expect, it } from 'vitest';
 
 /**
  * Classifier fixture test with eval scoring.
@@ -61,16 +61,16 @@ function buildEvalReport(samples: FixtureSample[], results: Tier[]): EvalReport 
 
   let correct = 0;
   for (let i = 0; i < samples.length; i++) {
-    const sample = samples[i]!;
-    const result = results[i]!;
+    const sample = samples[i] as (typeof samples)[number];
+    const result = results[i] as string;
     const expected = sample.expected_tier;
 
-    perTier[expected]!.total++;
-    confusion[expected]![result]++;
+    (perTier[expected] as { total: number; correct: number; accuracy: number }).total++;
+    (confusion[expected] as Record<string, number>)[result]++;
 
     if (result === expected) {
       correct++;
-      perTier[expected]!.correct++;
+      (perTier[expected] as { total: number; correct: number; accuracy: number }).correct++;
     } else {
       misclassified.push({
         sample_index: i,
@@ -82,7 +82,7 @@ function buildEvalReport(samples: FixtureSample[], results: Tier[]): EvalReport 
   }
 
   for (const tier of TIERS) {
-    const t = perTier[tier]!;
+    const t = perTier[tier] as { total: number; correct: number; accuracy: number };
     t.accuracy = t.total > 0 ? t.correct / t.total : 0;
   }
 
@@ -126,7 +126,7 @@ describe('Classifier: Fixture Accuracy', () => {
 
     // Per-tier breakdown for quick scan
     for (const tier of TIERS) {
-      const t = report.per_tier[tier]!;
+      const t = report.per_tier[tier] as { total: number; correct: number; accuracy: number };
       console.log(
         `  ${tier.padEnd(10)} ${t.correct}/${t.total} (${(t.accuracy * 100).toFixed(0)}%)`,
       );

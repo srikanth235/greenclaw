@@ -4,9 +4,9 @@
  */
 
 import { loadConfig } from '@greenclaw/config';
-import { createStore } from '@greenclaw/telemetry';
 import { createUsageStore } from '@greenclaw/monitoring';
-import { AlertMetricSchema, ThresholdUnitSchema, AlertPeriodSchema } from '@greenclaw/types';
+import { createStore } from '@greenclaw/telemetry';
+import { AlertMetricSchema, AlertPeriodSchema, ThresholdUnitSchema } from '@greenclaw/types';
 
 /**
  * Parse a named argument value.
@@ -79,7 +79,7 @@ export function runAlertsCommand(args: string[]): void {
   try {
     if (sub === 'list') {
       const rules = usageStore.listRules();
-      process.stdout.write(JSON.stringify(rules, null, 2) + '\n');
+      process.stdout.write(`${JSON.stringify(rules, null, 2)}\n`);
     } else if (sub === 'set') {
       const name = getArg(args, '--name');
       const metric = getArg(args, '--metric');
@@ -155,7 +155,7 @@ export function runAlertsCommand(args: string[]): void {
         created_at: new Date().toISOString(),
       };
       usageStore.setRule(rule);
-      process.stdout.write(JSON.stringify({ created: rule }, null, 2) + '\n');
+      process.stdout.write(`${JSON.stringify({ created: rule }, null, 2)}\n`);
     } else if (sub === 'remove') {
       const id = args[1];
       if (!id) {
@@ -164,16 +164,16 @@ export function runAlertsCommand(args: string[]): void {
         return;
       }
       const removed = usageStore.removeRule(id);
-      process.stdout.write(JSON.stringify({ removed, id }) + '\n');
+      process.stdout.write(`${JSON.stringify({ removed, id })}\n`);
     } else if (sub === 'history') {
       const limit = Number(getArg(args, '--last') ?? '20');
       const events = usageStore.alertHistory(limit);
-      process.stdout.write(JSON.stringify(events, null, 2) + '\n');
+      process.stdout.write(`${JSON.stringify(events, null, 2)}\n`);
     } else if (sub === 'check') {
       const triggered = usageStore.checkAlerts();
       const rules = usageStore.listRules().filter((r) => r.enabled);
       process.stdout.write(
-        JSON.stringify(
+        `${JSON.stringify(
           {
             checked_rules: rules.length,
             triggered,
@@ -181,11 +181,11 @@ export function runAlertsCommand(args: string[]): void {
           },
           null,
           2,
-        ) + '\n',
+        )}\n`,
       );
     } else {
       process.stdout.write(
-        JSON.stringify({
+        `${JSON.stringify({
           usage: [
             'list',
             'set --name <n> --metric <m> --threshold <v> --unit tokens|usd --period day|week|month [--model <m>]',
@@ -193,7 +193,7 @@ export function runAlertsCommand(args: string[]): void {
             'history [--last N]',
             'check',
           ],
-        }) + '\n',
+        })}\n`,
       );
     }
   } finally {

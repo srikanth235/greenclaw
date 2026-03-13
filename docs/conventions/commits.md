@@ -66,14 +66,14 @@ chore: upgrade vitest to v3
 ## Pre-commit: knowledge-store check
 
 A pre-commit hook (`scripts/check-knowledge-store.sh`) enforces the
-knowledge-store-first rule from CLAUDE.md using the Claude CLI.
+knowledge-store-first rule from CLAUDE.md using the Codex CLI.
 
 ### How it works
 
 1. If no `src/` files are staged, the check is skipped (docs-only, test-only,
    and config-only commits pass freely).
 2. When `src/` files are staged, the hook pipes the staged diff to
-   `claude -p`, which verifies that all required knowledge store updates are
+   `codex exec`, which verifies that all required knowledge store updates are
    present for the code changes.
 3. The LLM responds with `PASS:` or `FAIL:` plus a reason.
 4. `FAIL` blocks the commit and explains which docs need updating.

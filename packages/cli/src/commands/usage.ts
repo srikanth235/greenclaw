@@ -4,8 +4,8 @@
  */
 
 import { loadConfig } from '@greenclaw/config';
-import { createStore } from '@greenclaw/telemetry';
 import { createUsageStore } from '@greenclaw/monitoring';
+import { createStore } from '@greenclaw/telemetry';
 
 /**
  * Parse a named argument value.
@@ -33,7 +33,7 @@ export function runUsageCommand(args: string[]): void {
     if (sub === 'summary') {
       const period = getArg(args, '--period') ?? 'day';
       const result = usageStore.summary(period);
-      process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } else if (sub === 'breakdown') {
       const by = getArg(args, '--by') as 'model' | 'tier' | 'provider' | undefined;
       if (!by) {
@@ -43,21 +43,21 @@ export function runUsageCommand(args: string[]): void {
       }
       const period = getArg(args, '--period') ?? 'day';
       const result = usageStore.breakdown(by, period);
-      process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } else if (sub === 'trends') {
       const period = (getArg(args, '--period') ?? 'day') as 'day' | 'week';
       const last = Number(getArg(args, '--last') ?? '7');
       const result = usageStore.trends(period, last);
-      process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     } else {
       process.stdout.write(
-        JSON.stringify({
+        `${JSON.stringify({
           usage: [
             'summary [--period day|week|month]',
             'breakdown --by model|tier|provider [--period day|week|month]',
             'trends --period day|week [--last N]',
           ],
-        }) + '\n',
+        })}\n`,
       );
     }
   } finally {

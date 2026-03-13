@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { describe, expect, it } from 'vitest';
 
 /**
  * Skip hygiene — every `it.skip` or `describe.skip` in the test suite
@@ -102,7 +102,7 @@ function extractSkips(filePath: string): Array<{ line: number; text: string }> {
   const skips: Array<{ line: number; text: string }> = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!;
+    const line = lines[i] as string;
     if (/\b(?:it|test|describe)\.skip\s*\(/.test(line)) {
       skips.push({ line: i + 1, text: line.trim() });
     }

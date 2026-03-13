@@ -3,7 +3,7 @@
  * @module @greenclaw/monitoring/usage/helpers
  */
 
-import type { UsageSummary, UsageBreakdown, UsageTrend } from './types.js';
+import type { UsageBreakdown, UsageSummary, UsageTrend } from './types.js';
 
 /** Alert rule configuration. */
 export interface AlertRule {

@@ -39,25 +39,25 @@ export function runTracesCommand(args: string[]): void {
   try {
     if (hasFlag(args, '--stats')) {
       const stats = store.getStats();
-      process.stdout.write(JSON.stringify(stats, null, 2) + '\n');
+      process.stdout.write(`${JSON.stringify(stats, null, 2)}\n`);
     } else if (getArg(args, '--tier')) {
-      const results = store.queryByTier(getArg(args, '--tier')!);
-      process.stdout.write(JSON.stringify(results, null, 2) + '\n');
+      const results = store.queryByTier(getArg(args, '--tier') as string);
+      process.stdout.write(`${JSON.stringify(results, null, 2)}\n`);
     } else if (getArg(args, '--model')) {
-      const results = store.queryByModel(getArg(args, '--model')!);
-      process.stdout.write(JSON.stringify(results, null, 2) + '\n');
+      const results = store.queryByModel(getArg(args, '--model') as string);
+      process.stdout.write(`${JSON.stringify(results, null, 2)}\n`);
     } else if (getArg(args, '--slow')) {
       const threshold = Number(getArg(args, '--slow'));
       const results = store.querySlowRequests(threshold);
-      process.stdout.write(JSON.stringify(results, null, 2) + '\n');
+      process.stdout.write(`${JSON.stringify(results, null, 2)}\n`);
     } else if (getArg(args, '--since')) {
-      const from = getArg(args, '--since')!;
+      const from = getArg(args, '--since') as string;
       const until = getArg(args, '--until') ?? new Date().toISOString();
       const results = store.queryByTimeRange(from, until);
-      process.stdout.write(JSON.stringify(results, null, 2) + '\n');
+      process.stdout.write(`${JSON.stringify(results, null, 2)}\n`);
     } else {
       process.stdout.write(
-        JSON.stringify({
+        `${JSON.stringify({
           usage: [
             '--stats             Aggregated statistics',
             '--tier <TIER>       Filter by task tier',
@@ -65,7 +65,7 @@ export function runTracesCommand(args: string[]): void {
             '--slow <MS>         Traces above latency threshold',
             '--since <ISO>       Traces after timestamp (--until <ISO> optional)',
           ],
-        }) + '\n',
+        })}\n`,
       );
     }
   } finally {

@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { describe, expect, it } from 'vitest';
 
 /**
  * Module boundary enforcement — code-level taste checks that catch
@@ -82,7 +82,7 @@ describe('Module Boundaries: No Hardcoded Model Names', () => {
         const lines = content.split('\n');
 
         for (let i = 0; i < lines.length; i++) {
-          const line = lines[i]!;
+          const line = lines[i] as string;
           const trimmed = line.trim();
           // Skip comments
           if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
@@ -148,7 +148,7 @@ describe('Module Boundaries: No PII in Log Calls', () => {
         const lines = content.split('\n');
 
         for (let i = 0; i < lines.length; i++) {
-          const line = lines[i]!;
+          const line = lines[i] as string;
           const trimmed = line.trim();
           if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
 
@@ -195,7 +195,7 @@ describe('Module Boundaries: Zod as Source of Truth (types package)', () => {
       const lines = content.split('\n');
 
       for (let i = 0; i < lines.length; i++) {
-        const line = lines[i]!;
+        const line = lines[i] as string;
         const trimmed = line.trim();
         if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
 

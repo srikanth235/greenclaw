@@ -35,9 +35,10 @@ progresses. Use this document to identify gaps and prioritize work.
 | Harness: file limits       | Active     | B     | Source file max 300 lines + test-file-per-module          |
 | Harness: module boundaries | Active     | B     | No deep imports, no hardcoded models, no PII in logs      |
 | Harness: docs freshness    | Active     | B     | Design doc status validation, plan lifecycle checks       |
-| Harness: ESLint layers     | Active     | B     | `no-restricted-imports` enforces layer boundaries         |
-| Harness: no-console        | Active     | B     | `no-console` in packages/ enforces structured logging     |
-| Harness: process.env gate  | Active     | A     | ESLint bans `process.env` outside config/                 |
+| Harness: Biome layers      | Active     | B     | `noRestrictedImports` enforces layer boundaries           |
+| Harness: no-console        | Active     | B     | Biome `noConsole` in packages/src/ enforces structured logging |
+| Harness: process.env gate  | Active     | A     | Biome `noProcessEnv` bans `process.env` outside config/   |
+| Harness: JSDoc hygiene     | Active     | B     | Vitest harness: exported declarations require JSDoc       |
 | Harness: skip hygiene      | Active     | A     | No unmanaged it.skip/describe.skip without allowlist      |
 | Harness: knowledge gate    | Active     | A     | Deterministic CI: packages/ changes require docs/ changes |
 | Harness: side-effect ban   | Active     | A     | Timers, Math.random, Date.now banned in pure layers       |
@@ -85,4 +86,9 @@ breadth before depth.
   `pnpm exec eslint` so clean checkouts do not accidentally resolve a global
   ESLint 9 binary against the repo's legacy `.eslintrc.cjs` config.
 
-Last updated: 2026-03-12
+- 2026-03-13: Migrated from ESLint 8 + Prettier 3 + lint-staged to Biome v2
+  (PLAN-008). Corrected layer semantics: same-layer packages (optimization
+  <-> monitoring, cli <-> api) can now import each other per CLAUDE.md.
+  JSDoc enforcement moved to vitest harness test.
+
+Last updated: 2026-03-13
