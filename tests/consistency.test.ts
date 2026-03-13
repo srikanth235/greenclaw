@@ -892,7 +892,8 @@ describe('Semantic: env var parity', () => {
   }
 
   /**
-   * Find all process.env.* references in packages/ source files.
+   * Find all env vars consumed by the config package.
+   * Matches both `env.FOO` and `process.env.FOO` access patterns.
    * @returns Set of env var names
    */
   function findConsumedEnvVars(): Set<string> {
@@ -901,7 +902,7 @@ describe('Semantic: env var parity', () => {
     if (!fs.existsSync(configDir)) return vars;
 
     /**
-     * Scan a directory for process.env references.
+     * Scan config source for env access patterns.
      * @param dir - Directory to scan
      */
     function scan(dir: string): void {
@@ -911,21 +912,40 @@ describe('Semantic: env var parity', () => {
           scan(fullPath);
         } else if (entry.name.endsWith('.ts')) {
           const content = fs.readFileSync(fullPath, 'utf-8');
-          const pattern = /process\.env\.([A-Z_][A-Z0-9_]*)/g;
-          let match: RegExpExecArray | null;
-          while ((match = pattern.exec(content)) !== null) {
-            vars.add(match[1] as string);
-          }
-          // Also catch process.env['VAR'] and process.env["VAR"]
-          const bracketPattern = /process\.env\[['"]([A-Z_][A-Z0-9_]*)['"]\]/g;
-          while ((match = bracketPattern.exec(content)) !== null) {
-            vars.add(match[1] as string);
+          const patterns = [
+            /\benv\.([A-Z_][A-Z0-9_]*)/g,
+            /process\.env\.([A-Z_][A-Z0-9_]*)/g,
+            /process\.env\[['"]([A-Z_][A-Z0-9_]*)['"]\]/g,
+          ];
+
+          for (const pattern of patterns) {
+            let match: RegExpExecArray | null;
+            while ((match = pattern.exec(content)) !== null) {
+              vars.add(match[1] as string);
+            }
           }
         }
       }
     }
 
     scan(configDir);
+    return vars;
+  }
+
+  /**
+   * Find env vars explicitly documented as security-managed secrets.
+   * @returns Set of env var names mentioned in security.md
+   */
+  function findSecurityDocEnvVars(): Set<string> {
+    const securityPath = path.join(ROOT, 'docs', 'conventions', 'security.md');
+    if (!fs.existsSync(securityPath)) return new Set();
+    const content = cachedRead(securityPath);
+    const vars = new Set<string>();
+    const pattern = /\b([A-Z_][A-Z0-9_]*)\b/g;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(content)) !== null) {
+      vars.add(match[1] as string);
+    }
     return vars;
   }
 
@@ -947,51 +967,31 @@ describe('Semantic: env var parity', () => {
     ).toHaveLength(0);
   });
 
-  it('every env var in .env.example is consumed somewhere in packages/', () => {
+  it('every non-config env var in .env.example is explicitly documented in security.md', () => {
     const documented = parseEnvExample();
     if (documented.size === 0) return;
-
-    // Scan packages/ (.ts) and docs/ (.md) — vars may be documented
-    // in convention docs or AGENTS.md before config/ implements them.
-    const consumed = new Set<string>();
-
-    /**
-     * Scan files in a directory for env var name references.
-     * @param dir - Directory to scan
-     * @param extensions - File extensions to check
-     */
-    function scanAll(dir: string, extensions: string[]): void {
-      if (!fs.existsSync(dir)) return;
-      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory() && entry.name !== 'node_modules' && entry.name !== 'dist') {
-          scanAll(fullPath, extensions);
-        } else if (extensions.some((ext) => entry.name.endsWith(ext))) {
-          const content = fs.readFileSync(fullPath, 'utf-8');
-          for (const v of documented) {
-            if (content.includes(v)) {
-              consumed.add(v);
-            }
-          }
-        }
-      }
-    }
-
-    scanAll(path.join(ROOT, 'packages'), ['.ts', '.md']);
-    scanAll(path.join(ROOT, 'docs'), ['.md']);
+    const consumed = findConsumedEnvVars();
+    const securityManaged = findSecurityDocEnvVars();
 
     const orphan: string[] = [];
     for (const v of documented) {
-      if (!consumed.has(v)) {
+      if (!consumed.has(v) && !securityManaged.has(v)) {
         orphan.push(v);
       }
     }
 
     expect(
       orphan,
-      `Env vars in .env.example not referenced in packages/ or docs/: ${orphan.join(', ')}. ` +
-        `Fix: remove orphan vars from .env.example or document them in a convention doc.`,
+      `Env vars in .env.example are neither config-owned nor documented in security.md: ${orphan.join(', ')}. ` +
+        `Fix: add them to packages/config/src/, or document them in docs/conventions/security.md, or remove them from .env.example.`,
     ).toHaveLength(0);
+  });
+
+  it('observability docs reference the current log-level env var name', () => {
+    const observability = cachedRead(path.join(ROOT, 'docs', 'conventions', 'observability.md'));
+
+    expect(observability).toContain('`GREENCLAW_LOG_LEVEL`');
+    expect(observability).not.toContain('`LOG_LEVEL` env var controls the minimum level emitted');
   });
 });
 

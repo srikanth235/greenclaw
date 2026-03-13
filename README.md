@@ -38,10 +38,10 @@ pnpm install
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your upstream API keys
+# Edit .env with your runtime settings and upstream credentials
 
-# Build all packages
-pnpm build
+# Start the proxy in development mode
+pnpm dev
 ```
 
 GreenClaw starts on `http://localhost:9090`.
@@ -111,7 +111,9 @@ Logging uses Pino with structured JSON output to stdout. If SQLite initialisatio
 ## Development
 
 ```bash
+pnpm dev            # Start the proxy with tsx
 pnpm build          # Compile all packages (tsc)
+pnpm start          # Run the built proxy entrypoint
 pnpm typecheck      # Type check without emitting
 pnpm test           # Run tests (vitest)
 pnpm test:watch     # Run tests in watch mode

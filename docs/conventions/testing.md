@@ -60,7 +60,7 @@ of the codebase itself.
 - Pure-module side-effect ban (timers, Math.random, Date.now in pure layers)
 - No unmanaged `it.skip`/`describe.skip` without allowlisted reason
 - No unmanaged `TODO`/`FIXME`/ignore directives without linked PLAN/TD
-- Relevance gate (packages/ changes require path-specific doc updates)
+- Relevance gate (packages/ changes require owner docs and package-specific companion docs)
 - AST-based JSDoc hygiene (`@param` / `@returns` on exported callables)
 - Telemetry logger JSON contract validation
 - Telemetry SQLite schema/index parity against observability docs
@@ -71,8 +71,10 @@ of the codebase itself.
 These validate that documentation claims match executable truth:
 
 - README script parity: every `pnpm <script>` in README exists in package.json
+- README runtime parity: Quick Start/startup claims map to a real runtime entrypoint
 - README tooling parity: lint/format tool names match actual devDependencies
-- Env var parity: `.env.example` vars match `process.env` reads in config/
+- Env var parity: `.env.example` vars match `env.*` / `process.env.*` reads in config/
+- Security-secret exceptions: non-config env vars in `.env.example` must be documented in security.md
 - Status-doc boundaries: volatile prose only in QUALITY.md, PLANS.md, active plans, and debt tracker
 
 ### Fixture / Eval Tests (skipped until implemented)

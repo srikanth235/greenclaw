@@ -7,6 +7,7 @@ Layer 1. Single source of truth for all GreenClaw runtime configuration.
 ### What it owns
 
 - Environment variable loading and validation via Zod
+- Config-owned env surface mirrored in `.env.example`
 - Provider registry (upstream LLM endpoints and API keys)
 - Model-to-tier mapping (which models serve which tiers)
 - Token thresholds (when to trigger compaction)

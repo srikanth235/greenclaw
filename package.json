@@ -8,7 +8,9 @@
     "greenclaw": "./packages/cli/dist/index.js"
   },
   "scripts": {
+    "dev": "tsx packages/api/src/main.ts",
     "build": "pnpm -r build",
+    "start": "node packages/api/dist/main.js",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "test:watch": "vitest",

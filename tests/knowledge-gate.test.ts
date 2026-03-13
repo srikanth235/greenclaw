@@ -23,8 +23,10 @@ interface GateRule {
   label: string;
   /** Predicate: does this changed file trigger the rule? */
   source: (file: string) => boolean;
-  /** At least one of these patterns must match a changed file. */
-  requiredDocs: ((file: string) => boolean)[];
+  /** Every required doc predicate must match at least one changed file. */
+  requiredAll?: Array<{ label: string; matches: (file: string) => boolean }>;
+  /** At least one of these predicates must match a changed file. */
+  requiredAny?: Array<{ label: string; matches: (file: string) => boolean }>;
 }
 
 /**
@@ -36,52 +38,69 @@ function pkgAgents(pkg: string): (file: string) => boolean {
   return (f) => f === `packages/${pkg}/AGENTS.md`;
 }
 
+/**
+ * Helper: exact file predicate with a human-readable label.
+ * @param file - Repository-relative path
+ * @returns Requirement descriptor
+ */
+function exactDoc(file: string): { label: string; matches: (changed: string) => boolean } {
+  return {
+    label: file,
+    matches: (changed) => changed === file,
+  };
+}
+
 const GATE_RULES: GateRule[] = [
   // -- Every package: src/ changes require that package's AGENTS.md --
   ...['types', 'config', 'telemetry', 'optimization', 'monitoring', 'cli', 'api', 'dashboard'].map(
     (pkg): GateRule => ({
-      label: `packages/${pkg}/src/ → packages/${pkg}/AGENTS.md or docs/`,
+      label: `packages/${pkg}/src/`,
       source: (f) => f.startsWith(`packages/${pkg}/src/`),
-      requiredDocs: [pkgAgents(pkg), (f) => f.startsWith('docs/')],
+      requiredAll: [
+        {
+          label: `packages/${pkg}/AGENTS.md`,
+          matches: pkgAgents(pkg),
+        },
+      ],
     }),
   ),
 
-  // -- config/ additionally requires .env.example and security docs --
+  // -- config/ additionally requires .env.example --
   {
-    label: 'packages/config/src/ → .env.example or security.md',
+    label: 'packages/config/src/',
     source: (f) => f.startsWith('packages/config/src/'),
-    requiredDocs: [(f) => f === '.env.example', (f) => f === 'docs/conventions/security.md'],
+    requiredAll: [exactDoc('.env.example')],
   },
 
   // -- telemetry/ additionally requires observability docs --
   {
-    label: 'packages/telemetry/src/ → observability.md',
+    label: 'packages/telemetry/src/',
     source: (f) => f.startsWith('packages/telemetry/src/'),
-    requiredDocs: [(f) => f === 'docs/conventions/observability.md'],
+    requiredAll: [exactDoc('docs/conventions/observability.md')],
   },
 
   // -- api/ additionally requires a shared behavior doc --
   {
-    label: 'packages/api/src/ → ARCHITECTURE.md, errors.md, observability.md, or security.md',
+    label: 'packages/api/src/',
     source: (f) => f.startsWith('packages/api/src/'),
-    requiredDocs: [
-      (f) => f === 'ARCHITECTURE.md',
-      (f) => f === 'docs/conventions/errors.md',
-      (f) => f === 'docs/conventions/observability.md',
-      (f) => f === 'docs/conventions/security.md',
+    requiredAny: [
+      exactDoc('ARCHITECTURE.md'),
+      exactDoc('docs/conventions/errors.md'),
+      exactDoc('docs/conventions/observability.md'),
+      exactDoc('docs/conventions/security.md'),
     ],
   },
 
   // -- CLI, root config, CI: require README or CONTRIBUTING --
   {
-    label: 'CLI/config/CI changes → README.md or CONTRIBUTING.md',
+    label: 'CLI/config/CI changes',
     source: (f) =>
       f.startsWith('packages/cli/src/') ||
       f === 'package.json' ||
       f === 'biome.json' ||
       f.startsWith('.husky/') ||
       f.startsWith('.github/workflows/'),
-    requiredDocs: [(f) => f === 'README.md', (f) => f === 'CONTRIBUTING.md'],
+    requiredAny: [exactDoc('README.md'), exactDoc('CONTRIBUTING.md')],
   },
 ];
 
@@ -169,10 +188,21 @@ describe('Knowledge Gate: path-specific doc requirements', () => {
       const triggered = changedFiles.some(rule.source);
       if (!triggered) continue;
 
-      const satisfied = rule.requiredDocs.some((docPredicate) => changedFiles.some(docPredicate));
+      const missingAll =
+        rule.requiredAll?.filter((requirement) => !changedFiles.some(requirement.matches)) ?? [];
+      const missingAny =
+        rule.requiredAny &&
+        !rule.requiredAny.some((requirement) => changedFiles.some(requirement.matches))
+          ? [rule.requiredAny.map((requirement) => requirement.label).join(' or ')]
+          : [];
 
-      if (!satisfied) {
-        violations.push(rule.label);
+      if (missingAll.length > 0 || missingAny.length > 0) {
+        violations.push(
+          `${rule.label} missing ${[
+            ...missingAll.map((requirement) => requirement.label),
+            ...missingAny,
+          ].join(', ')}`,
+        );
       }
     }
 

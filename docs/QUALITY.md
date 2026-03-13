@@ -41,7 +41,7 @@ progresses. Use this document to identify gaps and prioritize work.
 | Harness: JSDoc hygiene     | Active     | B     | AST harness blocks missing exported JSDoc and callable tags |
 | Harness: skip hygiene      | Active     | A     | No unmanaged it.skip/describe.skip without allowlist      |
 | Harness: suppression hygiene | Active   | B     | TODO/ignore directives require linked PLAN/TD ownership    |
-| Harness: knowledge gate    | Active     | B     | Relevance gate: path-specific doc requirements            |
+| Harness: knowledge gate    | Active     | B     | Relevance gate: owner docs + package-specific companions  |
 | Harness: side-effect ban   | Active     | A     | Timers, Math.random, Date.now banned in pure layers       |
 | Harness: telemetry contracts | Active   | B     | Logger JSON, trace shape, and SQLite schema parity checks  |
 | Harness: proxy contracts   | Active     | B     | Passthrough, only-model-mutates, health, SSE parity       |
@@ -124,5 +124,13 @@ breadth before depth.
   low-signal structural checks (line-count limits, heading consistency).
   Fixed README ESLint/Prettier → Biome drift and orphan LOG_LEVEL in
   .env.example.
+
+- 2026-03-13: PR #7 review follow-up — fixed the first semantic harness gaps:
+  env-var parity now reads `env.*` / `process.env.*` from config instead of
+  scanning for `process.env` only, `.env.example` now covers the full config
+  env surface with security-secret exceptions documented in security.md,
+  README Quick Start regained a real runtime path via `pnpm dev` / `pnpm start`,
+  and the relevance gate now requires package owner docs instead of broad
+  `docs/**` fallbacks.
 
 Last updated: 2026-03-13

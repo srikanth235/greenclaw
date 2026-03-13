@@ -8,6 +8,7 @@ Layer 4. Hono application serving the transparent proxy.
 
 - Catch-all proxy endpoint — forwards requests to upstream providers
 - `GET /health` — health check endpoint
+- Runtime entrypoint for local/dev and built startup
 - Request orchestration: classify → compact → route → forward → respond
 - Upstream request forwarding via `fetch` (streaming + non-streaming)
 - Telemetry trace emission and alert evaluation
@@ -27,6 +28,7 @@ Layer 4. Hono application serving the transparent proxy.
 - Health endpoint returns 200 with uptime and version
 - Only the `model` field may change in the forwarded request body
 - `/health` is never traced
+- Runtime startup binds the configured port and shuts down cleanly on signals
 - App construction must stay testable via injected fetch, telemetry, logger,
   config, and clock dependencies
 
