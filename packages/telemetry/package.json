@@ -18,7 +18,6 @@
   },
   "dependencies": {
     "@greenclaw/types": "workspace:*",
-    "@greenclaw/config": "workspace:*",
     "better-sqlite3": "^12.6.2",
     "pino": "^10.3.1"
   },

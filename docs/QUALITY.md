@@ -30,7 +30,7 @@ progresses. Use this document to identify gaps and prioritize work.
 | Domain                     | Status     | Grade | Notes                                                     |
 | -------------------------- | ---------- | ----- | --------------------------------------------------------- |
 | Architecture enforcement   | Active     | B     | Layer deps, pure-function-layers, circular dep detection  |
-| Consistency checks         | Active     | A     | AGENTS.md sync, naming, module map, QUALITY, PLANS        |
+| Consistency checks         | Active     | A     | Structural discovery + semantic doc-contracts              |
 | Harness: doc integrity     | Active     | A     | Doc backlinks, AGENTS.md structure, convention coverage   |
 | Harness: file limits       | Active     | B     | Source file max 300 lines + test-file-per-module          |
 | Harness: module boundaries | Active     | B     | No deep imports, no hardcoded models, no PII in logs      |
@@ -41,7 +41,8 @@ progresses. Use this document to identify gaps and prioritize work.
 | Harness: JSDoc hygiene     | Active     | B     | AST harness blocks missing exported JSDoc and callable tags |
 | Harness: skip hygiene      | Active     | A     | No unmanaged it.skip/describe.skip without allowlist      |
 | Harness: suppression hygiene | Active   | B     | TODO/ignore directives require linked PLAN/TD ownership    |
-| Harness: knowledge gate    | Active     | A     | Deterministic CI: packages/ changes require docs/ changes |
+| Harness: knowledge gate    | Active     | B     | Relevance gate: owner docs + package-specific companions  |
+| Harness: owner-doc semantics | Active (opt-in) | B | `codex exec` compares `packages/*/AGENTS.md` against bounded package-local source/test inputs |
 | Harness: side-effect ban   | Active     | A     | Timers, Math.random, Date.now banned in pure layers       |
 | Harness: telemetry contracts | Active   | B     | Logger JSON, trace shape, and SQLite schema parity checks  |
 | Harness: proxy contracts   | Active     | B     | Passthrough, only-model-mutates, health, SSE parity       |
@@ -116,5 +117,36 @@ breadth before depth.
 - 2026-03-13: CI fix — knowledge-gate test failed because `actions/checkout@v4`
   defaults to `fetch-depth: 1` (shallow clone), so `main` branch was unavailable
   for `git diff`. Fixed by setting `fetch-depth: 0` in `.github/workflows/ci.yml`.
+
+- 2026-03-13: Knowledge gate was a no-op — checked `src/` prefix but all code
+  lives under `packages/*/src/`. Rewrote as relevance gate with path-specific
+  doc requirements (PLAN-010). Added semantic doc-contract checks: README
+  script/tooling parity, env var parity, status-doc boundaries. Removed
+  low-signal structural checks (line-count limits, heading consistency).
+  Fixed README ESLint/Prettier → Biome drift and orphan LOG_LEVEL in
+  .env.example.
+
+- 2026-03-13: PR #7 review follow-up — fixed the first semantic harness gaps:
+  env-var parity now reads `env.*` / `process.env.*` from config instead of
+  scanning for `process.env` only, `.env.example` now covers the full config
+  env surface with security-secret exceptions documented in security.md,
+  README Quick Start regained a real runtime path via `pnpm dev` / `pnpm start`,
+  and the relevance gate now requires package owner docs instead of broad
+  `docs/**` fallbacks.
+
+- 2026-03-13: Implemented PLAN-011 owner-doc semantic harness across every
+  workspace package. The LLM-backed check is opt-in via
+  `GREENCLAW_ENABLE_LLM_HARNESS=1`, uses bounded package-local file sets, and
+  package owner docs were tightened where the first pass exposed semantic drift.
+
+- 2026-03-13: Live PLAN-011 validation exposed semantic drift in package owner
+  docs and manifests. Fixed the stale config immutability claim and removed
+  unused workspace dependencies from `api`, `monitoring`, `telemetry`, and
+  `dashboard` package manifests so dependency boundaries match actual behavior.
+
+- 2026-03-13: Tuned PLAN-011 runtime defaults to use a smaller Codex-supported
+  OpenAI model for bounded owner-doc semantic checks. The harness now targets
+  `gpt-5` with low reasoning effort instead of `gpt-5.4` to reduce latency and
+  transport failures.
 
 Last updated: 2026-03-13

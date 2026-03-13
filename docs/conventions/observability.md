@@ -27,7 +27,7 @@ CloudWatch, etc.) without parsing.
 | `info`  | Normal operations — request proxied, server started             |
 | `debug` | Detailed diagnostics — classification signals, compaction stats |
 
-`LOG_LEVEL` env var controls the minimum level emitted (default: `info`).
+`GREENCLAW_LOG_LEVEL` env var controls the minimum level emitted (default: `info`).
 
 ### Implementation
 

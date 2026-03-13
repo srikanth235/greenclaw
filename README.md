@@ -38,9 +38,9 @@ pnpm install
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your upstream API keys
+# Edit .env with your runtime settings and upstream credentials
 
-# Start the proxy
+# Start the proxy in development mode
 pnpm dev
 ```
 
@@ -111,12 +111,14 @@ Logging uses Pino with structured JSON output to stdout. If SQLite initialisatio
 ## Development
 
 ```bash
+pnpm dev            # Start the proxy with tsx
 pnpm build          # Compile all packages (tsc)
+pnpm start          # Run the built proxy entrypoint
 pnpm typecheck      # Type check without emitting
 pnpm test           # Run tests (vitest)
 pnpm test:watch     # Run tests in watch mode
-pnpm lint           # Lint with zero warnings (eslint)
-pnpm format         # Format with Prettier
+pnpm lint           # Lint and format check (Biome)
+pnpm lint:fix       # Auto-fix lint and format issues (Biome)
 ```
 
 ### Tech Stack
@@ -126,6 +128,7 @@ pnpm format         # Format with Prettier
 - **HTTP**: Hono
 - **Package Manager**: pnpm (workspace monorepo)
 - **Testing**: Vitest
+- **Linting/Formatting**: Biome
 - **Logging**: Pino (structured JSON)
 - **Storage**: better-sqlite3
 

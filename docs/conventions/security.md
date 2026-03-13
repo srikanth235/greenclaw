@@ -8,8 +8,12 @@ must include this key for authentication. Missing or invalid keys return a
 
 ## Upstream Provider Keys
 
-Upstream API keys (OpenAI, Anthropic, etc.) are stored as environment variables
-and used by the proxy to authenticate with upstream providers.
+Upstream API keys are stored as environment variables and used by the proxy to
+authenticate with upstream providers:
+
+- `UPSTREAM_OPENAI_API_KEY`
+- `UPSTREAM_ANTHROPIC_API_KEY`
+- `UPSTREAM_OPENROUTER_API_KEY`
 
 ### Rules
 

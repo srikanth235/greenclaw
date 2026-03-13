@@ -7,10 +7,9 @@ Layer 1. Single source of truth for all GreenClaw runtime configuration.
 ### What it owns
 
 - Environment variable loading and validation via Zod
-- Provider registry (upstream LLM endpoints and API keys)
-- Model-to-tier mapping (which models serve which tiers)
-- Token thresholds (when to trigger compaction)
-- Port, log level, and other operational settings
+- Config-owned env surface mirrored in `.env.example`
+- Upstream base URL and tiered provider/model defaults
+- Port (`GREENCLAW_PORT`), log level, and telemetry DB path
 
 ### What it must NOT do
 
@@ -22,7 +21,8 @@ Layer 1. Single source of truth for all GreenClaw runtime configuration.
 
 - Config schema is Zod; the `Config` type is `z.infer<>` derived
 - All env vars have sensible defaults or fail fast with clear error messages
-- Config is loaded once at startup and treated as immutable
+- `loadConfig()` reparses the provided env bag on each call
+- Callers should treat the returned config object as immutable runtime state
 
 ### Dependencies
 
