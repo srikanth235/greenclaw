@@ -92,6 +92,8 @@ Use the existing `codex exec` integration pattern already present in the repo.
 - If disabled, the test should skip with a clear reason
 - Use `codex exec` with a fixed prompt, a machine-readable JSON verdict, and
   repo-local files only
+- Use `gpt-5` with low reasoning effort as the default model because the task
+  is a bounded semantic comparison, not an open-ended design review
 
 This keeps the default suite fast and deterministic while still making the LLM
 harness part of the repository test surface.

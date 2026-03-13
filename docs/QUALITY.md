@@ -144,4 +144,9 @@ breadth before depth.
   unused workspace dependencies from `api`, `monitoring`, `telemetry`, and
   `dashboard` package manifests so dependency boundaries match actual behavior.
 
+- 2026-03-13: Tuned PLAN-011 runtime defaults to use a smaller Codex-supported
+  OpenAI model for bounded owner-doc semantic checks. The harness now targets
+  `gpt-5` with low reasoning effort instead of `gpt-5.4` to reduce latency and
+  transport failures.
+
 Last updated: 2026-03-13

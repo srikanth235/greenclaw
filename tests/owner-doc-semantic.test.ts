@@ -17,6 +17,8 @@ const PACKAGES = [
 ] as const;
 const ENABLED = process.env.GREENCLAW_ENABLE_LLM_HARNESS === '1';
 const SHARED_CONTEXT_FILES = ['ARCHITECTURE.md', 'docs/conventions/testing.md'] as const;
+const CODEX_MODEL = 'gpt-5';
+const CODEX_REASONING_EFFORT = 'low';
 const CODEX_TIMEOUT_MS = 180_000;
 
 type PackageName = (typeof PACKAGES)[number];
@@ -266,7 +268,9 @@ function runSemanticCheck(pkg: PackageName): SemanticVerdict {
         [
           'exec',
           '-m',
-          'gpt-5.4',
+          CODEX_MODEL,
+          '-c',
+          `model_reasoning_effort="${CODEX_REASONING_EFFORT}"`,
           '--sandbox',
           'read-only',
           '--cd',
@@ -299,8 +303,8 @@ function runSemanticCheck(pkg: PackageName): SemanticVerdict {
             : String(error),
       );
       throw new Error(
-        `Codex semantic harness failed for packages/${pkg} ` +
-          `(timeout ${CODEX_TIMEOUT_MS}ms): ${detail}`,
+        `Codex semantic harness failed for packages/${pkg} using ${CODEX_MODEL} ` +
+          `(${CODEX_REASONING_EFFORT} reasoning, timeout ${CODEX_TIMEOUT_MS}ms): ${detail}`,
       );
     }
 

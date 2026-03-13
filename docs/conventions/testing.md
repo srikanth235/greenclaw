@@ -100,6 +100,8 @@ The harness contract is intentionally narrow:
 - compare one package at a time
 - use only `packages/<pkg>/AGENTS.md`, package-local source/tests, and a small
   shared root context set
+- use `gpt-5` with low reasoning effort by default; this is a bounded semantic
+  diff, not a flagship-model task
 - require a JSON verdict with concrete file evidence
 - fail only on factual contradictions or material owner-doc omissions
 - enforce a hard subprocess timeout so slow LLM calls cannot hang the suite
