@@ -25,6 +25,10 @@ Layer 4. Hono application serving the transparent proxy.
 - Streaming SSE chunks are forwarded byte-for-byte, not parsed
 - Every request produces a `RequestTrace` written to the telemetry store
 - Health endpoint returns 200 with uptime and version
+- Only the `model` field may change in the forwarded request body
+- `/health` is never traced
+- App construction must stay testable via injected fetch, telemetry, logger,
+  config, and clock dependencies
 
 ### Dependencies
 

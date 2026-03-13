@@ -4,6 +4,7 @@
  */
 
 export { createLogger, type LoggerOptions } from './logger.js';
+export { type FlatRow, traceToRow } from './row.js';
 export { createStore } from './store.js';
 export type {
   RequestTrace,

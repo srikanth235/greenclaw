@@ -19,6 +19,7 @@ pnpm test:watch    # Run in watch mode
 | `tests/file-limits.test.ts`        | Harness  | Source files ≤300 lines, test-file-per-module                       |
 | `tests/module-boundaries.test.ts`  | Harness  | No hardcoded models, no PII in logs, Zod source-of-truth            |
 | `tests/skip-hygiene.test.ts`       | Harness  | No unmanaged `it.skip`/`describe.skip` without allowlisted reason   |
+| `tests/suppression-hygiene.test.ts`| Harness  | No unmanaged source suppressions without linked PLAN/TD reference   |
 | `tests/knowledge-gate.test.ts`     | Harness  | Deterministic CI gate: src/ changes require docs/ changes           |
 | `tests/jsdoc-hygiene.test.ts`      | Harness  | Exported declarations and callable docs require JSDoc/tag coverage   |
 | `tests/proxy-contracts.test.ts`    | Contract | Upstream passthrough, only-model-mutates, boot smoke test           |
@@ -58,8 +59,12 @@ of the codebase itself.
 - No `process.env` outside config/ (Biome `noProcessEnv`)
 - Pure-module side-effect ban (timers, Math.random, Date.now in pure layers)
 - No unmanaged `it.skip`/`describe.skip` without allowlisted reason
+- No unmanaged `TODO`/`FIXME`/ignore directives without linked PLAN/TD
 - Knowledge-store CI gate (src/ changes require docs/ changes)
 - AST-based JSDoc hygiene (`@param` / `@returns` on exported callables)
+- Telemetry logger JSON contract validation
+- Telemetry SQLite schema/index parity against observability docs
+- Trace-shape hygiene for stored telemetry fields
 
 ### Fixture / Eval Tests (skipped until implemented)
 
@@ -92,6 +97,21 @@ workspace package behavior isolated from unrelated root harnesses.
 6. **Line-scoped static checks**: For regex-based source scans, evaluate
    exclusions (like comment handling) per line, not per file, to avoid
    false negatives.
+7. **Blocking by default**: New feasible harnesses should fail in CI as soon
+   as they land. Use `it.skip` only when the target capability does not yet
+   exist, and register every skip in `tests/skip-hygiene.test.ts`.
+8. **Suppressions require an owner**: Source-level TODOs and ignore directives
+   must carry a `PLAN-xxx` or `TD-xxx` reference on the same line so they can
+   be retired deliberately.
+
+## Harness Activation Policy
+
+- Unskip architecture, golden, contract, and fixture tests as soon as the
+  underlying package has a real implementation seam to exercise.
+- Prefer deterministic mock upstreams and injected dependencies over
+  environment-coupled integration tests.
+- When a formerly skipped harness is activated, remove the corresponding
+  allowlist entry and update `docs/QUALITY.md` in the same change.
 
 ## Adding Tests for a New Module
 

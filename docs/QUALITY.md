@@ -19,10 +19,10 @@ progresses. Use this document to identify gaps and prioritize work.
 | types/        | Partial        | N/A           | Complete | C     | Alert Zod schemas implemented        |
 | config/       | Stub           | N/A           | Complete | D     | Env var loading not yet implemented  |
 | telemetry/    | Functional     | Comprehensive | Complete | B     | Pino + SQLite + getDb() accessor     |
-| optimization/ | Stub           | N/A           | Complete | D     | classifier/compactor/router stubs    |
+| optimization/ | Functional     | Basic          | Complete | C     | Classifier, compactor (CompactResult), router (tier-aware provider) |
 | monitoring/   | Functional     | Pending       | Complete | C     | UsageStore + alert CRUD + evaluation |
 | cli/          | Functional     | Pending       | Complete | C     | usage/alerts/traces subcommands      |
-| api/          | Stub           | N/A           | Complete | D     | Hono app not yet wired               |
+| api/          | Functional     | Comprehensive | Complete | B     | Proxy with header sanitization, timeout, error handling |
 | dashboard/    | Stub           | N/A           | Complete | D     | Built last per plan                  |
 
 ## Cross-Cutting Quality
@@ -40,12 +40,14 @@ progresses. Use this document to identify gaps and prioritize work.
 | Harness: process.env gate  | Active     | A     | Biome `noProcessEnv` bans `process.env` outside config/   |
 | Harness: JSDoc hygiene     | Active     | B     | AST harness blocks missing exported JSDoc and callable tags |
 | Harness: skip hygiene      | Active     | A     | No unmanaged it.skip/describe.skip without allowlist      |
+| Harness: suppression hygiene | Active   | B     | TODO/ignore directives require linked PLAN/TD ownership    |
 | Harness: knowledge gate    | Active     | A     | Deterministic CI: packages/ changes require docs/ changes |
 | Harness: side-effect ban   | Active     | A     | Timers, Math.random, Date.now banned in pure layers       |
-| Harness: proxy contracts   | Documented | D     | Passthrough, only-model-mutates, boot smoke (skipped)     |
+| Harness: telemetry contracts | Active   | B     | Logger JSON, trace shape, and SQLite schema parity checks  |
+| Harness: proxy contracts   | Active     | B     | Passthrough, only-model-mutates, health, SSE parity       |
 | Error conventions          | Documented | B     | Schema defined, not yet implemented in api/               |
-| Observability              | Documented | D     | RequestTrace schema defined, no persistence yet           |
-| Security                   | Documented | C     | Conventions written, implementation pending               |
+| Observability              | Active     | B     | Shared RequestTrace schema, persistence, and query contracts |
+| Security                   | Active     | B     | Header sanitization, upstream timeout, trace error isolation |
 | CI pipeline                | Partial    | B     | Lint + typecheck + test, no integration tests yet         |
 
 ## Tracking Gaps
@@ -95,6 +97,21 @@ breadth before depth.
   `tests/jsdoc-hygiene.test.ts` only warned and under-scanned exported
   declarations. The harness now fails on missing exported JSDoc and missing
   `@param` / `@returns` tags for exported callables.
+
+- 2026-03-13: Added PLAN-009 harness expansion work: package-aware knowledge
+  gate, suppression hygiene, telemetry contract checks, shared request/health
+  schemas, and live proxy/classifier contract activation.
+
+- 2026-03-13: PR #5 review fixes — (1) compact() returns CompactResult tuple
+  instead of relying on reference equality, (2) startServer rejects on error,
+  (3) createApp skips createDefaultDependencies when all deps injected,
+  (4) proxy strips hop-by-hop and sensitive headers (cookie, host, etc.),
+  (5) upstream fetch uses AbortSignal.timeout(30s), (6) insertTrace wrapped
+  in try/catch to prevent telemetry failures crashing requests, (7) router
+  uses tier-based provider instead of hardcoded COMPLEX, (8) root tests use
+  package name imports, (9) added 400/502 path tests in api.test.ts,
+  (10) removed redundant null guards in app.ts, (11) exported traceToRow
+  from @greenclaw/telemetry public API.
 
 - 2026-03-13: CI fix — knowledge-gate test failed because `actions/checkout@v4`
   defaults to `fetch-depth: 1` (shallow clone), so `main` branch was unavailable

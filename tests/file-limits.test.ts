@@ -77,9 +77,7 @@ describe('File limits: source files stay under line cap', () => {
 // ---------------------------------------------------------------------------
 
 describe('File limits: test file per package', () => {
-  // Skip until packages have real implementation — stubs don't need dedicated tests.
-  // Unskip when PLAN-001 completes and packages have real logic.
-  it.skip('every package has at least one test file', () => {
+  it('every package has at least one test file', () => {
     const rootTestFiles = fs.existsSync(TESTS_DIR)
       ? fs.readdirSync(TESTS_DIR).filter((f) => f.endsWith('.test.ts'))
       : [];
@@ -99,14 +97,6 @@ describe('File limits: test file per package', () => {
         missing.push(pkg);
       }
     }
-
-    // Harness tests (consistency, architecture, file-limits, module-boundaries)
-    // cover all packages collectively, so we only flag packages that lack BOTH
-    // dedicated test files AND coverage from harness tests.
-    // For now, we check that at least a test file mentioning the package exists
-    // OR the package is covered by the harness tests (which run for all packages).
-    // This test becomes stricter once packages have real implementation.
-
     expect(
       missing,
       `Packages without any test file: ${missing.join(', ')}. ` +

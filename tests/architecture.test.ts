@@ -83,8 +83,7 @@ function extractPackageImports(filePath: string): string[] {
 }
 
 describe('Architecture: Layer Dependency Enforcement', () => {
-  // Skip until packages have real code — stubs have no imports to validate
-  it.skip('no package imports from a higher layer', () => {
+  it('no package imports from a higher layer', () => {
     for (const packageName of PACKAGE_ORDER) {
       const packageSrcDir = path.join(PACKAGES_DIR, packageName, 'src');
       const packageLayer = getLayerIndex(packageName);
