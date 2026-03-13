@@ -54,6 +54,18 @@ before writing or modifying application code.**
 - CI consistency tests (`tests/consistency.test.ts`) validate that
   modules, docs, and cross-links stay in sync.
 
+## Knowledge Invariants
+
+- **Discoverability** — durable docs are linked, indexed, and reachable.
+- **Ownership** — code surfaces change with their owner docs.
+- **Executable parity** — commands, env vars, and runtime claims match code.
+- **Status locality** — volatile progress/status lives only in status docs.
+- **Terminology** — product and domain language stays canonical.
+- **Cross-doc consistency** — repeated claims must agree semantically.
+
+Deep policy and LLM semantic-check guidance live in
+[docs/conventions/knowledge-store.md](docs/conventions/knowledge-store.md).
+
 ## Start Here
 
 | Document                                       | What you'll find                                            |
@@ -96,6 +108,7 @@ Enforced by `tests/architecture.test.ts`.
 | Document                                              | Scope                                                         |
 | ----------------------------------------------------- | ------------------------------------------------------------- |
 | [errors.md](docs/conventions/errors.md)               | Error shape, upstream passthrough, error types by HTTP status |
+| [knowledge-store.md](docs/conventions/knowledge-store.md) | Knowledge-doc invariants, semantic guard rails, LLM check rules |
 | [observability.md](docs/conventions/observability.md) | Structured logging, RequestTrace schema, health endpoint      |
 | [testing.md](docs/conventions/testing.md)             | Test categories, harness tests, adding new tests              |
 | [security.md](docs/conventions/security.md)           | API key handling, PII rules, error sanitization               |

@@ -77,6 +77,18 @@ These validate that documentation claims match executable truth:
 - Security-secret exceptions: non-config env vars in `.env.example` must be documented in security.md
 - Status-doc boundaries: volatile prose only in QUALITY.md, PLANS.md, active plans, and debt tracker
 
+#### LLM semantic harnesses
+
+When deterministic checks cannot express a repo-truth invariant cleanly, a
+bounded LLM harness is acceptable. Follow
+[knowledge-store.md](knowledge-store.md):
+
+- deterministic parity first; LLMs are for residual semantic checks
+- compare a named set of repo files or PR changes, not the whole codebase
+- require `PASS` / `FAIL` plus concrete file references
+- use the same prompt/rubric every run
+- replace recurring LLM findings with deterministic tests when possible
+
 ### Fixture / Eval Tests (skipped until implemented)
 
 Tests that evaluate the quality of a module's output against a labeled dataset.
