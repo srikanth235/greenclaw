@@ -46,6 +46,16 @@ These harnesses must follow strict rules:
 5. **Escalation path** — if an LLM check finds a recurring pattern that can be
    expressed deterministically, replace it with a normal harness
 
+## First Concrete Harness
+
+The first planned LLM semantic harness is
+[PLAN-011](../exec-plans/active/PLAN-011-owner-doc-semantic-harness.md):
+
+- invariant family: owner-doc semantic consistency
+- scope: `packages/api`, `packages/config`, `packages/telemetry`
+- question: does `packages/<pkg>/AGENTS.md` still truthfully describe package
+  ownership, prohibitions, invariants, and dependency boundaries?
+
 ## Non-Goals
 
 LLM semantic checks are not for:

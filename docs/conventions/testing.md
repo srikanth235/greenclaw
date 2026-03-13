@@ -89,6 +89,10 @@ bounded LLM harness is acceptable. Follow
 - use the same prompt/rubric every run
 - replace recurring LLM findings with deterministic tests when possible
 
+The first planned concrete harness is [PLAN-011](../exec-plans/active/PLAN-011-owner-doc-semantic-harness.md):
+owner-doc semantic consistency for `packages/api`, `packages/config`, and
+`packages/telemetry`.
+
 ### Fixture / Eval Tests (skipped until implemented)
 
 Tests that evaluate the quality of a module's output against a labeled dataset.
