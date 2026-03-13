@@ -28,11 +28,14 @@ Replace ESLint 8 + Prettier 3 + lint-staged (6 npm packages) with Biome v2
      cli <-> api), matching CLAUDE.md layer definitions
 
 4. **JSDoc enforcement via vitest harness**
-   - New `tests/jsdoc-hygiene.test.ts` scans exported declarations for
-     preceding JSDoc blocks (warn-level, matching prior ESLint severity)
+   - `tests/jsdoc-hygiene.test.ts` uses an AST-based scan of exported
+     declarations and callable tags
+   - Missing JSDoc, `@param`, and `@returns` fail the test suite
 
 5. **Pre-commit uses Biome native --staged**
-   - lint-staged eliminated; `biome check --staged` in `.husky/pre-commit`
+   - lint-staged eliminated; `biome check --write --staged --error-on-warnings`
+     in `.husky/pre-commit`
+   - No `--unsafe` rewrites in the pre-commit hook
 
 6. **Build and CI**
    - `pnpm typecheck` passes with zero errors
@@ -61,8 +64,8 @@ Replace ESLint 8 + Prettier 3 + lint-staged (6 npm packages) with Biome v2
 
 - **Formatting diff**: Biome formatter may produce slightly different output
   than Prettier in edge cases. Commit formatting changes separately.
-- **JSDoc test false positives**: Regex-based JSDoc detection may miss
-  complex export patterns. Start at warn level, tune before upgrading.
+- **JSDoc harness edge cases**: AST-based coverage is stricter than the
+  original regex scan and may need tuning for uncommon declaration patterns.
 - **Biome version churn**: Pin exact version to avoid surprises.
 
 ## Out of Scope

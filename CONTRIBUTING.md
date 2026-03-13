@@ -65,9 +65,10 @@ full enforcement rules.
 
 ## JSDoc requirements
 
-All exported functions, types, and classes require JSDoc comments with
-`@param` and `@returns` tags. The `tests/jsdoc-hygiene.test.ts` harness
-enforces this.
+All exported functions, classes, interfaces, and type aliases require a
+preceding JSDoc block. Exported functions and methods must also document their
+parameters with `@param` tags, and non-void returns with `@returns`. The
+`tests/jsdoc-hygiene.test.ts` harness enforces this with an AST-based scan.
 
 ```typescript
 /**
@@ -116,7 +117,7 @@ Pre-commit hooks run automatically:
    doc updates are present when `src/` files are staged. See
    [docs/conventions/commits.md](docs/conventions/commits.md) for details.
    Bypass with `SKIP_KNOWLEDGE_CHECK=1`.
-2. **Biome** — auto-fix lint + format on staged files (`biome check --write --unsafe --staged`), then re-stage fixed files. A second pass enforces **zero warnings and zero errors** — any remaining diagnostics block the commit.
+2. **Biome** — auto-fix lint + format on staged files (`biome check --write --staged --error-on-warnings`), then re-stage fixed files. Any remaining warnings or errors block the commit.
 3. **Tests** — `pnpm test`.
 
 Hook commands must resolve tools from this workspace, not from the user's

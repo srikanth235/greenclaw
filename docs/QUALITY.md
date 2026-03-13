@@ -38,7 +38,7 @@ progresses. Use this document to identify gaps and prioritize work.
 | Harness: Biome layers      | Active     | B     | `noRestrictedImports` enforces layer boundaries           |
 | Harness: no-console        | Active     | B     | Biome `noConsole` in packages/src/ enforces structured logging |
 | Harness: process.env gate  | Active     | A     | Biome `noProcessEnv` bans `process.env` outside config/   |
-| Harness: JSDoc hygiene     | Active     | B     | Vitest harness: exported declarations require JSDoc       |
+| Harness: JSDoc hygiene     | Active     | B     | AST harness blocks missing exported JSDoc and callable tags |
 | Harness: skip hygiene      | Active     | A     | No unmanaged it.skip/describe.skip without allowlist      |
 | Harness: knowledge gate    | Active     | A     | Deterministic CI: packages/ changes require docs/ changes |
 | Harness: side-effect ban   | Active     | A     | Timers, Math.random, Date.now banned in pure layers       |
@@ -90,5 +90,10 @@ breadth before depth.
   (PLAN-008). Corrected layer semantics: same-layer packages (optimization
   <-> monitoring, cli <-> api) can now import each other per CLAUDE.md.
   JSDoc enforcement moved to vitest harness test.
+
+- 2026-03-13: Fixed the initial Biome migration regression where
+  `tests/jsdoc-hygiene.test.ts` only warned and under-scanned exported
+  declarations. The harness now fails on missing exported JSDoc and missing
+  `@param` / `@returns` tags for exported callables.
 
 Last updated: 2026-03-13

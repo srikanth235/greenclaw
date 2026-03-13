@@ -1,16 +1,4 @@
 bash scripts/check-knowledge-store.sh
-pnpm exec biome check --write --unsafe --staged --no-errors-on-unmatched
+pnpm exec biome check --write --staged --error-on-warnings --no-errors-on-unmatched
 git update-index --again
-
-# Verify zero warnings and zero errors on staged files
-BIOME_OUTPUT=$(pnpm exec biome check --staged --no-errors-on-unmatched --max-diagnostics=100 2>&1)
-if echo "$BIOME_OUTPUT" | grep -qE "Found [0-9]+ (warning|error)"; then
-  echo ""
-  echo "[biome] Warnings or errors remain after auto-fix:"
-  echo "$BIOME_OUTPUT" | grep -E "Found [0-9]+ (warning|error)"
-  echo "  Fix manually or adjust biome.json rules."
-  echo ""
-  exit 1
-fi
-
 pnpm test

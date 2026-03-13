@@ -88,5 +88,17 @@ SKIP_KNOWLEDGE_CHECK=1 git commit -m "ci: update workflow"
 
 ### Requirements
 
-The `claude` CLI must be installed and authenticated. If it is not available
+The `codex` CLI must be installed and authenticated. If it is not available
 the commit is blocked.
+
+## Pre-commit: Biome staged check
+
+The Husky pre-commit hook runs Biome on staged files before tests.
+
+### How it works
+
+1. `pnpm exec biome check --write --staged --error-on-warnings` formats and
+   lints staged files using the repo's Biome config.
+2. `git update-index --again` re-stages any files rewritten by Biome.
+3. Warnings and errors fail the hook via Biome's exit code.
+4. `pnpm test` runs after the staged-file check passes.
