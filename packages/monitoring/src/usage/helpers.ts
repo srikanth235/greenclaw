@@ -3,32 +3,10 @@
  * @module @greenclaw/monitoring/usage/helpers
  */
 
+import type { AlertEvent, AlertRule } from '@greenclaw/types';
 import type { UsageBreakdown, UsageSummary, UsageTrend } from './types.js';
 
-/** Alert rule configuration. */
-export interface AlertRule {
-  id: string;
-  name: string;
-  metric: string;
-  threshold_value: number;
-  threshold_unit: string;
-  period: string;
-  model_filter: string | null;
-  enabled: boolean;
-  created_at: string;
-}
-
-/** Triggered alert event. */
-export interface AlertEvent {
-  id: string;
-  rule_id: string;
-  triggered_at: string;
-  metric_value: number;
-  threshold_value: number;
-  period_start: string;
-  period_end: string;
-  acknowledged: boolean;
-}
+export type { AlertEvent, AlertRule } from '@greenclaw/types';
 
 /** Usage store interface. */
 export interface UsageStore {

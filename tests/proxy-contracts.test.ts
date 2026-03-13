@@ -1,130 +1,342 @@
-import { describe, expect, it } from 'vitest';
+import * as fs from 'node:fs';
+import * as http from 'node:http';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { Writable } from 'node:stream';
+import { afterEach, describe, expect, it } from 'vitest';
+import { createApp, startServer } from '../packages/api/src/index.js';
+import type { GreenClawConfig } from '../packages/config/src/index.js';
+import { createLogger, createStore, type TelemetryStore } from '../packages/telemetry/src/index.js';
+
+type RunningServer = {
+  baseUrl: string;
+  close(): Promise<void>;
+};
+
+const openStores: TelemetryStore[] = [];
+
+afterEach(() => {
+  while (openStores.length > 0) {
+    const store = openStores.pop();
+    if (store) {
+      const db = store.getDb();
+      const fileName = db?.name;
+      store.close();
+      if (fileName && typeof fileName === 'string' && fs.existsSync(fileName)) {
+        fs.unlinkSync(fileName);
+      }
+    }
+  }
+});
 
 /**
- * Proxy contract tests — behavior harnesses for the core product invariants.
- *
- * These validate the fundamental guarantees documented in ARCHITECTURE.md:
- * 1. Upstream passthrough parity — responses forwarded unchanged
- * 2. Only-model-mutates — GreenClaw changes only the `model` field
- * 3. Boot smoke test — /health returns documented shape
- *
- * Currently skipped because api/ is a stub. Unskip when PLAN-001 completes
- * and the proxy has real implementation.
+ * Start a simple Node HTTP server on an ephemeral port.
+ * @param handler - Request handler
+ * @returns Running server wrapper
  */
+function startHttpServer(handler: http.RequestListener): Promise<RunningServer> {
+  return new Promise((resolve) => {
+    const server = http.createServer(handler);
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      if (!address || typeof address === 'string') {
+        throw new Error('Failed to resolve test server address');
+      }
 
-// ---------------------------------------------------------------------------
-// Upstream passthrough parity — non-streaming success and error forwarding.
-// From ARCHITECTURE.md: "passes the response back to OpenClaw unchanged"
-// From errors.md: "upstream provider errors are forwarded unchanged"
-// ---------------------------------------------------------------------------
+      resolve({
+        baseUrl: `http://127.0.0.1:${address.port}`,
+        close: () =>
+          new Promise<void>((closeResolve, closeReject) => {
+            server.close((error) => {
+              if (error) {
+                closeReject(error);
+                return;
+              }
+              closeResolve();
+            });
+          }),
+      });
+    });
+  });
+}
+
+/**
+ * Read the full request body as text.
+ * @param request - Incoming Node request
+ * @returns Request body text
+ */
+function readBody(request: http.IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    request.on('data', (chunk) => {
+      chunks.push(Buffer.from(chunk));
+    });
+    request.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
+    request.on('error', reject);
+  });
+}
+
+/**
+ * Build test config for a proxy instance.
+ * @param upstreamBaseUrl - Base URL of the mock upstream
+ * @param telemetryDbPath - Temp SQLite path
+ * @returns GreenClaw config object
+ */
+function makeConfig(upstreamBaseUrl: string, telemetryDbPath: string): GreenClawConfig {
+  return {
+    telemetryDbPath,
+    port: 0,
+    logLevel: 'info',
+    upstreamBaseUrl,
+    routingModels: {
+      HEARTBEAT: { provider: 'openai', model: 'gpt-4o-mini' },
+      SIMPLE: { provider: 'openai', model: 'gpt-4o-mini' },
+      MODERATE: { provider: 'openai', model: 'gpt-4o' },
+      COMPLEX: { provider: 'openai', model: 'gpt-4.1' },
+    },
+  };
+}
+
+/**
+ * Start a GreenClaw proxy server pointed at a mock upstream.
+ * @param upstreamBaseUrl - Base URL for upstream forwarding
+ * @returns Proxy server and telemetry store
+ */
+async function startProxy(
+  upstreamBaseUrl: string,
+): Promise<{ server: Awaited<ReturnType<typeof startServer>>; store: TelemetryStore }> {
+  const dbPath = path.join(os.tmpdir(), `greenclaw-proxy-${Date.now()}-${Math.random()}.db`);
+  const store = createStore(dbPath);
+  openStores.push(store);
+  let requestCounter = 0;
+  const logger = createLogger({
+    level: 'info',
+    destination: new Writable({
+      write(_chunk, _encoding, callback) {
+        callback();
+      },
+    }),
+  });
+  const config = makeConfig(upstreamBaseUrl, dbPath);
+  const app = createApp({
+    config,
+    fetchImpl: fetch,
+    telemetryStore: store,
+    logger,
+    now: () => Date.parse('2026-03-13T00:00:00.000Z'),
+    requestId: () => {
+      requestCounter += 1;
+      return `req-${requestCounter}`;
+    },
+    version: '0.1.0',
+  });
+
+  const server = await startServer({ app, hostname: '127.0.0.1', port: 0 });
+  return { server, store };
+}
 
 describe('Proxy Contract: Upstream Passthrough Parity', () => {
-  it.skip('forwards upstream JSON response unchanged', () => {
-    // TODO: When api/ is implemented:
-    // 1. Start a mock upstream server that returns a known JSON body
-    // 2. Send a request through GreenClaw
-    // 3. Assert the response body matches byte-for-byte
-    // 4. Assert status code is preserved
-    // 5. Assert content-type header is preserved
-    //
-    // const upstream = createMockUpstream({ status: 200, body: GOLDEN_RESPONSE });
-    // const response = await proxyRequest(upstream.url, SAMPLE_REQUEST);
-    // expect(response.status).toBe(200);
-    // expect(response.body).toEqual(GOLDEN_RESPONSE);
-    // expect(response.headers['content-type']).toBe('application/json');
-    expect(true).toBe(true);
+  it('forwards upstream JSON response unchanged', async () => {
+    const upstreamBody = JSON.stringify({
+      id: 'chatcmpl-123',
+      object: 'chat.completion',
+      created: 1710000000,
+      model: 'gpt-4o-mini',
+      choices: [{ index: 0, message: { role: 'assistant', content: 'hi' }, finish_reason: 'stop' }],
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+    });
+    const upstream = await startHttpServer((_request, response) => {
+      response.writeHead(200, { 'content-type': 'application/json', 'x-upstream': 'mock' });
+      response.end(upstreamBody);
+    });
+    const { server, store } = await startProxy(upstream.baseUrl);
+    const proxyBaseUrl = `http://127.0.0.1:${server.port}`;
+
+    try {
+      const response = await fetch(`${proxyBaseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model: 'auto',
+          messages: [{ role: 'user', content: 'What is the capital of France?' }],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('content-type')).toContain('application/json');
+      expect(response.headers.get('x-upstream')).toBe('mock');
+      expect(await response.text()).toBe(upstreamBody);
+      expect(store.getStats().totalTraces).toBe(1);
+    } finally {
+      await server.close();
+      await upstream.close();
+    }
   });
 
-  it.skip('forwards upstream error responses unchanged', () => {
-    // TODO: When api/ is implemented:
-    // 1. Start a mock upstream that returns a 429 with a provider error body
-    // 2. Send a request through GreenClaw
-    // 3. Assert the 429 status is preserved
-    // 4. Assert the error body is forwarded as-is (not wrapped)
-    //
-    // const errorBody = { error: { message: "Rate limited", type: "rate_limit_error" } };
-    // const upstream = createMockUpstream({ status: 429, body: errorBody });
-    // const response = await proxyRequest(upstream.url, SAMPLE_REQUEST);
-    // expect(response.status).toBe(429);
-    // expect(response.body).toEqual(errorBody);
-    expect(true).toBe(true);
+  it('forwards upstream error responses unchanged', async () => {
+    const errorBody = JSON.stringify({
+      error: { message: 'Rate limited', type: 'rate_limit_error', param: null, code: null },
+    });
+    const upstream = await startHttpServer((_request, response) => {
+      response.writeHead(429, { 'content-type': 'application/json' });
+      response.end(errorBody);
+    });
+    const { server, store } = await startProxy(upstream.baseUrl);
+    const proxyBaseUrl = `http://127.0.0.1:${server.port}`;
+
+    try {
+      const response = await fetch(`${proxyBaseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model: 'auto',
+          messages: [{ role: 'user', content: 'What is the weather in Austin?' }],
+        }),
+      });
+
+      expect(response.status).toBe(429);
+      expect(await response.text()).toBe(errorBody);
+      expect(store.getStats().totalTraces).toBe(1);
+    } finally {
+      await server.close();
+      await upstream.close();
+    }
+  });
+
+  it('forwards SSE chunks byte-for-byte without rewriting', async () => {
+    const chunks = ['data: {"delta":"one"}\n\n', 'data: {"delta":"two"}\n\n', 'data: [DONE]\n\n'];
+    const upstream = await startHttpServer((_request, response) => {
+      response.writeHead(200, {
+        'content-type': 'text/event-stream; charset=utf-8',
+        'cache-control': 'no-cache',
+        connection: 'keep-alive',
+      });
+      for (const chunk of chunks) {
+        response.write(chunk);
+      }
+      response.end();
+    });
+    const { server, store } = await startProxy(upstream.baseUrl);
+    const proxyBaseUrl = `http://127.0.0.1:${server.port}`;
+
+    try {
+      const response = await fetch(`${proxyBaseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model: 'auto',
+          stream: true,
+          messages: [{ role: 'system', content: 'HEARTBEAT check agent.' }],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('content-type')).toContain('text/event-stream');
+      expect(await response.text()).toBe(chunks.join(''));
+      expect(store.getStats().totalTraces).toBe(1);
+    } finally {
+      await server.close();
+      await upstream.close();
+    }
   });
 });
-
-// ---------------------------------------------------------------------------
-// Only-model-mutates — the single mutation GreenClaw makes to the request.
-// From ARCHITECTURE.md: "router/ maps the TaskTier to the cheapest
-// appropriate upstream model and swaps the model field"
-// ---------------------------------------------------------------------------
 
 describe('Proxy Contract: Only Model Mutates', () => {
-  it.skip('preserves all request fields except model', () => {
-    // TODO: When api/ is implemented:
-    // 1. Start a mock upstream that echoes the received request body
-    // 2. Send a request with known fields (messages, temperature, max_tokens, etc.)
-    // 3. Assert all fields except `model` match the original request
-    //
-    // const request = {
-    //   model: 'gpt-4',
-    //   messages: [{ role: 'user', content: 'Hello' }],
-    //   temperature: 0.7,
-    //   max_tokens: 100,
-    //   stream: false,
-    // };
-    // const upstream = createEchoUpstream();
-    // const echoed = await proxyAndEcho(upstream.url, request);
-    // expect(echoed.messages).toEqual(request.messages);
-    // expect(echoed.temperature).toBe(request.temperature);
-    // expect(echoed.max_tokens).toBe(request.max_tokens);
-    // expect(echoed.stream).toBe(request.stream);
-    // // model may differ (that's the point of routing)
-    expect(true).toBe(true);
+  it('preserves all request fields except model', async () => {
+    const upstream = await startHttpServer(async (request, response) => {
+      response.writeHead(200, { 'content-type': 'application/json' });
+      response.end(await readBody(request));
+    });
+    const { server } = await startProxy(upstream.baseUrl);
+    const proxyBaseUrl = `http://127.0.0.1:${server.port}`;
+
+    try {
+      const request = {
+        model: 'auto',
+        messages: [{ role: 'user', content: 'What meetings do I have tomorrow?' }],
+        temperature: 0.7,
+        max_tokens: 100,
+        stream: false,
+      };
+
+      const response = await fetch(`${proxyBaseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(request),
+      });
+      const echoed = (await response.json()) as Record<string, unknown>;
+
+      expect(echoed.model).toBe('gpt-4o-mini');
+      expect(echoed.messages).toEqual(request.messages);
+      expect(echoed.temperature).toBe(request.temperature);
+      expect(echoed.max_tokens).toBe(request.max_tokens);
+      expect(echoed.stream).toBe(request.stream);
+    } finally {
+      await server.close();
+      await upstream.close();
+    }
   });
 
-  it.skip('does not modify non-model fields in the forwarded request', () => {
-    // TODO: When api/ is implemented:
-    // 1. Create a request with extra provider-specific fields
-    // 2. Assert they survive the proxy unchanged
-    //
-    // const request = {
-    //   model: 'claude-3-opus',
-    //   messages: [{ role: 'user', content: 'Test' }],
-    //   top_p: 0.9,
-    //   frequency_penalty: 0.5,
-    //   presence_penalty: 0.3,
-    //   user: 'test-user-123',
-    // };
-    // const upstream = createEchoUpstream();
-    // const echoed = await proxyAndEcho(upstream.url, request);
-    // const { model: _m, ...rest } = request;
-    // const { model: _em, ...echoedRest } = echoed;
-    // expect(echoedRest).toEqual(rest);
-    expect(true).toBe(true);
+  it('does not modify non-model fields in the forwarded request', async () => {
+    const upstream = await startHttpServer(async (request, response) => {
+      response.writeHead(200, { 'content-type': 'application/json' });
+      response.end(await readBody(request));
+    });
+    const { server } = await startProxy(upstream.baseUrl);
+    const proxyBaseUrl = `http://127.0.0.1:${server.port}`;
+
+    try {
+      const request = {
+        model: 'greenclaw/auto',
+        messages: [{ role: 'user', content: 'Check my inbox and draft a reply to urgent emails.' }],
+        top_p: 0.9,
+        frequency_penalty: 0.5,
+        presence_penalty: 0.3,
+        user: 'test-user-123',
+        metadata: { source: 'proxy-contract-test' },
+      };
+
+      const response = await fetch(`${proxyBaseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-request-id': 'req-contract' },
+        body: JSON.stringify(request),
+      });
+      const echoed = (await response.json()) as Record<string, unknown>;
+      const { model: _ignoredModel, ...rest } = request;
+      const { model: _ignoredEchoedModel, ...echoedRest } = echoed as typeof echoed & {
+        model: string;
+      };
+
+      expect((echoed as { model: string }).model).toBe('gpt-4o');
+      expect(echoedRest).toEqual(rest);
+    } finally {
+      await server.close();
+      await upstream.close();
+    }
   });
 });
 
-// ---------------------------------------------------------------------------
-// Boot smoke test — start the app on an ephemeral port and validate /health.
-// From ARCHITECTURE.md: GET /health returns { status, version, uptime }
-// From observability.md: health endpoint is not traced
-// ---------------------------------------------------------------------------
-
 describe('Proxy Contract: Boot Smoke Test', () => {
-  it.skip('/health returns documented shape', () => {
-    // TODO: When src/server.ts is implemented:
-    // 1. Start the server on port 0 (ephemeral)
-    // 2. GET /health
-    // 3. Assert response matches { status: 'ok', version: string, uptime: number }
-    // 4. Shut down the server
-    //
-    // const server = await startServer({ port: 0 });
-    // const response = await fetch(`http://localhost:${server.port}/health`);
-    // const body = await response.json();
-    // expect(response.status).toBe(200);
-    // expect(body.status).toBe('ok');
-    // expect(typeof body.version).toBe('string');
-    // expect(typeof body.uptime).toBe('number');
-    // await server.close();
-    expect(true).toBe(true);
+  it('/health returns documented shape and is not traced', async () => {
+    const upstream = await startHttpServer((_request, response) => {
+      response.writeHead(200, { 'content-type': 'application/json' });
+      response.end('{}');
+    });
+    const { server, store } = await startProxy(upstream.baseUrl);
+    const proxyBaseUrl = `http://127.0.0.1:${server.port}`;
+
+    try {
+      const response = await fetch(`${proxyBaseUrl}/health`);
+      const body = (await response.json()) as Record<string, unknown>;
+
+      expect(response.status).toBe(200);
+      expect(body.status).toBe('ok');
+      expect(typeof body.version).toBe('string');
+      expect(typeof body.uptime).toBe('number');
+      expect(store.getStats().totalTraces).toBe(0);
+    } finally {
+      await server.close();
+      await upstream.close();
+    }
   });
 });

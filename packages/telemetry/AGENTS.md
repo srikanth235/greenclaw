@@ -26,6 +26,8 @@ Layer 2. Structured logging (Pino) and telemetry persistence (SQLite).
 4. Timestamps are normalized to UTC ISO-8601 on insert and query
 5. No PII in log output or stored traces
 6. DB file location is configurable via `GREENCLAW_TELEMETRY_DB` env var
+7. Shared `RequestTrace` types come from `@greenclaw/types`, not local duplicates
+8. SQLite schema and indexes must stay in parity with `docs/conventions/observability.md`
 
 ### Dependencies
 

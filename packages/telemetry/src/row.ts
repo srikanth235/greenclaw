@@ -14,7 +14,7 @@ export interface FlatRow {
   original_model: string;
   routed_model: string;
   routed_provider: string;
-  task_tier: string;
+  task_tier: RequestTrace['task_tier'];
   compaction_applied: number;
   tokens_prompt: number;
   tokens_completion: number;
