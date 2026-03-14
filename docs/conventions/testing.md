@@ -132,6 +132,12 @@ workspace package behavior isolated from unrelated root harnesses.
    must carry a `PLAN-xxx` or `TD-xxx` reference on the same line so they can
    be retired deliberately.
 
+## CI Triggers
+
+The CI workflow (`.github/workflows/ci.yml`) runs on both `push` to `main`
+and `pull_request` targeting `main`. This ensures checks run when PRs are
+opened/updated **and** when they are merged.
+
 ## Harness Activation Policy
 
 - Unskip architecture, golden, contract, and fixture tests as soon as the
