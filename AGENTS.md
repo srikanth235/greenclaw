@@ -25,8 +25,8 @@ before writing or modifying application code.**
    - Quality change → update `docs/QUALITY.md`
    - New convention → add to `docs/conventions/`
 3. **Implement** — Only now write application code, tests, and config.
-4. **Cross-link** — Ensure CLAUDE.md, AGENTS.md tables, and doc indexes
-   stay in sync with any new artifacts.
+4. **Cross-link** — Ensure the relevant index doc (e.g. `docs/PLANS.md`,
+   `docs/design/index.md`) is updated with any new artifacts.
 5. **Verify** — `pnpm typecheck && pnpm lint && pnpm test`
 
 ### What counts as a knowledge store update
@@ -95,14 +95,6 @@ Enforced by `tests/architecture.test.ts`.
 
 [Full index](docs/design/index.md)
 
-| Document                                         | Topic                                                                 |
-| ------------------------------------------------ | --------------------------------------------------------------------- |
-| [001](docs/design/001-philosophy.md)             | Transparent proxy, heuristics-first, pure pipeline, cost optimization |
-| [002](docs/design/002-core-beliefs.md)           | Agent-first operating principles (9 beliefs)                          |
-| [003](docs/design/003-language-and-framework.md) | TypeScript + Hono + Node 22 + pnpm                                    |
-| [004](docs/design/004-routing-strategy.md)       | Four-tier routing (HEARTBEAT → SIMPLE → MODERATE → COMPLEX)           |
-| [005](docs/design/005-zod-as-source-of-truth.md) | Zod schemas as single source of truth                                 |
-
 ## Conventions
 
 | Document                                              | Scope                                                         |
@@ -117,16 +109,6 @@ Enforced by `tests/architecture.test.ts`.
 ## Execution Plans
 
 [All plans](docs/PLANS.md) · [Tech debt](docs/exec-plans/tech-debt-tracker.md)
-
-| Plan                                                                 | Status | Goal                                               |
-| -------------------------------------------------------------------- | ------ | -------------------------------------------------- |
-| [PLAN-001](docs/exec-plans/active/PLAN-001-proxy-skeleton.md)        | Active | Transparent passthrough proxy with instrumentation |
-| [PLAN-006](docs/exec-plans/active/PLAN-006-local-telemetry-store.md) | Active | Local observability stack (Pino + SQLite)          |
-| [PLAN-007](docs/exec-plans/active/PLAN-007-usage-analytics.md)       | Active | Monorepo + usage analytics + budget alerting       |
-| [PLAN-008](docs/exec-plans/active/PLAN-008-biome-migration.md)       | Active | Migrate ESLint + Prettier to Biome v2              |
-| [PLAN-009](docs/exec-plans/active/PLAN-009-harness-expansion.md)     | Active | Harness expansion and contract activation          |
-| [PLAN-010](docs/exec-plans/active/PLAN-010-semantic-repo-truth.md)   | Active | Semantic repo-truth guards                         |
-| [PLAN-011](docs/exec-plans/active/PLAN-011-owner-doc-semantic-harness.md) | Active | Owner-doc semantic consistency and claim enforcement |
 
 ## References
 

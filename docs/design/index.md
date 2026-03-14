@@ -29,4 +29,3 @@ PR. When reviewing design docs, update the "Last Verified" date.
 
 1. Assign the next sequential number: `docs/design/NNN-<slug>.md`
 2. Add a row to the table above
-3. Add a row to root `AGENTS.md` design table

@@ -22,7 +22,7 @@ describe('monitoring', () => {
     stores.push(store);
     store.insertTrace({
       id: 'trace-1',
-      timestamp: '2026-03-13T00:00:00.000Z',
+      timestamp: new Date().toISOString(),
       request_id: 'req-1',
       original_model: 'auto',
       routed_model: 'gpt-4o-mini',

@@ -38,7 +38,6 @@ owner, priority, and status.
    - **Known Risks**: Bulleted
    - **Out of Scope**: Explicit boundaries
 3. Add a row to the Active Plans table above
-4. Add a row to root `AGENTS.md` execution plans table
 
 When a plan is complete:
 
