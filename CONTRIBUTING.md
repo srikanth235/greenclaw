@@ -111,6 +111,14 @@ full type table and examples.
 <type>(<scope>): <description>
 ```
 
+## CI pipeline
+
+CI runs on both `push` to main and `pull_request` targeting main. Two jobs:
+
+1. **check** — typecheck, lint, test (always runs)
+2. **semantic-owner-docs** — LLM-backed owner-doc consistency check (runs only
+   when `vars.ENABLE_SEMANTIC_HARNESS` is set to `'true'` in repository settings)
+
 Pre-commit hooks run automatically:
 
 1. **Knowledge-store check** — uses the Codex CLI to verify that all required

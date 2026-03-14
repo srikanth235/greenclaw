@@ -105,6 +105,7 @@ Enforced by `tests/architecture.test.ts`.
 | [testing.md](docs/conventions/testing.md)             | Test categories, harness tests, adding new tests              |
 | [security.md](docs/conventions/security.md)           | API key handling, PII rules, error sanitization               |
 | [commits.md](docs/conventions/commits.md)             | Conventional Commits format, type table, scope rules          |
+| [doc-governance.md](docs/conventions/doc-governance.md) | Document mutation classes, append-only ledgers, owner-map rules |
 
 ## Execution Plans
 

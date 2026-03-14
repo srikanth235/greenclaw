@@ -58,6 +58,13 @@ and tightly bounded.
 - package A-grades also require the latest owner-doc semantic verdict to be PASS
 - repeated semantic failures must lower the documented grade or reopen the gap
 
+## Document Mutation Governance
+
+Documents are classified by mutation type (ledger, state, decision, index,
+owner-map, reference) with per-class enforcement rules. Full taxonomy and
+harness details live in
+[doc-governance.md](doc-governance.md).
+
 ## Non-Goals
 
 Semantic checks are not for:
