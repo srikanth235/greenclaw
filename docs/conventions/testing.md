@@ -101,7 +101,7 @@ bounded LLM harness is acceptable. Follow
 - treat present-tense unimplemented guarantees as failures
 
 The first implemented semantic harness is
-[PLAN-011](../exec-plans/active/PLAN-011-owner-doc-semantic-harness.md):
+[PLAN-011](../exec-plans/completed/PLAN-011-owner-doc-semantic-harness.md):
 owner-doc semantic consistency for every workspace package. It is disabled by
 default and runs only when `GREENCLAW_ENABLE_LLM_HARNESS=1`.
 

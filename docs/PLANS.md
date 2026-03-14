@@ -6,22 +6,22 @@ completed plans, and known technical debt are all versioned and co-located.
 
 ## Active Plans
 
-| Plan                                                            | Status          | Goal                                               |
-| --------------------------------------------------------------- | --------------- | -------------------------------------------------- |
-| [PLAN-001](exec-plans/active/PLAN-001-proxy-skeleton.md)        | Active — Week 1 | Transparent passthrough proxy with instrumentation |
-| [PLAN-006](exec-plans/active/PLAN-006-local-telemetry-store.md) | Active — Week 1 | Local observability stack (Pino + SQLite)          |
-| [PLAN-007](exec-plans/active/PLAN-007-usage-analytics.md)       | Active — Week 1 | Monorepo + usage analytics + budget alerting       |
-| [PLAN-008](exec-plans/active/PLAN-008-biome-migration.md)       | Active — Week 1 | Migrate ESLint + Prettier to Biome v2              |
-| [PLAN-009](exec-plans/active/PLAN-009-harness-expansion.md)     | Active — Week 2 | Harness expansion and contract activation          |
-| [PLAN-010](exec-plans/active/PLAN-010-semantic-repo-truth.md)   | Active — Week 1 | Semantic repo-truth guards                         |
-| [PLAN-011](exec-plans/active/PLAN-011-owner-doc-semantic-harness.md) | Active — Week 1 | Owner-doc semantic consistency and claim enforcement |
-| [PLAN-012](exec-plans/active/PLAN-012-doc-governance.md)             | Active — Week 1 | Document mutation governance harness                 |
+| Plan | Status | Goal |
+| ---- | ------ | ---- |
+| (none currently) | | |
 
 ## Completed Plans
 
-| Plan       | Completed | Goal |
-| ---------- | --------- | ---- |
-| (none yet) |           |      |
+| Plan | Completed | Goal |
+| ---- | --------- | ---- |
+| [PLAN-001](exec-plans/completed/PLAN-001-proxy-skeleton.md) | 2026-03-13 | Transparent passthrough proxy with instrumentation |
+| [PLAN-006](exec-plans/completed/PLAN-006-local-telemetry-store.md) | 2026-03-12 | Local observability stack (Pino + SQLite) |
+| [PLAN-007](exec-plans/completed/PLAN-007-usage-analytics.md) | 2026-03-12 | Monorepo + usage analytics + budget alerting |
+| [PLAN-008](exec-plans/completed/PLAN-008-biome-migration.md) | 2026-03-13 | Migrate ESLint + Prettier to Biome v2 |
+| [PLAN-009](exec-plans/completed/PLAN-009-harness-expansion.md) | 2026-03-13 | Harness expansion and contract activation |
+| [PLAN-010](exec-plans/completed/PLAN-010-semantic-repo-truth.md) | 2026-03-13 | Semantic repo-truth guards |
+| [PLAN-011](exec-plans/completed/PLAN-011-owner-doc-semantic-harness.md) | 2026-03-13 | Owner-doc semantic consistency and claim enforcement |
+| [PLAN-012](exec-plans/completed/PLAN-012-doc-governance.md) | 2026-03-14 | Document mutation governance harness |
 
 ## Technical Debt
 
