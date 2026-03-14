@@ -135,4 +135,8 @@ breadth before depth.
   doc, and git-diff-based test enforcing append-only defect log, grade-note
   coupling, owner-map volatile-word ban, and reference enforcer citation checks.
 
+- 2026-03-14: Fixed CI workflow YAML parse error — secrets context not allowed
+  in job-level `if` conditions. Replaced with `vars.ENABLE_SEMANTIC_HARNESS`
+  repository variable. Added `push` trigger so CI runs on merges to main.
+
 Last updated: 2026-03-14
