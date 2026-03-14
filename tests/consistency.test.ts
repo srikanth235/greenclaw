@@ -7,6 +7,7 @@ import {
   loadAllPackageMeta,
   loadDocGovernanceTiers,
   loadQualityMeta,
+  loadSectionClasses,
   loadTechDebtMeta,
 } from './lib/frontmatter';
 import { extractSection, parseMarkdownTable } from './lib/markdown';
@@ -1457,6 +1458,12 @@ describe('Intra-file parity: frontmatter ↔ markdown tables', () => {
         }
       }
     }
+    // Reverse: table rows not in frontmatter
+    for (const [pkg] of tableAutonomy) {
+      if (!qMeta.autonomy[pkg]) {
+        violations.push(`${pkg}: in Autonomy Readiness table but missing from frontmatter`);
+      }
+    }
 
     expect(
       violations,
@@ -1464,50 +1471,83 @@ describe('Intra-file parity: frontmatter ↔ markdown tables', () => {
     ).toHaveLength(0);
   });
 
-  it('tech-debt-tracker.md frontmatter active IDs match Active Debt table', () => {
+  it('tech-debt-tracker.md frontmatter active items match Active Debt table', () => {
     const tdMeta = loadTechDebtMeta();
     const content = cachedRead(path.join(ROOT, 'docs', 'exec-plans', 'tech-debt-tracker.md'));
     const section = extractSection(content, /^##\s+Active Debt/);
     expect(section, 'tech-debt-tracker.md must have a ## Active Debt section').toBeTruthy();
 
-    const tableIds = new Set<string>();
-    for (const row of parseMarkdownTable(section as string)) {
-      if (row.id) tableIds.add(row.id);
+    const tableRows = parseMarkdownTable(section as string);
+    const tableById = new Map<string, Record<string, string>>();
+    for (const row of tableRows) {
+      if (row.id) tableById.set(row.id, row);
     }
 
-    const fmIds = new Set(tdMeta.active.map((d) => d.id));
+    const fmById = new Map(tdMeta.active.map((d) => [d.id, d]));
     const violations: string[] = [];
-    for (const id of fmIds) {
-      if (!tableIds.has(id)) violations.push(`${id}: in frontmatter but missing from table`);
+
+    // Frontmatter → table (ID + field parity)
+    for (const [id, fmItem] of fmById) {
+      const tableRow = tableById.get(id);
+      if (!tableRow) {
+        violations.push(`${id}: in frontmatter but missing from table`);
+        continue;
+      }
+      const tableModule = (tableRow.module ?? '').replace(/\/$/, '');
+      if (tableModule && tableModule !== fmItem.module) {
+        violations.push(`${id}.module: frontmatter=${fmItem.module}, table=${tableModule}`);
+      }
+      if (tableRow.priority && tableRow.priority !== fmItem.priority) {
+        violations.push(
+          `${id}.priority: frontmatter=${fmItem.priority}, table=${tableRow.priority}`,
+        );
+      }
+      if (tableRow.status && tableRow.status !== fmItem.status) {
+        violations.push(`${id}.status: frontmatter=${fmItem.status}, table=${tableRow.status}`);
+      }
     }
-    for (const id of tableIds) {
-      if (!fmIds.has(id)) violations.push(`${id}: in table but missing from frontmatter`);
+    // Table → frontmatter
+    for (const id of tableById.keys()) {
+      if (!fmById.has(id)) violations.push(`${id}: in table but missing from frontmatter`);
     }
 
     expect(
       violations,
-      `tech-debt-tracker.md intra-file parity violations:\n  ${violations.join('\n  ')}`,
+      `tech-debt-tracker.md intra-file parity violations (active):\n  ${violations.join('\n  ')}`,
     ).toHaveLength(0);
   });
 
-  it('tech-debt-tracker.md frontmatter resolved IDs match Resolved Debt table', () => {
+  it('tech-debt-tracker.md frontmatter resolved items match Resolved Debt table', () => {
     const tdMeta = loadTechDebtMeta();
     const content = cachedRead(path.join(ROOT, 'docs', 'exec-plans', 'tech-debt-tracker.md'));
     const section = extractSection(content, /^##\s+Resolved Debt/);
     expect(section, 'tech-debt-tracker.md must have a ## Resolved Debt section').toBeTruthy();
 
-    const tableIds = new Set<string>();
-    for (const row of parseMarkdownTable(section as string)) {
-      if (row.id) tableIds.add(row.id);
+    const tableRows = parseMarkdownTable(section as string);
+    const tableById = new Map<string, Record<string, string>>();
+    for (const row of tableRows) {
+      if (row.id) tableById.set(row.id, row);
     }
 
-    const fmIds = new Set(tdMeta.resolved.map((d) => d.id));
+    const fmById = new Map(tdMeta.resolved.map((d) => [d.id, d]));
     const violations: string[] = [];
-    for (const id of fmIds) {
-      if (!tableIds.has(id)) violations.push(`${id}: in frontmatter but missing from table`);
+
+    // Frontmatter → table (ID + resolved date parity)
+    for (const [id, fmItem] of fmById) {
+      const tableRow = tableById.get(id);
+      if (!tableRow) {
+        violations.push(`${id}: in frontmatter but missing from table`);
+        continue;
+      }
+      if (tableRow.resolved && tableRow.resolved !== fmItem.resolved) {
+        violations.push(
+          `${id}.resolved: frontmatter=${fmItem.resolved}, table=${tableRow.resolved}`,
+        );
+      }
     }
-    for (const id of tableIds) {
-      if (!fmIds.has(id)) violations.push(`${id}: in table but missing from frontmatter`);
+    // Table → frontmatter
+    for (const id of tableById.keys()) {
+      if (!fmById.has(id)) violations.push(`${id}: in table but missing from frontmatter`);
     }
 
     expect(
@@ -1538,8 +1578,10 @@ describe('Intra-file parity: frontmatter ↔ markdown tables', () => {
     }
 
     const violations: string[] = [];
+    const allFmPackages = new Set<string>();
     for (const [tier, pkgs] of Object.entries(govMeta.tiers)) {
       for (const pkg of pkgs) {
+        allFmPackages.add(pkg);
         const tableTier = tableTiers.get(pkg);
         if (!tableTier) {
           violations.push(`${pkg}: in frontmatter tier=${tier} but missing from table`);
@@ -1548,10 +1590,51 @@ describe('Intra-file parity: frontmatter ↔ markdown tables', () => {
         }
       }
     }
+    // Reverse: table packages not in frontmatter
+    for (const [pkg] of tableTiers) {
+      if (!allFmPackages.has(pkg)) {
+        violations.push(`${pkg}: in Autonomy Tiers table but missing from frontmatter`);
+      }
+    }
 
     expect(
       violations,
       `doc-governance.md intra-file parity violations:\n  ${violations.join('\n  ')}`,
+    ).toHaveLength(0);
+  });
+
+  it('section-class frontmatter headings exist in their documents (PLAN-015)', () => {
+    const governedDocs = [
+      path.join(ROOT, 'docs', 'QUALITY.md'),
+      path.join(ROOT, 'docs', 'exec-plans', 'tech-debt-tracker.md'),
+    ];
+
+    const violations: string[] = [];
+
+    for (const docPath of governedDocs) {
+      if (!fs.existsSync(docPath)) continue;
+      const sections = loadSectionClasses(docPath);
+      if (sections.length === 0) continue;
+
+      const content = cachedRead(docPath);
+      const relPath = path.relative(ROOT, docPath);
+
+      for (const sec of sections) {
+        const headingRe = new RegExp(
+          `^##\\s+${sec.heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+          'm',
+        );
+        if (!headingRe.test(content)) {
+          violations.push(
+            `${relPath}: frontmatter declares "${sec.heading}" but heading not found`,
+          );
+        }
+      }
+    }
+
+    expect(
+      violations,
+      `Section-class frontmatter headings must exist in the document:\n  ${violations.join('\n  ')}`,
     ).toHaveLength(0);
   });
 });

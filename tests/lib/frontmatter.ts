@@ -520,3 +520,49 @@ export function loadDocGovernanceTiers(): DocGovernanceTiers {
   }
   return DocGovernanceTiersSchema.parse(raw);
 }
+
+// ---------------------------------------------------------------------------
+// Section-to-class mapping (PLAN-015)
+// ---------------------------------------------------------------------------
+
+/** Mutation classes for document governance. */
+const MutationClassEnum = z.enum([
+  'ledger',
+  'state',
+  'decision',
+  'index',
+  'owner-map',
+  'reference',
+]);
+
+/** A single section-to-class mapping entry. */
+export const SectionClassSchema = z.object({
+  heading: z.string().min(1),
+  class: MutationClassEnum,
+});
+
+/** Validated section-class entry type. */
+export type SectionClass = z.infer<typeof SectionClassSchema>;
+
+/**
+ * Load section-to-class mappings from a document's YAML frontmatter.
+ * @param filePath - Absolute path to the markdown file
+ * @returns Array of section-class mappings, or empty array if no `sections` key
+ * @throws If frontmatter is missing or `sections` entries are invalid
+ */
+export function loadSectionClasses(filePath: string): SectionClass[] {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const raw = parseFrontmatter(content);
+  if (!raw || !raw.sections) return [];
+  const sections = raw.sections;
+  if (!Array.isArray(sections)) {
+    throw new Error(`${filePath}: "sections" frontmatter must be an array.`);
+  }
+  return sections.map((entry, i) => {
+    const result = SectionClassSchema.safeParse(entry);
+    if (!result.success) {
+      throw new Error(`${filePath}: sections[${i}] is invalid: ${result.error.message}`);
+    }
+    return result.data;
+  });
+}

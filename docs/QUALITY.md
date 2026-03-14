@@ -17,6 +17,11 @@ autonomy:
   cli: { bootable: true, contract: false, observable: false, rollback_safe: true }
   api: { bootable: true, contract: true, observable: true, rollback_safe: true }
   dashboard: { bootable: true, contract: false, observable: false, rollback_safe: true }
+sections:
+  - { heading: "Defect Log", class: ledger }
+  - { heading: "Package Quality", class: state }
+  - { heading: "Cross-Cutting Quality", class: state }
+  - { heading: "Autonomy Readiness", class: state }
 ---
 # GreenClaw — Quality Scorecard
 

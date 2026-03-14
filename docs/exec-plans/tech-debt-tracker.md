@@ -7,6 +7,9 @@ resolved:
   - { id: TD-003, resolved: "2026-03-13" }
   - { id: TD-005, resolved: "2026-03-12" }
   - { id: TD-006, resolved: "2026-03-12" }
+sections:
+  - { heading: "Resolved Debt", class: ledger }
+  - { heading: "Active Debt", class: state }
 ---
 # GreenClaw — Technical Debt Tracker
 

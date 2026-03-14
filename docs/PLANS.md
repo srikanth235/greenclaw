@@ -8,7 +8,7 @@ completed plans, and known technical debt are all versioned and co-located.
 
 | Plan | Status | Goal |
 | ---- | ------ | ---- |
-*None currently active.*
+| [PLAN-015](exec-plans/active/PLAN-015-section-class-frontmatter.md) | Active | Section-to-class mapping in frontmatter |
 
 ## Completed Plans
 

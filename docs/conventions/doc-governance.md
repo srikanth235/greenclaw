@@ -122,10 +122,28 @@ autonomy:
 The volatile-word scan excludes the frontmatter block. Grade and tier
 changes in frontmatter are state-class mutations (require defect log entry).
 
+## Section-Class Frontmatter (PLAN-015)
+
+Documents with per-section governance declare their section-to-class
+mapping in YAML frontmatter. This lets `tests/doc-governance.test.ts`
+discover governed sections automatically instead of hardcoding heading
+regexes. Enforced by `tests/consistency.test.ts` (heading existence parity).
+
+```yaml
+sections:
+  - { heading: "Defect Log", class: ledger }
+  - { heading: "Package Quality", class: state }
+```
+
+Whole-file governed documents (owner-map, reference) do not need a
+`sections` block — the class applies to the entire file.
+
 ## Adding a New Governed Document
 
 1. Classify the document into one of the six mutation classes
 2. Add a row to the **Document Classification** table above
-3. If the class requires harness enforcement, add a rule in
+3. If the document has per-section governance, add `sections` to its
+   YAML frontmatter with heading and class for each governed section
+4. If the class requires harness enforcement, add a rule in
    `tests/doc-governance.test.ts`
-4. Update `docs/QUALITY.md` if the harness grade changes
+5. Update `docs/QUALITY.md` if the harness grade changes
