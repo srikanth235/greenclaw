@@ -7,18 +7,17 @@ Address high-priority items before adding new features.
 
 | ID     | Debt                                  | Module     | Priority | Status | Notes                                                |
 | ------ | ------------------------------------- | ---------- | -------- | ------ | ---------------------------------------------------- |
-| TD-001 | Architecture test is `it.skip`        | tests/     | High     | Open   | Unskip once stubs have real imports to validate      |
 | TD-002 | tiktoken WASM initialization overhead | compactor/ | Medium   | Open   | Lazy-load and cache the encoder instance             |
-| TD-003 | No integration test harness           | tests/     | Medium   | Open   | Need end-to-end proxy test with mock upstream        |
 | TD-004 | Dashboard is stub-only                | dashboard/ | Low      | Open   | Deferred to PLAN-005                                 |
-| TD-005 | No telemetry persistence              | telemetry/ | High     | In Progress | PLAN-006: SQLite store for RequestTrace                |
-| TD-006 | No local observability stack          | telemetry/ | Medium   | In Progress | PLAN-006: Pino + SQLite, no Docker — see harness-engineering.md |
 
 ## Resolved Debt
 
-| ID         | Debt | Resolved | Resolution |
-| ---------- | ---- | -------- | ---------- |
-| (none yet) |      |          |            |
+| ID | Debt | Resolved | Resolution |
+| -- | ---- | -------- | ---------- |
+| TD-001 | Architecture test is `it.skip` | 2026-03-13 | Unskipped layer-dependency enforcement during PLAN-009 harness activation. |
+| TD-003 | No integration test harness | 2026-03-13 | Added live proxy contract coverage with mock upstream passthrough, SSE parity, and health checks in PLAN-009. |
+| TD-005 | No telemetry persistence | 2026-03-12 | Added SQLite-backed `request_traces` persistence in PLAN-006. |
+| TD-006 | No local observability stack | 2026-03-12 | Added Pino structured logging plus SQLite telemetry storage in PLAN-006. |
 
 ## Adding New Debt
 
