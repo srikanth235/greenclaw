@@ -15,6 +15,7 @@ completed plans, and known technical debt are all versioned and co-located.
 | [PLAN-009](exec-plans/active/PLAN-009-harness-expansion.md)     | Active — Week 2 | Harness expansion and contract activation          |
 | [PLAN-010](exec-plans/active/PLAN-010-semantic-repo-truth.md)   | Active — Week 1 | Semantic repo-truth guards                         |
 | [PLAN-011](exec-plans/active/PLAN-011-owner-doc-semantic-harness.md) | Active — Week 1 | Owner-doc semantic consistency and claim enforcement |
+| [PLAN-012](exec-plans/active/PLAN-012-doc-governance.md)             | Active — Week 1 | Document mutation governance harness                 |
 
 ## Completed Plans
 

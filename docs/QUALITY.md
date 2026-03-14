@@ -55,6 +55,7 @@ Package A-grades require:
 | Error conventions          | Documented | C     | Docs updated to current API behavior; broader error map deferred |
 | Observability              | Active     | B     | Shared RequestTrace schema, persistence, and query contracts |
 | Security                   | Active     | B     | Header sanitization, upstream timeout, trace error isolation |
+| Harness: doc governance    | Active     | B     | Ledger append-only, grade-note coupling, owner-map volatile ban |
 | CI pipeline                | Partial    | B     | Deterministic suite is always on; semantic lane requires Codex auth |
 
 ## Tracking Gaps
@@ -129,4 +130,9 @@ breadth before depth.
   `telemetry/` dependency/configurability claims and made `config.loadConfig()`
   return a deep-frozen object so the immutability invariant is mechanically true.
 
-Last updated: 2026-03-13
+- 2026-03-14: Added PLAN-012 document governance harness — mutation class
+  taxonomy (ledger, state, decision, index, owner-map, reference), convention
+  doc, and git-diff-based test enforcing append-only defect log, grade-note
+  coupling, owner-map volatile-word ban, and reference enforcer citation checks.
+
+Last updated: 2026-03-14
