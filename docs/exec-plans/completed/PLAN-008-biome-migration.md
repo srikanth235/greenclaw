@@ -1,8 +1,6 @@
 # PLAN-008: Migrate from ESLint + Prettier to Biome v2
 
-## Status
-
-Active — Week 1
+**Status**: Completed — 2026-03-13
 
 ## Goal
 

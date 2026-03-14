@@ -1,6 +1,6 @@
 # PLAN-011 — Owner-Doc Semantic Harness and Claim Enforcement
 
-**Status**: Active — Week 1
+**Status**: Completed — 2026-03-13
 **Goal**: Add one bounded LLM-backed semantic harness for package owner docs and use its first findings to tighten claim classification, deterministic parity, and repo-truth enforcement around those docs.
 
 ## Invariant Family

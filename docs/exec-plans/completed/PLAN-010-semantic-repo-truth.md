@@ -1,6 +1,6 @@
 # PLAN-010 — Semantic Repo-Truth Guards
 
-**Status**: Active — Week 1
+**Status**: Completed — 2026-03-13
 **Goal**: Replace structural-only doc checks with semantic parity tests that catch real drift between documentation claims and executable truth, then close the first review gaps in the new harnesses.
 
 ## Acceptance Criteria
