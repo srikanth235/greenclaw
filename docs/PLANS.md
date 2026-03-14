@@ -13,8 +13,8 @@ completed plans, and known technical debt are all versioned and co-located.
 | [PLAN-007](exec-plans/active/PLAN-007-usage-analytics.md)       | Active — Week 1 | Monorepo + usage analytics + budget alerting       |
 | [PLAN-008](exec-plans/active/PLAN-008-biome-migration.md)       | Active — Week 1 | Migrate ESLint + Prettier to Biome v2              |
 | [PLAN-009](exec-plans/active/PLAN-009-harness-expansion.md)     | Active — Week 2 | Harness expansion and contract activation          |
-| [PLAN-010](exec-plans/active/PLAN-010-semantic-repo-truth.md)   | Active — Week 1 | Semantic repo-truth guards                         |
-| [PLAN-011](exec-plans/active/PLAN-011-owner-doc-semantic-harness.md) | Active — Week 1 | Owner-doc semantic consistency and claim enforcement |
+| [PLAN-010](exec-plans/active/PLAN-010-semantic-repo-truth.md)   | Active — Week 1 | Semantic repo-truth and claim enforcement          |
+| [PLAN-011](exec-plans/active/PLAN-011-owner-doc-semantic-harness.md) | Active — Week 1 | Owner-doc semantic consistency harness             |
 
 ## Completed Plans
 
@@ -38,6 +38,7 @@ owner, priority, and status.
    - **Known Risks**: Bulleted
    - **Out of Scope**: Explicit boundaries
 3. Add a row to the Active Plans table above
+4. Add a row to root `AGENTS.md` execution plans table
 
 When a plan is complete:
 

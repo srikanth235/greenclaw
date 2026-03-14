@@ -1,43 +1,53 @@
-# PLAN-010 — Semantic Repo-Truth Guards
+# PLAN-010 — Semantic Repo-Truth and Claim Enforcement
 
 **Status**: Active — Week 1
-**Goal**: Replace structural-only doc checks with semantic parity tests that catch real drift between documentation claims and executable truth, then close the first review gaps in the new harnesses.
+**Goal**: Upgrade the knowledge-store guard rails so they enforce path-to-doc relevance, executable parity, and claim classification instead of only structural doc presence.
+
+## Scope
+
+This plan defines the broad enforcement shape for repo truth:
+
+- knowledge-store invariant families and claim classes
+- path-specific knowledge gate rules instead of "any docs changed"
+- deterministic parity checks for README/runtime/env/tooling drift
+- quality-policy linkage for semantic harness coverage
+- trusted CI wiring for bounded semantic harnesses
+
+The concrete owner-doc semantic harness lands under PLAN-011.
 
 ## Acceptance Criteria
 
-1. Knowledge gate rejects `packages/<pkg>/src/` changes that lack the correct companion doc update (not just "any" doc)
-2. README commands like `pnpm dev`, `pnpm start`, and `pnpm lint` match `package.json` scripts and actual startup/tooling behavior
-3. `.env.example` variables match what `packages/config/src/` actually reads from `env.*` / `process.env.*`, with security-only exceptions explicitly documented
-4. Timeless docs (design/, references/, conventions/) do not contain volatile status prose
-5. Low-signal structural checks (line-count limits, heading consistency) are removed
-6. Knowledge gate requires package owner docs and package-specific companion docs instead of broad `docs/**` fallbacks
-7. All existing passing tests continue to pass after drift in README, observability docs, and `.env.example` is fixed
+1. `docs/conventions/knowledge-store.md` defines invariant families, claim
+   classes, and the deterministic-first enforcement ladder.
+2. The knowledge gate requires package-specific owner docs and companion docs
+   for relevant code/config changes.
+3. Deterministic parity checks cover README scripts/runtime/tooling and env var
+   drift against config/security docs.
+4. `docs/QUALITY.md` documents how semantic drift affects package grades.
+5. CI fetches enough history for merge-base diffing and includes a trusted
+   semantic-harness lane when Codex auth is configured.
 
 ## Files Expected to Change
 
 | File | Change |
 | ---- | ------ |
-| `tests/knowledge-gate.test.ts` | Require package AGENTS docs and package-specific companion docs |
-| `tests/consistency.test.ts` | Replace no-op env scan, tighten README/env contracts |
-| `packages/api/src/main.ts` | Add thin runtime entrypoint for `pnpm dev` / `pnpm start` |
-| `package.json` | Add runnable `dev` and `start` scripts |
-| `packages/api/AGENTS.md` | Document runtime entrypoint ownership and shutdown invariants |
-| `docs/conventions/testing.md` | Add semantic doc-contract category |
-| `docs/QUALITY.md` | Defect log entry for knowledge-gate no-op bug |
-| `README.md` | Restore truthful Quick Start and built runtime instructions |
-| `.env.example` | Expand to full config env surface, keep only documented security secrets |
-| `docs/conventions/observability.md` | Fix stale `LOG_LEVEL` reference |
-| `docs/PLANS.md` | Add PLAN-010 row |
-| `CLAUDE.md` | Add PLAN-010 row |
+| `docs/conventions/knowledge-store.md` | Add invariant families and claim taxonomy |
+| `docs/conventions/testing.md` | Document deterministic parity and semantic harness policy |
+| `tests/knowledge-gate.test.ts` | Replace broad gate with path-specific relevance rules |
+| `tests/consistency.test.ts` | Add deterministic repo-truth parity checks |
+| `.github/workflows/ci.yml` | Fetch merge-base history and add trusted semantic lane |
+| `docs/QUALITY.md` | Link grades to semantic and deterministic claim coverage |
 
 ## Known Risks
 
-- Status-doc boundary check may produce false positives on legitimate forward-looking language in convention docs; mitigate with a curated phrase list
-- Path-specific gate rules need maintenance when new packages are added
-- Runtime entrypoint should stay thin; avoid duplicating dependency wiring outside `api/`
+- Over-broad gate rules create busywork instead of useful review pressure.
+- Semantic CI requires explicit Codex auth and should not silently appear
+  mandatory on untrusted forks.
+- Deterministic parity checks can become brittle if they are phrased around
+  presentation instead of executable truth.
 
 ## Out of Scope
 
-- CLI command dispatch validation (brittle, couples to framework internals)
-- Automated doc gardening / scheduled cleanup jobs
-- QUALITY.md grade-vs-reality verification (requires defining "stub" mechanically)
+- Open-ended whole-repo semantic review
+- Automatic grade rewriting inside CI
+- New runtime features unrelated to repo-truth enforcement

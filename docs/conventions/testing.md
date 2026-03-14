@@ -134,9 +134,13 @@ workspace package behavior isolated from unrelated root harnesses.
 
 ## CI Triggers
 
-The CI workflow (`.github/workflows/ci.yml`) runs on both `push` to `main`
-and `pull_request` targeting `main`. This ensures checks run when PRs are
-opened/updated **and** when they are merged.
+The CI workflow (`.github/workflows/ci-check.yml`) runs on both `push` to
+`main` and `pull_request` targeting `main`. This ensures checks run when PRs
+are opened/updated **and** when they are merged.
+
+The semantic owner-doc harness job is gated on the `ENABLE_SEMANTIC_HARNESS`
+repository variable (Settings → Secrets and variables → Actions → Variables).
+Set it to `true` to enable the job; omit or set to any other value to skip.
 
 ## Harness Activation Policy
 

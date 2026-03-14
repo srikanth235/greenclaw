@@ -51,7 +51,7 @@ jobs:
         run: pnpm test
 
   semantic-owner-docs:
-    if: ${{ secrets.OPENAI_API_KEY != '' }}
+    if: vars.ENABLE_SEMANTIC_HARNESS == 'true'
     runs-on: ubuntu-latest
 
     steps:
