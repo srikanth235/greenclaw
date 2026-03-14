@@ -26,6 +26,8 @@ Layer 3. Usage analytics and budget alerting for end users.
   constraint + INSERT OR IGNORE (atomic, no TOCTOU race)
 - Graceful degradation: returns empty results if DB handle is null
 - All timestamps are UTC ISO-8601
+- Tests must use dynamic timestamps (e.g. `new Date().toISOString()`)
+  so period-bound queries match regardless of when the suite runs
 
 ### Dependencies
 
