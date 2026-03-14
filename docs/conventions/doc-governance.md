@@ -54,8 +54,15 @@ introduce temporal coupling and status drift:
 - Bare dates matching `20\d{2}-\d{2}(-\d{2})?`
 - `changelog`, `history`, `what changed`
 
-Allowed exceptions: dates inside markdown link targets (e.g. plan file names)
-and the word "Active" / "Completed" in execution plan status references.
+Allowed exceptions:
+- Dates inside markdown link targets (e.g. plan file names)
+- `Active` / `Completed` in execution plan status references within table cells
+- `in progress` in table cells that also reference a `PLAN-NNN`
+- `pending` in table cells describing test/implementation/docs status columns
+- `done` in table cells that reference a `PLAN-NNN`
+- `history` in bulleted feature descriptions (e.g. "Alert event history")
+
+Enforced by `tests/doc-governance.test.ts`.
 
 ## Adding a New Governed Document
 
