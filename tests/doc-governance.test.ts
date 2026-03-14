@@ -334,6 +334,64 @@ describe('Document Governance', () => {
   });
 
   // -------------------------------------------------------------------------
+  // State: Autonomy Readiness value changes require rationale
+  // -------------------------------------------------------------------------
+  it('Autonomy Readiness changes are accompanied by rationale', () => {
+    if (result.skipped) return;
+    if (!result.files.includes('docs/QUALITY.md')) return;
+
+    const oldContent = getOldContent(result.mergeBase, 'docs/QUALITY.md');
+    if (!oldContent) return;
+
+    const newContent = fs.readFileSync(path.join(ROOT, 'docs/QUALITY.md'), 'utf-8');
+
+    /**
+     * Parse autonomy readiness rows from QUALITY.md.
+     * @param content - File content
+     * @returns Map of package → row content (all columns concatenated)
+     */
+    function parseAutonomyRows(content: string): Map<string, string> {
+      const section = extractSection(content, /^##\s+Autonomy Readiness/);
+      if (!section) return new Map();
+
+      const map = new Map<string, string>();
+      const rowPattern =
+        /\|\s*(\w+)\/?\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*(\S+)\s*\|/g;
+      let match: RegExpExecArray | null;
+      while ((match = rowPattern.exec(section)) !== null) {
+        const name = match[1] as string;
+        // Concatenate all value columns for comparison
+        map.set(name, `${match[2]}|${match[3]}|${match[4]}|${match[5]}|${match[6]}`);
+      }
+      return map;
+    }
+
+    const oldRows = parseAutonomyRows(oldContent);
+    const newRows = parseAutonomyRows(newContent);
+
+    // Check that the defect log has a new entry if any readiness values changed
+    const changed: string[] = [];
+    for (const [name, newVal] of newRows) {
+      const oldVal = oldRows.get(name);
+      if (oldVal !== undefined && oldVal !== newVal) {
+        changed.push(`${name}: ${oldVal} → ${newVal}`);
+      }
+    }
+
+    if (changed.length > 0) {
+      // Verify the defect log was also updated (same mechanism as grade changes)
+      const oldDefectLog = extractSection(oldContent, /^##\s+Defect Log/) ?? '';
+      const newDefectLog = extractSection(newContent, /^##\s+Defect Log/) ?? '';
+      expect(
+        newDefectLog.length > oldDefectLog.length,
+        `Autonomy Readiness values changed but Defect Log was not updated.\n` +
+          `Changed: ${changed.join(', ')}\n\n` +
+          `See docs/conventions/doc-governance.md (state class).`,
+      ).toBe(true);
+    }
+  });
+
+  // -------------------------------------------------------------------------
   // Owner-map: no volatile status language in AGENTS.md / CLAUDE.md
   // -------------------------------------------------------------------------
   it('owner-map docs contain no volatile status language', () => {
@@ -434,7 +492,7 @@ describe('Document Governance', () => {
   // -------------------------------------------------------------------------
   // Reference: convention docs should cite enforcers for imperative rules
   // -------------------------------------------------------------------------
-  it('convention doc imperative rules cite their enforcer (advisory)', () => {
+  it('convention doc imperative rules cite their enforcer', () => {
     if (result.skipped) return;
 
     const conventionFiles = result.files.filter(
@@ -476,13 +534,11 @@ describe('Document Governance', () => {
       }
     }
 
-    // Advisory only — log but don't fail
-    if (warnings.length > 0) {
-      console.warn(
-        `[doc-governance] Convention rules without enforcer citations:\n` +
-          `  ${warnings.join('\n  ')}\n` +
-          `Consider adding a test/lint reference or noting "manual review".`,
-      );
-    }
+    expect(
+      warnings,
+      `[doc-governance] Convention rules without enforcer citations:\n` +
+        `  ${warnings.join('\n  ')}\n` +
+        `Add a test/lint reference or note "manual review".`,
+    ).toHaveLength(0);
   });
 });

@@ -31,9 +31,9 @@ pnpm test:watch    # Run in watch mode
 
 ### Harness Tests (always run)
 
-Deterministic structural checks that catch drift between docs, code, and
-architecture. These never depend on implementation — they validate the shape
-of the codebase itself.
+Deterministic structural checks (in `tests/*.test.ts`) that catch drift
+between docs, code, and architecture. These never depend on implementation —
+they validate the shape of the codebase itself.
 
 - Architecture layer enforcement (no upward imports)
 - Pure function layers (classifier, compactor, router have no I/O imports)
@@ -43,10 +43,10 @@ of the codebase itself.
 - Doc cross-link validation (all links resolve to real files)
 - Skill docs that invoke local CLI tools keep runnable command syntax
 - Doc backlinks (no orphan docs in design/, conventions/, exec-plans/)
-- AGENTS.md structure validation (required sections + consistent headings)
+- AGENTS.md structure validation (required sections + consistent headings; `tests/consistency.test.ts`)
 - Convention coverage (every convention listed in CLAUDE.md)
 - Design doc freshness (valid statuses in design index)
-- Knowledge store structure (required docs exist)
+- Knowledge store structure (required docs exist; `tests/consistency.test.ts`)
 - CLAUDE.md module map matches actual `packages/` directories
 - QUALITY.md has a row for every module, grades are valid (A/B/C/D)
 - PLANS.md index matches plan files on disk
@@ -65,6 +65,8 @@ of the codebase itself.
 - Telemetry logger JSON contract validation
 - Telemetry SQLite schema/index parity against observability docs
 - Trace-shape hygiene for stored telemetry fields
+- Autonomy readiness table coverage (every package has a row)
+- Autonomy tier validation (critical-tier packages maintain grade >= B)
 
 #### Deterministic repo-truth parity checks (in `tests/consistency.test.ts`)
 
@@ -116,7 +118,7 @@ workspace package behavior isolated from unrelated root harnesses.
 
 ## Conventions
 
-1. **No test pollution**: Tests must not modify project files or leave artifacts
+1. **No test pollution**: Tests must not modify project files or leave artifacts (manual review)
 2. **Deterministic**: Same result on every run
 3. **Fast**: Individual tests complete in <100ms (except fixture evals)
 4. **Isolated**: No dependency on execution order
@@ -130,7 +132,7 @@ workspace package behavior isolated from unrelated root harnesses.
    skip in `tests/skip-hygiene.test.ts`.
 8. **Suppressions require an owner**: Source-level TODOs and ignore directives
    must carry a `PLAN-xxx` or `TD-xxx` reference on the same line so they can
-   be retired deliberately.
+   be retired deliberately. Enforced by `tests/suppression-hygiene.test.ts`.
 
 ## Harness Activation Policy
 
