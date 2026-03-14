@@ -19,7 +19,7 @@ determines what kinds of changes are allowed and how the harness enforces them.
 | Document | Class | Governed Section |
 | --- | --- | --- |
 | `docs/QUALITY.md` — Defect Log | ledger | `## Defect Log` to end-of-file |
-| `docs/QUALITY.md` — Grade Tables | state | `## Package Quality` and `## Cross-Cutting Quality` |
+| `docs/QUALITY.md` — Grade Tables | state | `## Package Quality`, `## Cross-Cutting Quality`, and `## Autonomy Readiness` |
 | `docs/exec-plans/tech-debt-tracker.md` — Resolved | ledger | `## Resolved Debt` table |
 | `docs/exec-plans/tech-debt-tracker.md` — Active | state | `## Active Debt` table (rows can move to Resolved) |
 | `docs/design/*.md` | decision | Body after status line (when status is Accepted/Verified) |
@@ -41,7 +41,7 @@ Enforced by `tests/doc-governance.test.ts`. Enforcement level per class:
 | decision | **Deferred** | No accepted ADRs exist yet; will activate when first ADR is accepted |
 | index | **Existing** | Already covered by `tests/consistency.test.ts` (PLANS.md, design/index.md) |
 | owner-map | **Hard fail** | Regex scan for volatile status words |
-| reference | **Warning** | Imperative rules without enforcer citation logged but not blocking |
+| reference | **Hard fail** | Imperative rules without enforcer citation block the test suite |
 
 ## Volatile Status Words (owner-map ban list)
 
@@ -63,6 +63,26 @@ Allowed exceptions:
 - `history` in bulleted feature descriptions (e.g. "Alert event history")
 
 Enforced by `tests/doc-governance.test.ts`.
+
+## Gate Authority
+
+CI (`pnpm test`) is the **authoritative enforcement boundary**. Every
+harness and governance check runs in CI via `tests/*.test.ts`. Local
+hooks (e.g. `scripts/check-knowledge-store.sh`) are convenience mirrors
+that provide faster feedback but are bypassable and not trusted.
+
+Enforced by `.github/workflows/ci.yml` → `pnpm test`.
+
+## Autonomy Tiers
+
+Packages have different blast radii. Higher-tier packages require
+stronger evidence before changes are considered safe.
+
+| Tier | Packages | Required Evidence <!-- enforced by tests/consistency.test.ts --> |
+| --- | --- | --- |
+| **Critical** | `api`, `telemetry` | Contract tests + fixture eval + semantic owner-doc PASS |
+| **Standard** | `config`, `optimization`, `monitoring`, `types` | Unit tests + harness pass |
+| **Low** | `cli`, `dashboard` | Harness pass |
 
 ## Adding a New Governed Document
 

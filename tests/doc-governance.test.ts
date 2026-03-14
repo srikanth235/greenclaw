@@ -434,7 +434,7 @@ describe('Document Governance', () => {
   // -------------------------------------------------------------------------
   // Reference: convention docs should cite enforcers for imperative rules
   // -------------------------------------------------------------------------
-  it('convention doc imperative rules cite their enforcer (advisory)', () => {
+  it('convention doc imperative rules cite their enforcer', () => {
     if (result.skipped) return;
 
     const conventionFiles = result.files.filter(
@@ -476,13 +476,11 @@ describe('Document Governance', () => {
       }
     }
 
-    // Advisory only — log but don't fail
-    if (warnings.length > 0) {
-      console.warn(
-        `[doc-governance] Convention rules without enforcer citations:\n` +
-          `  ${warnings.join('\n  ')}\n` +
-          `Consider adding a test/lint reference or noting "manual review".`,
-      );
-    }
+    expect(
+      warnings,
+      `[doc-governance] Convention rules without enforcer citations:\n` +
+        `  ${warnings.join('\n  ')}\n` +
+        `Add a test/lint reference or note "manual review".`,
+    ).toHaveLength(0);
   });
 });

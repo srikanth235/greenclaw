@@ -468,6 +468,94 @@ describe('Consistency: QUALITY.md covers all packages', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Autonomy readiness — every package must have a row in the Autonomy
+// Readiness table in QUALITY.md.
+// ---------------------------------------------------------------------------
+
+describe('Consistency: QUALITY.md autonomy readiness covers all packages', () => {
+  /**
+   * Parse the Autonomy Readiness table from QUALITY.md.
+   * @returns Set of package names found in the table
+   */
+  function parseAutonomyTable(): Set<string> {
+    const content = cachedRead(PATHS.qualityMd);
+    const rowPattern = /\|\s*(\w+)\/?\s*\|\s*(?:Yes|No)\s*\|/g;
+    const packages = new Set<string>();
+    let match: RegExpExecArray | null;
+    // Only match rows after the Autonomy Readiness heading
+    const autonomySection = content.indexOf('## Autonomy Readiness');
+    if (autonomySection === -1) return packages;
+    const sectionContent = content.slice(autonomySection);
+    while ((match = rowPattern.exec(sectionContent)) !== null) {
+      packages.add(match[1] as string);
+    }
+    return packages;
+  }
+
+  it('every package has a row in the Autonomy Readiness table', () => {
+    const listed = parseAutonomyTable();
+    const missing: string[] = [];
+    for (const pkg of PACKAGES) {
+      if (!listed.has(pkg)) {
+        missing.push(pkg);
+      }
+    }
+    expect(
+      missing,
+      `Packages missing from QUALITY.md Autonomy Readiness table: ${missing.join(', ')}. ` +
+        `Fix: add a row to the "Autonomy Readiness" table in docs/QUALITY.md.`,
+    ).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Autonomy tiers — critical-tier packages must maintain grade >= B.
+// ---------------------------------------------------------------------------
+
+describe('Consistency: autonomy tier validation', () => {
+  const CRITICAL_PACKAGES = ['api', 'telemetry'] as const;
+
+  it('critical-tier packages have grade >= B in QUALITY.md', () => {
+    const content = cachedRead(PATHS.qualityMd);
+    const rowPattern = /\|\s*(\w+)\/?\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([A-Z])\s*\|/g;
+    const grades = new Map<string, string>();
+    let match: RegExpExecArray | null;
+    while ((match = rowPattern.exec(content)) !== null) {
+      grades.set(match[1] as string, match[2] as string);
+    }
+
+    const violations: string[] = [];
+    for (const pkg of CRITICAL_PACKAGES) {
+      const grade = grades.get(pkg);
+      if (!grade || (grade !== 'A' && grade !== 'B')) {
+        violations.push(`${pkg}/ has grade "${grade ?? 'missing'}" (critical tier requires >= B)`);
+      }
+    }
+
+    expect(
+      violations,
+      `Critical-tier grade violations:\n  ${violations.join('\n  ')}\n` +
+        `Fix: critical-tier packages (${CRITICAL_PACKAGES.join(', ')}) must maintain grade >= B.`,
+    ).toHaveLength(0);
+  });
+
+  it('every package in PACKAGES has a tier assignment in doc-governance.md', () => {
+    const content = cachedRead(path.join(ROOT, 'docs', 'conventions', 'doc-governance.md'));
+    const missing: string[] = [];
+    for (const pkg of PACKAGES) {
+      if (!content.includes(`\`${pkg}\``)) {
+        missing.push(pkg);
+      }
+    }
+    expect(
+      missing,
+      `Packages missing from autonomy tier table in doc-governance.md: ${missing.join(', ')}. ` +
+        `Fix: assign every package to a tier in the "Autonomy Tiers" table.`,
+    ).toHaveLength(0);
+  });
+});
+
 describe('Consistency: PLANS.md index matches exec-plans on disk', () => {
   /**
    * Extract plan file references from PLANS.md.

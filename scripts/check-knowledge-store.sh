@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# GreenClaw — Knowledge-store-first pre-commit hook
+# GreenClaw — Knowledge-store-first pre-commit hook (convenience only)
+#
+# This is a LOCAL convenience mirror. The authoritative gate is CI
+# (`pnpm test` → `tests/knowledge-gate.test.ts`). See
+# docs/conventions/doc-governance.md § Gate Authority.
 #
 # Uses the Codex CLI to verify that commits touching packages/*/src/ include
 # the correct knowledge store updates (docs/, AGENTS.md, QUALITY.md, etc.).

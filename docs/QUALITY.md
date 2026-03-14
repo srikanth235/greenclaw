@@ -55,8 +55,26 @@ Package A-grades require:
 | Error conventions          | Documented | C     | Docs updated to current API behavior; broader error map deferred |
 | Observability              | Active     | B     | Shared RequestTrace schema, persistence, and query contracts |
 | Security                   | Active     | B     | Header sanitization, upstream timeout, trace error isolation |
-| Harness: doc governance    | Active     | B     | Ledger append-only, grade-note coupling, owner-map volatile ban |
+| Harness: doc governance    | Active     | B     | Ledger append-only, grade-note coupling, owner-map volatile ban, reference enforcer citation |
 | CI pipeline                | Partial    | B     | Deterministic suite is always on; semantic lane requires Codex auth |
+
+## Autonomy Readiness
+
+Per-package readiness for autonomous development without human intervention.
+Criteria: Bootable (imports without external config), Contract-Covered (blocking
+contract/fixture tests in CI), Observable (structured logs/traces), Rollback-Safe
+(no irreversible side effects).
+
+| Package       | Bootable | Contract | Observable | Rollback-Safe | Score |
+| ------------- | -------- | -------- | ---------- | ------------- | ----- |
+| types/        | Yes      | No       | No         | Yes           | 2/4   |
+| config/       | Yes      | No       | No         | Yes           | 2/4   |
+| telemetry/    | Yes      | Yes      | Yes        | Yes           | 4/4   |
+| optimization/ | Yes      | Yes      | No         | Yes           | 3/4   |
+| monitoring/   | Yes      | No       | No         | Yes           | 2/4   |
+| cli/          | Yes      | No       | No         | Yes           | 2/4   |
+| api/          | Yes      | Yes      | Yes        | Yes           | 4/4   |
+| dashboard/    | Yes      | No       | No         | Yes           | 2/4   |
 
 ## Tracking Gaps
 
@@ -145,5 +163,12 @@ breadth before depth.
   (3) defect log append-only validates full entry blocks including continuation
   lines, (4) resolved debt compares full row content not just IDs, (5) added
   missing `done` and `history` to volatile-word ban list with precise exemptions.
+
+- 2026-03-14: Autonomy hardening — (1) promoted reference-class enforcement
+  from warning to hard fail, (2) documented CI as authoritative gate (local
+  hooks are convenience only), (3) added per-package autonomy readiness table
+  with bootable/contract/observable/rollback-safe criteria, (4) added autonomy
+  tiers (critical/standard/low) with grade floor enforcement for critical
+  packages.
 
 Last updated: 2026-03-14
