@@ -1,3 +1,9 @@
+---
+tiers:
+  critical: [api, telemetry]
+  standard: [config, optimization, monitoring, types]
+  low: [cli, dashboard]
+---
 # GreenClaw — Document Governance
 
 Every knowledge-store document belongs to a **mutation class**. The class
@@ -29,6 +35,9 @@ determines what kinds of changes are allowed and how the harness enforces them.
 | `packages/*/AGENTS.md` — frontmatter | state | YAML between opening and closing `---` delimiters |
 | `CLAUDE.md` | owner-map | Entire file |
 | `AGENTS.md` | owner-map | Entire file |
+| `docs/QUALITY.md` — frontmatter | state | YAML grades and autonomy readiness (PLAN-014) |
+| `docs/exec-plans/tech-debt-tracker.md` — frontmatter | state | YAML active/resolved debt items (PLAN-014) |
+| `docs/conventions/doc-governance.md` — frontmatter | state | YAML tier assignments (PLAN-014) |
 | `docs/conventions/*.md` | reference | Entire file |
 
 ## Enforcement
@@ -43,6 +52,7 @@ Enforced by `tests/doc-governance.test.ts`. Enforcement level per class:
 | index | **Existing** | Already covered by `tests/consistency.test.ts` (PLANS.md, design/index.md) |
 | owner-map | **Hard fail** | Regex scan for volatile status words |
 | reference | **Hard fail** | Imperative rules without enforcer citation block the test suite |
+| intra-file parity | **Hard fail** | Frontmatter values must match their markdown table views. Enforced by `tests/consistency.test.ts` (PLAN-014) |
 
 ## Volatile Status Words (owner-map ban list)
 

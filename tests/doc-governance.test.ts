@@ -2,6 +2,7 @@ import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { extractSection, parseMarkdownTable } from './lib/markdown';
 
 /**
  * Document governance harness — enforces mutation policies on
@@ -116,36 +117,7 @@ function getOldContent(mergeBase: string, filePath: string): string | null {
   }
 }
 
-/**
- * Extract a section from markdown content between a heading and the next
- * same-or-higher-level heading (or EOF).
- * @param content - Full markdown content
- * @param headingPattern - Regex to match the section heading
- * @returns The section content (excluding the heading line), or null
- */
-function extractSection(content: string, headingPattern: RegExp): string | null {
-  const lines = content.split('\n');
-  let startIdx = -1;
-  let headingLevel = 0;
-
-  for (let i = 0; i < lines.length; i++) {
-    if (startIdx === -1) {
-      if (headingPattern.test(lines[i])) {
-        startIdx = i + 1;
-        const match = lines[i].match(/^(#+)/);
-        headingLevel = match ? match[1].length : 0;
-      }
-    } else if (headingLevel > 0) {
-      const match = lines[i].match(/^(#+)\s/);
-      if (match && match[1].length <= headingLevel) {
-        return lines.slice(startIdx, i).join('\n');
-      }
-    }
-  }
-
-  if (startIdx === -1) return null;
-  return lines.slice(startIdx).join('\n');
-}
+// extractSection imported from ./lib/markdown
 
 /**
  * Extract defect-log entries as complete blocks (top-level `- ` line plus
@@ -176,7 +148,8 @@ function defectEntries(section: string): string[] {
 }
 
 /**
- * Extract table rows (pipe-delimited lines, excluding header separator).
+ * Extract raw table rows (pipe-delimited lines, excluding header separator).
+ * Used for append-only ledger checks where row identity matters.
  * @param section - Section content
  * @returns Array of raw row strings
  */
@@ -278,34 +251,34 @@ describe('Document Governance', () => {
 
     const newContent = fs.readFileSync(path.join(ROOT, 'docs/QUALITY.md'), 'utf-8');
 
-    // Parse both package quality rows (| name/ | impl | tests | docs | grade | notes |)
-    // and cross-cutting rows (| domain | status | grade | notes |).
-    // The name column may contain spaces, colons, slashes.
-    const pkgRowPattern =
-      /\|\s*([^|]+?)\/?(\s*)\|[^|]*\|[^|]*\|[^|]*\|\s*([A-D])\s*\|\s*(.*?)\s*\|/g;
-    const crossCutRowPattern = /\|\s*([^|]+?)\s*\|[^|]*\|\s*([A-D])\s*\|\s*(.*?)\s*\|/g;
-
-    /** Parse grade tables into a map of name → { grade, notes } */
+    /**
+     * Parse grade tables from markdown content using shared table parser.
+     * Works for both old (pre-frontmatter) and new content.
+     * @param content - QUALITY.md content
+     * @returns Map of name → { grade, notes }
+     */
     function parseGrades(content: string): Map<string, { grade: string; notes: string }> {
       const map = new Map<string, { grade: string; notes: string }>();
-      let match: RegExpExecArray | null;
 
-      // Package quality table (6 columns)
-      const pkgRe = new RegExp(pkgRowPattern.source, 'g');
-      while ((match = pkgRe.exec(content)) !== null) {
-        const name = match[1].trim();
-        if (name === 'Package' || name === '---' || name.startsWith('-')) continue;
-        map.set(name, { grade: match[3], notes: match[4] });
+      // Package quality table
+      const pkgSection = extractSection(content, /^##\s+Package Quality/);
+      if (pkgSection) {
+        for (const row of parseMarkdownTable(pkgSection)) {
+          const name = (row.package ?? '').replace(/\/$/, '').trim();
+          if (name && row.grade) {
+            map.set(name, { grade: row.grade, notes: row.notes ?? '' });
+          }
+        }
       }
 
-      // Cross-cutting quality table (4 columns)
+      // Cross-cutting quality table
       const ccSection = extractSection(content, /^##\s+Cross-Cutting Quality/);
       if (ccSection) {
-        const ccRe = new RegExp(crossCutRowPattern.source, 'g');
-        while ((match = ccRe.exec(ccSection)) !== null) {
-          const name = match[1].trim();
-          if (name === 'Domain' || name === '---' || name.startsWith('-')) continue;
-          map.set(name, { grade: match[2], notes: match[3] });
+        for (const row of parseMarkdownTable(ccSection)) {
+          const name = (row.domain ?? '').trim();
+          if (name && row.grade) {
+            map.set(name, { grade: row.grade, notes: row.notes ?? '' });
+          }
         }
       }
 
@@ -346,7 +319,7 @@ describe('Document Governance', () => {
     const newContent = fs.readFileSync(path.join(ROOT, 'docs/QUALITY.md'), 'utf-8');
 
     /**
-     * Parse autonomy readiness rows from QUALITY.md.
+     * Parse autonomy readiness rows from QUALITY.md using shared table parser.
      * @param content - File content
      * @returns Map of package → row content (all columns concatenated)
      */
@@ -355,13 +328,13 @@ describe('Document Governance', () => {
       if (!section) return new Map();
 
       const map = new Map<string, string>();
-      const rowPattern =
-        /\|\s*(\w+)\/?\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*(\S+)\s*\|/g;
-      let match: RegExpExecArray | null;
-      while ((match = rowPattern.exec(section)) !== null) {
-        const name = match[1] as string;
-        // Concatenate all value columns for comparison
-        map.set(name, `${match[2]}|${match[3]}|${match[4]}|${match[5]}|${match[6]}`);
+      for (const row of parseMarkdownTable(section)) {
+        const pkg = (row.package ?? '').replace(/\/$/, '').trim();
+        if (!pkg) continue;
+        map.set(
+          pkg,
+          `${row.bootable}|${row.contract}|${row.observable}|${row.rollback_safe}|${row.score}`,
+        );
       }
       return map;
     }

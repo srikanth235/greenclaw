@@ -2,6 +2,7 @@
 
 The repository knowledge store is not just "docs that exist". It is a set of
 claims that must remain discoverable, current, and mechanically defensible.
+<!-- enforced by tests/consistency.test.ts and tests/doc-governance.test.ts -->
 
 ## Broad Invariant Families
 
@@ -15,6 +16,7 @@ claims that must remain discoverable, current, and mechanically defensible.
 | Progressive disclosure | `AGENTS.md` files remain maps, not manuals | Lightweight deterministic checks + review |
 | Decision provenance | Non-obvious behavior points back to a plan, ADR, or owner doc | Deterministic checks where possible |
 | Cross-doc consistency | Repeated claims across docs do not contradict each other | Bounded semantic checks |
+| Frontmatter parity | Machine-readable YAML frontmatter and human-readable markdown tables within the same file must agree | Deterministic intra-file parity tests (`tests/consistency.test.ts`, PLAN-014) |
 
 ## Claim Classes
 
@@ -56,7 +58,7 @@ and tightly bounded.
 
 - package A-grades require deterministic coverage for normative guarantees
 - package A-grades also require the latest owner-doc semantic verdict to be PASS
-- repeated semantic failures must lower the documented grade or reopen the gap
+- repeated semantic failures must lower the documented grade or reopen the gap <!-- enforced by manual review -->
 
 ## Document Mutation Governance
 
