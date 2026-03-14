@@ -97,23 +97,53 @@ function coerce(value: string): boolean | number | string {
  * @returns Map of package directory name → validated PackageMeta
  * @throws If any AGENTS.md is missing frontmatter or fails schema validation
  */
-export function loadAllPackageMeta(): Map<string, PackageMeta> {
-  const meta = new Map<string, PackageMeta>();
+/**
+ * Discover all package directories under packages/.
+ * Uses the filesystem as the authoritative source — not frontmatter.
+ * A directory counts as a package if it contains a `src/` subdirectory.
+ * @returns Array of package directory names
+ */
+export function discoverPackageDirs(): string[] {
+  if (!fs.existsSync(PACKAGES_DIR)) return [];
 
-  if (!fs.existsSync(PACKAGES_DIR)) return meta;
-
-  const dirs = fs
+  return fs
     .readdirSync(PACKAGES_DIR, { withFileTypes: true })
     .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+    .filter((d) => fs.existsSync(path.join(PACKAGES_DIR, d.name, 'src')))
     .map((d) => d.name);
+}
+
+/**
+ * Load and validate frontmatter from all package AGENTS.md files.
+ *
+ * Uses filesystem-discovered packages as the universe — a package
+ * with missing AGENTS.md or broken/absent frontmatter throws an error
+ * so it cannot silently disappear from test harnesses.
+ *
+ * @returns Map of package directory name → validated PackageMeta
+ * @throws If any package lacks AGENTS.md or has missing/invalid frontmatter
+ */
+export function loadAllPackageMeta(): Map<string, PackageMeta> {
+  const meta = new Map<string, PackageMeta>();
+  const dirs = discoverPackageDirs();
 
   for (const dir of dirs) {
     const agentsPath = path.join(PACKAGES_DIR, dir, 'AGENTS.md');
-    if (!fs.existsSync(agentsPath)) continue;
+    if (!fs.existsSync(agentsPath)) {
+      throw new Error(
+        `Package "${dir}" has no AGENTS.md. ` +
+          `Every package must have an AGENTS.md with valid YAML frontmatter.`,
+      );
+    }
 
     const content = fs.readFileSync(agentsPath, 'utf-8');
     const raw = parseFrontmatter(content);
-    if (!raw) continue;
+    if (!raw) {
+      throw new Error(
+        `Package "${dir}/AGENTS.md" has no YAML frontmatter (--- block). ` +
+          `See docs/conventions/doc-governance.md for the required schema.`,
+      );
+    }
 
     const parsed = PackageMetaSchema.parse(raw);
     meta.set(dir, parsed);

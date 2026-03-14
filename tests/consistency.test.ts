@@ -1339,7 +1339,7 @@ describe('Consistency: frontmatter parity', () => {
 
   it('frontmatter tiers match doc-governance.md', () => {
     const govMd = cachedRead(path.join(ROOT, 'docs', 'conventions', 'doc-governance.md'));
-    const tierPattern = /\|\s*(\w+)\s*\|\s*`([^`]+(?:`,\s*`[^`]+)*)`\s*\|/g;
+    const tierPattern = /\|\s*\*{0,2}(\w+)\*{0,2}\s*\|\s*`([^`]+(?:`,\s*`[^`]+)*)`\s*\|/g;
     const govTiers = new Map<string, string>();
     let match: RegExpExecArray | null;
     while ((match = tierPattern.exec(govMd)) !== null) {
@@ -1353,7 +1353,9 @@ describe('Consistency: frontmatter parity', () => {
     const violations: string[] = [];
     for (const [pkg, pm] of meta) {
       const govTier = govTiers.get(pkg);
-      if (govTier && govTier !== pm.tier) {
+      if (!govTier) {
+        violations.push(`${pkg}: missing from doc-governance.md Autonomy Tiers table`);
+      } else if (govTier !== pm.tier) {
         violations.push(`${pkg}: frontmatter tier=${pm.tier}, doc-governance.md tier=${govTier}`);
       }
     }
