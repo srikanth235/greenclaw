@@ -2,6 +2,8 @@ import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { loadSectionClasses, type SectionClass } from './lib/frontmatter';
+import { extractSection, parseMarkdownTable } from './lib/markdown';
 
 /**
  * Document governance harness — enforces mutation policies on
@@ -116,36 +118,7 @@ function getOldContent(mergeBase: string, filePath: string): string | null {
   }
 }
 
-/**
- * Extract a section from markdown content between a heading and the next
- * same-or-higher-level heading (or EOF).
- * @param content - Full markdown content
- * @param headingPattern - Regex to match the section heading
- * @returns The section content (excluding the heading line), or null
- */
-function extractSection(content: string, headingPattern: RegExp): string | null {
-  const lines = content.split('\n');
-  let startIdx = -1;
-  let headingLevel = 0;
-
-  for (let i = 0; i < lines.length; i++) {
-    if (startIdx === -1) {
-      if (headingPattern.test(lines[i])) {
-        startIdx = i + 1;
-        const match = lines[i].match(/^(#+)/);
-        headingLevel = match ? match[1].length : 0;
-      }
-    } else if (headingLevel > 0) {
-      const match = lines[i].match(/^(#+)\s/);
-      if (match && match[1].length <= headingLevel) {
-        return lines.slice(startIdx, i).join('\n');
-      }
-    }
-  }
-
-  if (startIdx === -1) return null;
-  return lines.slice(startIdx).join('\n');
-}
+// extractSection imported from ./lib/markdown
 
 /**
  * Extract defect-log entries as complete blocks (top-level `- ` line plus
@@ -176,7 +149,8 @@ function defectEntries(section: string): string[] {
 }
 
 /**
- * Extract table rows (pipe-delimited lines, excluding header separator).
+ * Extract raw table rows (pipe-delimited lines, excluding header separator).
+ * Used for append-only ledger checks where row identity matters.
  * @param section - Section content
  * @returns Array of raw row strings
  */
@@ -195,80 +169,82 @@ describe('Document Governance', () => {
   const result = getChangedFiles();
 
   // -------------------------------------------------------------------------
-  // Ledger: QUALITY.md defect log is append-only
+  // Ledger: append-only sections (discovered from frontmatter)
   // -------------------------------------------------------------------------
-  it('QUALITY.md defect log entries are append-only', () => {
-    if (result.skipped) return;
-    if (!result.files.includes('docs/QUALITY.md')) return;
 
-    const oldContent = getOldContent(result.mergeBase, 'docs/QUALITY.md');
-    if (!oldContent) return; // new file, nothing to check
-
-    const newContent = fs.readFileSync(path.join(ROOT, 'docs/QUALITY.md'), 'utf-8');
-
-    const oldDefectLog = extractSection(oldContent, /^##\s+Defect Log/);
-    const newDefectLog = extractSection(newContent, /^##\s+Defect Log/);
-
-    if (!oldDefectLog) return; // section didn't exist before
-
-    // Every old defect entry (full block including continuation lines) must still exist
-    const oldEntries = defectEntries(oldDefectLog);
-    const newEntries = defectEntries(newDefectLog ?? '');
-
-    const missing = oldEntries.filter((entry) => !newEntries.includes(entry));
-
-    expect(
-      missing,
-      `Defect log is append-only. These entries were deleted or modified:\n` +
-        `${missing.map((e) => `  ${e}`).join('\n')}\n\n` +
-        `See docs/conventions/doc-governance.md for the mutation policy.`,
-    ).toHaveLength(0);
+  /** Files with section-class frontmatter and their repo-relative paths. */
+  const governedFiles: Array<{ repoPath: string; absPath: string; sections: SectionClass[] }> = [
+    'docs/QUALITY.md',
+    'docs/exec-plans/tech-debt-tracker.md',
+  ].map((repoPath) => {
+    const absPath = path.join(ROOT, repoPath);
+    const sections = fs.existsSync(absPath) ? loadSectionClasses(absPath) : [];
+    return { repoPath, absPath, sections };
   });
 
+  for (const gf of governedFiles) {
+    const ledgerSections = gf.sections.filter((s) => s.class === 'ledger');
+    for (const sec of ledgerSections) {
+      it(`${gf.repoPath} "${sec.heading}" is append-only`, () => {
+        if (result.skipped) return;
+        if (!result.files.includes(gf.repoPath)) return;
+
+        const oldContent = getOldContent(result.mergeBase, gf.repoPath);
+        if (!oldContent) return;
+
+        const newContent = fs.readFileSync(gf.absPath, 'utf-8');
+        const headingRe = new RegExp(
+          `^##\\s+${sec.heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+        );
+
+        const oldSection = extractSection(oldContent, headingRe);
+        const newSection = extractSection(newContent, headingRe);
+
+        if (!oldSection) return;
+
+        // Defect Log uses bullet entries; tables use pipe-delimited rows
+        const hasBullets = oldSection.split('\n').some((l) => l.startsWith('- '));
+
+        if (hasBullets) {
+          const oldEntries = defectEntries(oldSection);
+          const newEntries = defectEntries(newSection ?? '');
+          const missing = oldEntries.filter((entry) => !newEntries.includes(entry));
+          expect(
+            missing,
+            `"${sec.heading}" is append-only. These entries were deleted or modified:\n` +
+              `${missing.map((e) => `  ${e}`).join('\n')}\n\n` +
+              `See docs/conventions/doc-governance.md for the mutation policy.`,
+          ).toHaveLength(0);
+        } else {
+          const oldRows = tableRows(oldSection).filter((r) => !r.includes('(none yet)'));
+          const newRows = tableRows(newSection ?? '');
+          const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
+          const newRowsNormalized = newRows.map(normalize);
+          const missing = oldRows.filter((row) => !newRowsNormalized.includes(normalize(row)));
+          expect(
+            missing,
+            `"${sec.heading}" is append-only. These entries were deleted or modified:\n` +
+              `${missing.map((e) => `  ${e}`).join('\n')}\n\n` +
+              `See docs/conventions/doc-governance.md.`,
+          ).toHaveLength(0);
+        }
+      });
+    }
+  }
+
   // -------------------------------------------------------------------------
-  // Ledger: tech-debt-tracker.md resolved rows are append-only
+  // State: grade/value changes require rationale (discovered from frontmatter)
   // -------------------------------------------------------------------------
-  it('tech-debt-tracker.md resolved debt rows are append-only', () => {
-    if (result.skipped) return;
-    if (!result.files.includes('docs/exec-plans/tech-debt-tracker.md')) return;
 
-    const oldContent = getOldContent(result.mergeBase, 'docs/exec-plans/tech-debt-tracker.md');
-    if (!oldContent) return;
+  // QUALITY.md state sections — each discovered from frontmatter
+  const qualityFile = governedFiles.find((gf) => gf.repoPath === 'docs/QUALITY.md');
+  const qualityStateSections = qualityFile?.sections.filter((s) => s.class === 'state') ?? [];
 
-    const newContent = fs.readFileSync(
-      path.join(ROOT, 'docs/exec-plans/tech-debt-tracker.md'),
-      'utf-8',
-    );
+  // Grade-bearing sections (Package Quality, Cross-Cutting Quality)
+  const gradeSectionHeadings = qualityStateSections
+    .filter((s) => s.heading !== 'Autonomy Readiness')
+    .map((s) => s.heading);
 
-    const oldResolved = extractSection(oldContent, /^##\s+Resolved Debt/);
-    const newResolved = extractSection(newContent, /^##\s+Resolved Debt/);
-
-    if (!oldResolved) return;
-
-    const oldRows = tableRows(oldResolved).filter((r) => !r.includes('(none yet)'));
-    const newRows = tableRows(newResolved ?? '');
-
-    // Normalize whitespace for comparison (collapse internal spaces)
-    const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
-    const newRowsNormalized = newRows.map(normalize);
-
-    const missing = oldRows.filter((row) => {
-      if (row.includes('(none yet)')) return false;
-      return !newRowsNormalized.includes(normalize(row));
-    });
-
-    expect(
-      missing,
-      `Resolved debt rows are append-only (tombstone-based). ` +
-        `These resolved entries were deleted or modified:\n` +
-        `${missing.map((e) => `  ${e}`).join('\n')}\n\n` +
-        `See docs/conventions/doc-governance.md.`,
-    ).toHaveLength(0);
-  });
-
-  // -------------------------------------------------------------------------
-  // State: QUALITY.md grade changes require notes changes
-  // -------------------------------------------------------------------------
   it('QUALITY.md grade changes are accompanied by notes changes', () => {
     if (result.skipped) return;
     if (!result.files.includes('docs/QUALITY.md')) return;
@@ -278,34 +254,24 @@ describe('Document Governance', () => {
 
     const newContent = fs.readFileSync(path.join(ROOT, 'docs/QUALITY.md'), 'utf-8');
 
-    // Parse both package quality rows (| name/ | impl | tests | docs | grade | notes |)
-    // and cross-cutting rows (| domain | status | grade | notes |).
-    // The name column may contain spaces, colons, slashes.
-    const pkgRowPattern =
-      /\|\s*([^|]+?)\/?(\s*)\|[^|]*\|[^|]*\|[^|]*\|\s*([A-D])\s*\|\s*(.*?)\s*\|/g;
-    const crossCutRowPattern = /\|\s*([^|]+?)\s*\|[^|]*\|\s*([A-D])\s*\|\s*(.*?)\s*\|/g;
-
-    /** Parse grade tables into a map of name → { grade, notes } */
+    /**
+     * Parse grade tables from markdown content using frontmatter-discovered sections.
+     * @param content - QUALITY.md content
+     * @returns Map of name → { grade, notes }
+     */
     function parseGrades(content: string): Map<string, { grade: string; notes: string }> {
       const map = new Map<string, { grade: string; notes: string }>();
-      let match: RegExpExecArray | null;
 
-      // Package quality table (6 columns)
-      const pkgRe = new RegExp(pkgRowPattern.source, 'g');
-      while ((match = pkgRe.exec(content)) !== null) {
-        const name = match[1].trim();
-        if (name === 'Package' || name === '---' || name.startsWith('-')) continue;
-        map.set(name, { grade: match[3], notes: match[4] });
-      }
+      for (const heading of gradeSectionHeadings) {
+        const headingRe = new RegExp(`^##\\s+${heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
+        const section = extractSection(content, headingRe);
+        if (!section) continue;
 
-      // Cross-cutting quality table (4 columns)
-      const ccSection = extractSection(content, /^##\s+Cross-Cutting Quality/);
-      if (ccSection) {
-        const ccRe = new RegExp(crossCutRowPattern.source, 'g');
-        while ((match = ccRe.exec(ccSection)) !== null) {
-          const name = match[1].trim();
-          if (name === 'Domain' || name === '---' || name.startsWith('-')) continue;
-          map.set(name, { grade: match[2], notes: match[3] });
+        for (const row of parseMarkdownTable(section)) {
+          const name = (row.package ?? row.domain ?? '').replace(/\/$/, '').trim();
+          if (name && row.grade) {
+            map.set(name, { grade: row.grade, notes: row.notes ?? '' });
+          }
         }
       }
 
@@ -319,7 +285,7 @@ describe('Document Governance', () => {
 
     for (const [name, newEntry] of newGrades) {
       const oldEntry = oldGrades.get(name);
-      if (!oldEntry) continue; // new row, no constraint
+      if (!oldEntry) continue;
       if (oldEntry.grade !== newEntry.grade && oldEntry.notes === newEntry.notes) {
         violations.push(`${name}: grade ${oldEntry.grade}→${newEntry.grade} but notes unchanged`);
       }
@@ -333,35 +299,40 @@ describe('Document Governance', () => {
     ).toHaveLength(0);
   });
 
-  // -------------------------------------------------------------------------
-  // State: Autonomy Readiness value changes require rationale
-  // -------------------------------------------------------------------------
+  // Autonomy Readiness section — discovered from frontmatter
+  const autonomySection = qualityStateSections.find((s) => s.heading === 'Autonomy Readiness');
+
   it('Autonomy Readiness changes are accompanied by rationale', () => {
     if (result.skipped) return;
     if (!result.files.includes('docs/QUALITY.md')) return;
+    if (!autonomySection) return;
 
     const oldContent = getOldContent(result.mergeBase, 'docs/QUALITY.md');
     if (!oldContent) return;
 
     const newContent = fs.readFileSync(path.join(ROOT, 'docs/QUALITY.md'), 'utf-8');
 
+    const headingRe = new RegExp(
+      `^##\\s+${autonomySection.heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+    );
+
     /**
-     * Parse autonomy readiness rows from QUALITY.md.
+     * Parse autonomy readiness rows from QUALITY.md using shared table parser.
      * @param content - File content
      * @returns Map of package → row content (all columns concatenated)
      */
     function parseAutonomyRows(content: string): Map<string, string> {
-      const section = extractSection(content, /^##\s+Autonomy Readiness/);
+      const section = extractSection(content, headingRe);
       if (!section) return new Map();
 
       const map = new Map<string, string>();
-      const rowPattern =
-        /\|\s*(\w+)\/?\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*(\S+)\s*\|/g;
-      let match: RegExpExecArray | null;
-      while ((match = rowPattern.exec(section)) !== null) {
-        const name = match[1] as string;
-        // Concatenate all value columns for comparison
-        map.set(name, `${match[2]}|${match[3]}|${match[4]}|${match[5]}|${match[6]}`);
+      for (const row of parseMarkdownTable(section)) {
+        const pkg = (row.package ?? '').replace(/\/$/, '').trim();
+        if (!pkg) continue;
+        map.set(
+          pkg,
+          `${row.bootable}|${row.contract}|${row.observable}|${row.rollback_safe}|${row.score}`,
+        );
       }
       return map;
     }
@@ -369,7 +340,6 @@ describe('Document Governance', () => {
     const oldRows = parseAutonomyRows(oldContent);
     const newRows = parseAutonomyRows(newContent);
 
-    // Check that the defect log has a new entry if any readiness values changed
     const changed: string[] = [];
     for (const [name, newVal] of newRows) {
       const oldVal = oldRows.get(name);
@@ -379,9 +349,14 @@ describe('Document Governance', () => {
     }
 
     if (changed.length > 0) {
-      // Verify the defect log was also updated (same mechanism as grade changes)
-      const oldDefectLog = extractSection(oldContent, /^##\s+Defect Log/) ?? '';
-      const newDefectLog = extractSection(newContent, /^##\s+Defect Log/) ?? '';
+      // Find ledger section heading from frontmatter for defect log check
+      const ledgerSection = qualityFile?.sections.find((s) => s.class === 'ledger');
+      const defectLogRe = ledgerSection
+        ? new RegExp(`^##\\s+${ledgerSection.heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
+        : /^##\s+Defect Log/;
+
+      const oldDefectLog = extractSection(oldContent, defectLogRe) ?? '';
+      const newDefectLog = extractSection(newContent, defectLogRe) ?? '';
       expect(
         newDefectLog.length > oldDefectLog.length,
         `Autonomy Readiness values changed but Defect Log was not updated.\n` +

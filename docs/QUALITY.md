@@ -1,3 +1,28 @@
+---
+packages:
+  types: { grade: B }
+  config: { grade: C }
+  telemetry: { grade: B }
+  optimization: { grade: C }
+  monitoring: { grade: C }
+  cli: { grade: C }
+  api: { grade: B }
+  dashboard: { grade: D }
+autonomy:
+  types: { bootable: true, contract: false, observable: false, rollback_safe: true }
+  config: { bootable: true, contract: false, observable: false, rollback_safe: true }
+  telemetry: { bootable: true, contract: true, observable: true, rollback_safe: true }
+  optimization: { bootable: true, contract: true, observable: false, rollback_safe: true }
+  monitoring: { bootable: true, contract: false, observable: false, rollback_safe: true }
+  cli: { bootable: true, contract: false, observable: false, rollback_safe: true }
+  api: { bootable: true, contract: true, observable: true, rollback_safe: true }
+  dashboard: { bootable: true, contract: false, observable: false, rollback_safe: true }
+sections:
+  - { heading: "Defect Log", class: ledger }
+  - { heading: "Package Quality", class: state }
+  - { heading: "Cross-Cutting Quality", class: state }
+  - { heading: "Autonomy Readiness", class: state }
+---
 # GreenClaw — Quality Scorecard
 
 Quality grade per module and architectural domain. Updated as implementation
@@ -185,5 +210,12 @@ breadth before depth.
   frontmatter tiers parity test now catches packages omitted from
   doc-governance.md tier table (not just mismatches). Also fixed bold-marker
   regex in tier table parsing.
+
+- 2026-03-14: PLAN-014 frontmatter-first doc parsing — added YAML frontmatter
+  to QUALITY.md (grades + autonomy), tech-debt-tracker.md (active/resolved items),
+  and doc-governance.md (tier assignments). Created shared `tests/lib/markdown.ts`
+  table parser. Replaced bespoke regex parsing in consistency.test.ts and
+  doc-governance.test.ts with frontmatter loaders and shared parser. Added
+  intra-file parity invariant enforcing frontmatter ↔ markdown table sync.
 
 Last updated: 2026-03-14

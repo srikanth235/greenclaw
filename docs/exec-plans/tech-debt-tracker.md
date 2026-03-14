@@ -1,3 +1,16 @@
+---
+active:
+  - { id: TD-002, module: compactor, priority: Medium, status: Open }
+  - { id: TD-004, module: dashboard, priority: Low, status: Open }
+resolved:
+  - { id: TD-001, resolved: "2026-03-13" }
+  - { id: TD-003, resolved: "2026-03-13" }
+  - { id: TD-005, resolved: "2026-03-12" }
+  - { id: TD-006, resolved: "2026-03-12" }
+sections:
+  - { heading: "Resolved Debt", class: ledger }
+  - { heading: "Active Debt", class: state }
+---
 # GreenClaw — Technical Debt Tracker
 
 Known technical debt, tracked with owner module, priority, and status.

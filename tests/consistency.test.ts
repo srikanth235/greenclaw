@@ -1,7 +1,16 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { getPackageNames, getPackagesByTier, loadAllPackageMeta } from './lib/frontmatter';
+import {
+  getPackageNames,
+  getPackagesByTier,
+  loadAllPackageMeta,
+  loadDocGovernanceTiers,
+  loadQualityMeta,
+  loadSectionClasses,
+  loadTechDebtMeta,
+} from './lib/frontmatter';
+import { extractSection, parseMarkdownTable } from './lib/markdown';
 
 /**
  * Consistency checks — periodic validation that documentation,
@@ -357,42 +366,52 @@ describe('Consistency: QUALITY.md covers all packages', () => {
     'Harness: fixture eval',
   ] as const;
 
+  const qualityMeta = loadQualityMeta();
+
   /**
-   * Parse the Module/Package Quality table from QUALITY.md.
+   * Get package grades from QUALITY.md frontmatter.
    * @returns Map of package name → grade
    */
   function parseQualityTable(): Map<string, string> {
-    const content = cachedRead(PATHS.qualityMd);
-    // Match rows like: | types/      | Stub           | N/A           | Complete | D     | ...
-    const rowPattern = /\|\s*(\w+)\/?\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([A-Z])\s*\|/g;
     const grades = new Map<string, string>();
-    let match: RegExpExecArray | null;
-    while ((match = rowPattern.exec(content)) !== null) {
-      grades.set(match[1] as string, match[2] as string);
+    for (const [pkg, data] of Object.entries(qualityMeta.packages)) {
+      grades.set(pkg, data.grade);
     }
     return grades;
   }
 
+  /**
+   * Parse notes from QUALITY.md table (view-only, not in frontmatter).
+   * @returns Map of package name → notes string
+   */
   function parseQualityNotes(): Map<string, string> {
     const content = cachedRead(PATHS.qualityMd);
-    const rowPattern = /\|\s*(\w+)\/?\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([A-Z])\s*\|\s*([^|]+)\|/g;
+    const section = extractSection(content, /^##\s+Package Quality/);
+    if (!section) return new Map();
+    const rows = parseMarkdownTable(section);
     const notes = new Map<string, string>();
-    let match: RegExpExecArray | null;
-    while ((match = rowPattern.exec(content)) !== null) {
-      notes.set(match[1] as string, (match[3] as string).trim());
+    for (const row of rows) {
+      const pkg = (row.package ?? '').replace(/\/$/, '');
+      if (pkg && row.notes) notes.set(pkg, row.notes);
     }
     return notes;
   }
 
+  /**
+   * Parse cross-cutting quality domain names from QUALITY.md table.
+   * @returns Set of domain names
+   */
   function parseCrossCuttingRows(): Set<string> {
     const content = cachedRead(PATHS.qualityMd);
-    const rowPattern = /^\|\s*([^|]+?)\s*\|\s*(?:Active|Documented|Partial)\s*\|\s*[A-D]\s*\|/gm;
-    const rows = new Set<string>();
-    let match: RegExpExecArray | null;
-    while ((match = rowPattern.exec(content)) !== null) {
-      rows.add((match[1] as string).trim());
+    const section = extractSection(content, /^##\s+Cross-Cutting Quality/);
+    if (!section) return new Set();
+    const rows = parseMarkdownTable(section);
+    const domains = new Set<string>();
+    for (const row of rows) {
+      const domain = row.domain;
+      if (domain && domain !== '---') domains.add(domain);
     }
-    return rows;
+    return domains;
   }
 
   it('every package has a row in QUALITY.md', () => {
@@ -466,37 +485,19 @@ describe('Consistency: QUALITY.md covers all packages', () => {
 // ---------------------------------------------------------------------------
 
 describe('Consistency: QUALITY.md autonomy readiness covers all packages', () => {
-  /**
-   * Parse the Autonomy Readiness table from QUALITY.md.
-   * @returns Set of package names found in the table
-   */
-  function parseAutonomyTable(): Set<string> {
-    const content = cachedRead(PATHS.qualityMd);
-    const rowPattern = /\|\s*(\w+)\/?\s*\|\s*(?:Yes|No)\s*\|/g;
-    const packages = new Set<string>();
-    let match: RegExpExecArray | null;
-    // Only match rows after the Autonomy Readiness heading
-    const autonomySection = content.indexOf('## Autonomy Readiness');
-    if (autonomySection === -1) return packages;
-    const sectionContent = content.slice(autonomySection);
-    while ((match = rowPattern.exec(sectionContent)) !== null) {
-      packages.add(match[1] as string);
-    }
-    return packages;
-  }
+  const qMeta = loadQualityMeta();
 
-  it('every package has a row in the Autonomy Readiness table', () => {
-    const listed = parseAutonomyTable();
+  it('every package has an entry in QUALITY.md autonomy frontmatter', () => {
     const missing: string[] = [];
     for (const pkg of PACKAGES) {
-      if (!listed.has(pkg)) {
+      if (!qMeta.autonomy[pkg]) {
         missing.push(pkg);
       }
     }
     expect(
       missing,
-      `Packages missing from QUALITY.md Autonomy Readiness table: ${missing.join(', ')}. ` +
-        `Fix: add a row to the "Autonomy Readiness" table in docs/QUALITY.md.`,
+      `Packages missing from QUALITY.md autonomy frontmatter: ${missing.join(', ')}. ` +
+        `Fix: add an entry to the "autonomy" block in docs/QUALITY.md frontmatter.`,
     ).toHaveLength(0);
   });
 });
@@ -513,20 +514,26 @@ describe('Consistency: autonomy tier validation', () => {
   /** All tier-assigned packages must cover PACKAGES exactly. */
   const ALL_TIERED = [...CRITICAL_PACKAGES, ...STANDARD_PACKAGES, ...LOW_PACKAGES];
 
+  const qMeta = loadQualityMeta();
+
   /**
-   * Parse package grades and notes from QUALITY.md.
+   * Get package grades from frontmatter + notes from table.
    * @returns Map of package name → { grade, notes }
    */
   function parsePackageQuality(): Map<string, { grade: string; notes: string }> {
     const content = cachedRead(PATHS.qualityMd);
-    const rowPattern = /\|\s*(\w+)\/?\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([A-Z])\s*\|\s*([^|]*)\|/g;
+    const section = extractSection(content, /^##\s+Package Quality/);
+    const tableNotes = new Map<string, string>();
+    if (section) {
+      for (const row of parseMarkdownTable(section)) {
+        const pkg = (row.package ?? '').replace(/\/$/, '');
+        if (pkg) tableNotes.set(pkg, row.notes ?? '');
+      }
+    }
+
     const map = new Map<string, { grade: string; notes: string }>();
-    let match: RegExpExecArray | null;
-    while ((match = rowPattern.exec(content)) !== null) {
-      map.set(match[1] as string, {
-        grade: match[2] as string,
-        notes: (match[3] as string).trim(),
-      });
+    for (const [pkg, data] of Object.entries(qMeta.packages)) {
+      map.set(pkg, { grade: data.grade, notes: tableNotes.get(pkg) ?? '' });
     }
     return map;
   }
@@ -1285,42 +1292,34 @@ describe('Consistency: frontmatter parity', () => {
   });
 
   it('frontmatter grades match QUALITY.md', () => {
-    const content = cachedRead(PATHS.qualityMd);
-    const rowPattern = /\|\s*(\w+)\/?\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([A-Z])\s*\|/g;
-    const qualityGrades = new Map<string, string>();
-    let match: RegExpExecArray | null;
-    while ((match = rowPattern.exec(content)) !== null) {
-      qualityGrades.set(match[1] as string, match[2] as string);
-    }
-
+    const qMeta = loadQualityMeta();
     const violations: string[] = [];
     for (const [pkg, m] of meta) {
-      const qGrade = qualityGrades.get(pkg);
+      const qGrade = qMeta.packages[pkg]?.grade;
       if (qGrade && qGrade !== m.grade) {
-        violations.push(`${pkg}: frontmatter grade=${m.grade}, QUALITY.md grade=${qGrade}`);
+        violations.push(`${pkg}: AGENTS.md grade=${m.grade}, QUALITY.md grade=${qGrade}`);
       }
     }
     expect(
       violations,
       `Frontmatter/QUALITY.md grade mismatches:\n  ${violations.join('\n  ')}\n` +
-        `Fix: update either AGENTS.md frontmatter or QUALITY.md to match.`,
+        `Fix: update either AGENTS.md frontmatter or QUALITY.md frontmatter to match.`,
     ).toHaveLength(0);
   });
 
   it('frontmatter layers match CLAUDE.md package map', () => {
     const claudeMd = cachedRead(PATHS.claudeMd);
-    const rowPattern = /\|\s*(\d+)\s*\|\s*`?(?:packages\/|@greenclaw\/|src\/)(\w+)\/?`?/g;
+    const section = extractSection(claudeMd, /^##\s+Package Map/);
     const claudeLayers = new Map<string, number>();
-    let match: RegExpExecArray | null;
-    while ((match = claudeMd.matchAll(rowPattern)) !== null) {
-      // Use matchAll workaround
-      break;
-    }
-    // Re-parse with exec loop
-    const re = /\|\s*(\d+)\s*\|\s*`?(?:packages\/|@greenclaw\/|src\/)(\w+)\/?`?/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(claudeMd)) !== null) {
-      claudeLayers.set(m[2] as string, Number.parseInt(m[1] as string, 10));
+    if (section) {
+      for (const row of parseMarkdownTable(section)) {
+        const layer = Number.parseInt(row.layer ?? '', 10);
+        // Extract package name from the Package column (e.g. `packages/types/`)
+        const pkgMatch = (row.package ?? '').match(/(?:packages\/|@greenclaw\/|src\/)(\w+)/);
+        if (pkgMatch && !Number.isNaN(layer)) {
+          claudeLayers.set(pkgMatch[1] as string, layer);
+        }
+      }
     }
 
     const violations: string[] = [];
@@ -1338,13 +1337,9 @@ describe('Consistency: frontmatter parity', () => {
   });
 
   it('frontmatter tiers match doc-governance.md', () => {
-    const govMd = cachedRead(path.join(ROOT, 'docs', 'conventions', 'doc-governance.md'));
-    const tierPattern = /\|\s*\*{0,2}(\w+)\*{0,2}\s*\|\s*`([^`]+(?:`,\s*`[^`]+)*)`\s*\|/g;
+    const govTiersMeta = loadDocGovernanceTiers();
     const govTiers = new Map<string, string>();
-    let match: RegExpExecArray | null;
-    while ((match = tierPattern.exec(govMd)) !== null) {
-      const tier = (match[1] as string).toLowerCase();
-      const pkgs = (match[2] as string).split(/`,\s*`/).map((p) => p.replace(/`/g, ''));
+    for (const [tier, pkgs] of Object.entries(govTiersMeta.tiers)) {
       for (const pkg of pkgs) {
         govTiers.set(pkg, tier);
       }
@@ -1354,7 +1349,7 @@ describe('Consistency: frontmatter parity', () => {
     for (const [pkg, pm] of meta) {
       const govTier = govTiers.get(pkg);
       if (!govTier) {
-        violations.push(`${pkg}: missing from doc-governance.md Autonomy Tiers table`);
+        violations.push(`${pkg}: missing from doc-governance.md frontmatter tiers`);
       } else if (govTier !== pm.tier) {
         violations.push(`${pkg}: frontmatter tier=${pm.tier}, doc-governance.md tier=${govTier}`);
       }
@@ -1362,38 +1357,22 @@ describe('Consistency: frontmatter parity', () => {
     expect(
       violations,
       `Frontmatter/doc-governance.md tier mismatches:\n  ${violations.join('\n  ')}\n` +
-        `Fix: update either AGENTS.md frontmatter or doc-governance.md tier table to match.`,
+        `Fix: update either AGENTS.md frontmatter or doc-governance.md frontmatter to match.`,
     ).toHaveLength(0);
   });
 
   it('frontmatter autonomy readiness matches QUALITY.md', () => {
-    const content = cachedRead(PATHS.qualityMd);
-    const autonomySection = content.slice(content.indexOf('## Autonomy Readiness'));
-    const rowPattern =
-      /\|\s*(\w+)\/?\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|/g;
-    const qualityAutonomy = new Map<
-      string,
-      { bootable: boolean; contract: boolean; observable: boolean; rollback_safe: boolean }
-    >();
-    let match: RegExpExecArray | null;
-    while ((match = rowPattern.exec(autonomySection)) !== null) {
-      qualityAutonomy.set(match[1] as string, {
-        bootable: match[2] === 'Yes',
-        contract: match[3] === 'Yes',
-        observable: match[4] === 'Yes',
-        rollback_safe: match[5] === 'Yes',
-      });
-    }
+    const qMeta = loadQualityMeta();
 
     const violations: string[] = [];
     for (const [pkg, pm] of meta) {
-      const qa = qualityAutonomy.get(pkg);
+      const qa = qMeta.autonomy[pkg];
       if (!qa) continue;
       const fields = ['bootable', 'contract', 'observable', 'rollback_safe'] as const;
       for (const field of fields) {
         if (pm.autonomy[field] !== qa[field]) {
           violations.push(
-            `${pkg}.autonomy.${field}: frontmatter=${pm.autonomy[field]}, QUALITY.md=${qa[field]}`,
+            `${pkg}.autonomy.${field}: AGENTS.md=${pm.autonomy[field]}, QUALITY.md=${qa[field]}`,
           );
         }
       }
@@ -1401,7 +1380,261 @@ describe('Consistency: frontmatter parity', () => {
     expect(
       violations,
       `Frontmatter/QUALITY.md autonomy readiness mismatches:\n  ${violations.join('\n  ')}\n` +
-        `Fix: update either AGENTS.md frontmatter or QUALITY.md autonomy table to match.`,
+        `Fix: update either AGENTS.md frontmatter or QUALITY.md frontmatter to match.`,
+    ).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Intra-file parity — each doc's frontmatter must match its own markdown
+// tables. This invariant prevents drift between machine-readable frontmatter
+// and human-readable views within the same file. (PLAN-014)
+// ---------------------------------------------------------------------------
+
+describe('Intra-file parity: frontmatter ↔ markdown tables', () => {
+  it('QUALITY.md frontmatter grades match Package Quality table', () => {
+    const qMeta = loadQualityMeta();
+    const content = cachedRead(PATHS.qualityMd);
+    const section = extractSection(content, /^##\s+Package Quality/);
+    expect(section, 'QUALITY.md must have a ## Package Quality section').toBeTruthy();
+
+    const tableGrades = new Map<string, string>();
+    for (const row of parseMarkdownTable(section as string)) {
+      const pkg = (row.package ?? '').replace(/\/$/, '');
+      if (pkg && row.grade) tableGrades.set(pkg, row.grade);
+    }
+
+    const violations: string[] = [];
+    for (const [pkg, data] of Object.entries(qMeta.packages)) {
+      const tableGrade = tableGrades.get(pkg);
+      if (!tableGrade) {
+        violations.push(`${pkg}: in frontmatter but missing from Package Quality table`);
+      } else if (tableGrade !== data.grade) {
+        violations.push(`${pkg}: frontmatter grade=${data.grade}, table grade=${tableGrade}`);
+      }
+    }
+    // Check reverse — table rows not in frontmatter
+    for (const [pkg] of tableGrades) {
+      if (!qMeta.packages[pkg]) {
+        violations.push(`${pkg}: in Package Quality table but missing from frontmatter`);
+      }
+    }
+
+    expect(
+      violations,
+      `QUALITY.md intra-file parity violations (frontmatter ↔ table):\n  ${violations.join('\n  ')}`,
+    ).toHaveLength(0);
+  });
+
+  it('QUALITY.md frontmatter autonomy matches Autonomy Readiness table', () => {
+    const qMeta = loadQualityMeta();
+    const content = cachedRead(PATHS.qualityMd);
+    const section = extractSection(content, /^##\s+Autonomy Readiness/);
+    expect(section, 'QUALITY.md must have a ## Autonomy Readiness section').toBeTruthy();
+
+    const tableAutonomy = new Map<string, Record<string, boolean>>();
+    for (const row of parseMarkdownTable(section as string)) {
+      const pkg = (row.package ?? '').replace(/\/$/, '');
+      if (!pkg) continue;
+      tableAutonomy.set(pkg, {
+        bootable: row.bootable === 'Yes',
+        contract: row.contract === 'Yes',
+        observable: row.observable === 'Yes',
+        rollback_safe: row.rollback_safe === 'Yes',
+      });
+    }
+
+    const violations: string[] = [];
+    const fields = ['bootable', 'contract', 'observable', 'rollback_safe'] as const;
+    for (const [pkg, data] of Object.entries(qMeta.autonomy)) {
+      const tableRow = tableAutonomy.get(pkg);
+      if (!tableRow) {
+        violations.push(`${pkg}: in frontmatter autonomy but missing from table`);
+        continue;
+      }
+      for (const field of fields) {
+        if (data[field] !== tableRow[field]) {
+          violations.push(`${pkg}.${field}: frontmatter=${data[field]}, table=${tableRow[field]}`);
+        }
+      }
+    }
+    // Reverse: table rows not in frontmatter
+    for (const [pkg] of tableAutonomy) {
+      if (!qMeta.autonomy[pkg]) {
+        violations.push(`${pkg}: in Autonomy Readiness table but missing from frontmatter`);
+      }
+    }
+
+    expect(
+      violations,
+      `QUALITY.md intra-file parity violations (autonomy):\n  ${violations.join('\n  ')}`,
+    ).toHaveLength(0);
+  });
+
+  it('tech-debt-tracker.md frontmatter active items match Active Debt table', () => {
+    const tdMeta = loadTechDebtMeta();
+    const content = cachedRead(path.join(ROOT, 'docs', 'exec-plans', 'tech-debt-tracker.md'));
+    const section = extractSection(content, /^##\s+Active Debt/);
+    expect(section, 'tech-debt-tracker.md must have a ## Active Debt section').toBeTruthy();
+
+    const tableRows = parseMarkdownTable(section as string);
+    const tableById = new Map<string, Record<string, string>>();
+    for (const row of tableRows) {
+      if (row.id) tableById.set(row.id, row);
+    }
+
+    const fmById = new Map(tdMeta.active.map((d) => [d.id, d]));
+    const violations: string[] = [];
+
+    // Frontmatter → table (ID + field parity)
+    for (const [id, fmItem] of fmById) {
+      const tableRow = tableById.get(id);
+      if (!tableRow) {
+        violations.push(`${id}: in frontmatter but missing from table`);
+        continue;
+      }
+      const tableModule = (tableRow.module ?? '').replace(/\/$/, '');
+      if (tableModule && tableModule !== fmItem.module) {
+        violations.push(`${id}.module: frontmatter=${fmItem.module}, table=${tableModule}`);
+      }
+      if (tableRow.priority && tableRow.priority !== fmItem.priority) {
+        violations.push(
+          `${id}.priority: frontmatter=${fmItem.priority}, table=${tableRow.priority}`,
+        );
+      }
+      if (tableRow.status && tableRow.status !== fmItem.status) {
+        violations.push(`${id}.status: frontmatter=${fmItem.status}, table=${tableRow.status}`);
+      }
+    }
+    // Table → frontmatter
+    for (const id of tableById.keys()) {
+      if (!fmById.has(id)) violations.push(`${id}: in table but missing from frontmatter`);
+    }
+
+    expect(
+      violations,
+      `tech-debt-tracker.md intra-file parity violations (active):\n  ${violations.join('\n  ')}`,
+    ).toHaveLength(0);
+  });
+
+  it('tech-debt-tracker.md frontmatter resolved items match Resolved Debt table', () => {
+    const tdMeta = loadTechDebtMeta();
+    const content = cachedRead(path.join(ROOT, 'docs', 'exec-plans', 'tech-debt-tracker.md'));
+    const section = extractSection(content, /^##\s+Resolved Debt/);
+    expect(section, 'tech-debt-tracker.md must have a ## Resolved Debt section').toBeTruthy();
+
+    const tableRows = parseMarkdownTable(section as string);
+    const tableById = new Map<string, Record<string, string>>();
+    for (const row of tableRows) {
+      if (row.id) tableById.set(row.id, row);
+    }
+
+    const fmById = new Map(tdMeta.resolved.map((d) => [d.id, d]));
+    const violations: string[] = [];
+
+    // Frontmatter → table (ID + resolved date parity)
+    for (const [id, fmItem] of fmById) {
+      const tableRow = tableById.get(id);
+      if (!tableRow) {
+        violations.push(`${id}: in frontmatter but missing from table`);
+        continue;
+      }
+      if (tableRow.resolved && tableRow.resolved !== fmItem.resolved) {
+        violations.push(
+          `${id}.resolved: frontmatter=${fmItem.resolved}, table=${tableRow.resolved}`,
+        );
+      }
+    }
+    // Table → frontmatter
+    for (const id of tableById.keys()) {
+      if (!fmById.has(id)) violations.push(`${id}: in table but missing from frontmatter`);
+    }
+
+    expect(
+      violations,
+      `tech-debt-tracker.md intra-file parity violations (resolved):\n  ${violations.join('\n  ')}`,
+    ).toHaveLength(0);
+  });
+
+  it('doc-governance.md frontmatter tiers match Autonomy Tiers table', () => {
+    const govMeta = loadDocGovernanceTiers();
+    const content = cachedRead(path.join(ROOT, 'docs', 'conventions', 'doc-governance.md'));
+    const section = extractSection(content, /^##\s+Autonomy Tiers/);
+    expect(section, 'doc-governance.md must have a ## Autonomy Tiers section').toBeTruthy();
+
+    // Parse tier table — rows like | **Critical** | `api`, `telemetry` | ... |
+    const tableRows = parseMarkdownTable(section as string);
+    const tableTiers = new Map<string, string>();
+    for (const row of tableRows) {
+      const tier = (row.tier ?? '').replace(/\*/g, '').toLowerCase();
+      const pkgsStr = row.packages ?? '';
+      const pkgs = pkgsStr
+        .split(/`,\s*`/)
+        .map((p) => p.replace(/`/g, '').trim())
+        .filter(Boolean);
+      for (const pkg of pkgs) {
+        tableTiers.set(pkg, tier);
+      }
+    }
+
+    const violations: string[] = [];
+    const allFmPackages = new Set<string>();
+    for (const [tier, pkgs] of Object.entries(govMeta.tiers)) {
+      for (const pkg of pkgs) {
+        allFmPackages.add(pkg);
+        const tableTier = tableTiers.get(pkg);
+        if (!tableTier) {
+          violations.push(`${pkg}: in frontmatter tier=${tier} but missing from table`);
+        } else if (tableTier !== tier) {
+          violations.push(`${pkg}: frontmatter tier=${tier}, table tier=${tableTier}`);
+        }
+      }
+    }
+    // Reverse: table packages not in frontmatter
+    for (const [pkg] of tableTiers) {
+      if (!allFmPackages.has(pkg)) {
+        violations.push(`${pkg}: in Autonomy Tiers table but missing from frontmatter`);
+      }
+    }
+
+    expect(
+      violations,
+      `doc-governance.md intra-file parity violations:\n  ${violations.join('\n  ')}`,
+    ).toHaveLength(0);
+  });
+
+  it('section-class frontmatter headings exist in their documents (PLAN-015)', () => {
+    const governedDocs = [
+      path.join(ROOT, 'docs', 'QUALITY.md'),
+      path.join(ROOT, 'docs', 'exec-plans', 'tech-debt-tracker.md'),
+    ];
+
+    const violations: string[] = [];
+
+    for (const docPath of governedDocs) {
+      if (!fs.existsSync(docPath)) continue;
+      const sections = loadSectionClasses(docPath);
+      if (sections.length === 0) continue;
+
+      const content = cachedRead(docPath);
+      const relPath = path.relative(ROOT, docPath);
+
+      for (const sec of sections) {
+        const headingRe = new RegExp(
+          `^##\\s+${sec.heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+          'm',
+        );
+        if (!headingRe.test(content)) {
+          violations.push(
+            `${relPath}: frontmatter declares "${sec.heading}" but heading not found`,
+          );
+        }
+      }
+    }
+
+    expect(
+      violations,
+      `Section-class frontmatter headings must exist in the document:\n  ${violations.join('\n  ')}`,
     ).toHaveLength(0);
   });
 });

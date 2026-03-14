@@ -8,12 +8,13 @@ completed plans, and known technical debt are all versioned and co-located.
 
 | Plan | Status | Goal |
 | ---- | ------ | ---- |
-| (none currently) | | |
+| [PLAN-015](exec-plans/active/PLAN-015-section-class-frontmatter.md) | Active | Section-to-class mapping in frontmatter |
 
 ## Completed Plans
 
 | Plan | Completed | Goal |
 | ---- | --------- | ---- |
+| [PLAN-014](exec-plans/completed/PLAN-014-frontmatter-docs.md) | 2026-03-14 | Frontmatter-first doc parsing + intra-file parity invariant |
 | [PLAN-001](exec-plans/completed/PLAN-001-proxy-skeleton.md) | 2026-03-13 | Transparent passthrough proxy with instrumentation |
 | [PLAN-006](exec-plans/completed/PLAN-006-local-telemetry-store.md) | 2026-03-12 | Local observability stack (Pino + SQLite) |
 | [PLAN-007](exec-plans/completed/PLAN-007-usage-analytics.md) | 2026-03-12 | Monorepo + usage analytics + budget alerting |

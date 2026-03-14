@@ -1,3 +1,9 @@
+---
+tiers:
+  critical: [api, telemetry]
+  standard: [config, optimization, monitoring, types]
+  low: [cli, dashboard]
+---
 # GreenClaw — Document Governance
 
 Every knowledge-store document belongs to a **mutation class**. The class
@@ -29,6 +35,9 @@ determines what kinds of changes are allowed and how the harness enforces them.
 | `packages/*/AGENTS.md` — frontmatter | state | YAML between opening and closing `---` delimiters |
 | `CLAUDE.md` | owner-map | Entire file |
 | `AGENTS.md` | owner-map | Entire file |
+| `docs/QUALITY.md` — frontmatter | state | YAML grades and autonomy readiness (PLAN-014) |
+| `docs/exec-plans/tech-debt-tracker.md` — frontmatter | state | YAML active/resolved debt items (PLAN-014) |
+| `docs/conventions/doc-governance.md` — frontmatter | state | YAML tier assignments (PLAN-014) |
 | `docs/conventions/*.md` | reference | Entire file |
 
 ## Enforcement
@@ -43,6 +52,7 @@ Enforced by `tests/doc-governance.test.ts`. Enforcement level per class:
 | index | **Existing** | Already covered by `tests/consistency.test.ts` (PLANS.md, design/index.md) |
 | owner-map | **Hard fail** | Regex scan for volatile status words |
 | reference | **Hard fail** | Imperative rules without enforcer citation block the test suite |
+| intra-file parity | **Hard fail** | Frontmatter values must match their markdown table views. Enforced by `tests/consistency.test.ts` (PLAN-014) |
 
 ## Volatile Status Words (owner-map ban list)
 
@@ -112,10 +122,28 @@ autonomy:
 The volatile-word scan excludes the frontmatter block. Grade and tier
 changes in frontmatter are state-class mutations (require defect log entry).
 
+## Section-Class Frontmatter (PLAN-015)
+
+Documents with per-section governance declare their section-to-class
+mapping in YAML frontmatter. This lets `tests/doc-governance.test.ts`
+discover governed sections automatically instead of hardcoding heading
+regexes. Enforced by `tests/consistency.test.ts` (heading existence parity).
+
+```yaml
+sections:
+  - { heading: "Defect Log", class: ledger }
+  - { heading: "Package Quality", class: state }
+```
+
+Whole-file governed documents (owner-map, reference) do not need a
+`sections` block — the class applies to the entire file.
+
 ## Adding a New Governed Document
 
 1. Classify the document into one of the six mutation classes
 2. Add a row to the **Document Classification** table above
-3. If the class requires harness enforcement, add a rule in
+3. If the document has per-section governance, add `sections` to its
+   YAML frontmatter with heading and class for each governed section
+4. If the class requires harness enforcement, add a rule in
    `tests/doc-governance.test.ts`
-4. Update `docs/QUALITY.md` if the harness grade changes
+5. Update `docs/QUALITY.md` if the harness grade changes
