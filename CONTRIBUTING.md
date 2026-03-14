@@ -113,9 +113,12 @@ full type table and examples.
 
 ## CI pipeline
 
-CI runs on both `push` to main and `pull_request` targeting main.
+CI runs on both `push` to main and `pull_request` targeting main. Two jobs:
 
 1. **check** — typecheck, lint, test (always runs)
+2. **semantic-owner-docs** — LLM-backed owner-doc consistency check (runs only
+   when `vars.ENABLE_SEMANTIC_HARNESS` is `'true'`; individual steps are gated
+   on `env.HAS_OPENAI_KEY` so fork PRs and repos without the secret skip gracefully)
 
 Pre-commit hooks run automatically:
 

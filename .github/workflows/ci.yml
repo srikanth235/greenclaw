@@ -49,3 +49,42 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+  semantic-owner-docs:
+    if: ${{ vars.ENABLE_SEMANTIC_HARNESS == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Codex CLI
+        if: ${{ env.HAS_OPENAI_KEY == 'true' }}
+        run: npm install -g @openai/codex
+
+      - name: Authenticate Codex CLI
+        if: ${{ env.HAS_OPENAI_KEY == 'true' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: printenv OPENAI_API_KEY | codex login --with-api-key
+
+      - name: Semantic owner-doc harness
+        if: ${{ env.HAS_OPENAI_KEY == 'true' }}
+        run: GREENCLAW_ENABLE_LLM_HARNESS=1 pnpm test -- tests/owner-doc-semantic.test.ts
