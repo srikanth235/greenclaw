@@ -515,32 +515,59 @@ describe('Consistency: QUALITY.md autonomy readiness covers all packages', () =>
 
 describe('Consistency: autonomy tier validation', () => {
   const CRITICAL_PACKAGES = ['api', 'telemetry'] as const;
+  const STANDARD_PACKAGES = ['config', 'optimization', 'monitoring', 'types'] as const;
+  const LOW_PACKAGES = ['cli', 'dashboard'] as const;
 
-  it('critical-tier packages have grade >= B in QUALITY.md', () => {
+  /** All tier-assigned packages must cover PACKAGES exactly. */
+  const ALL_TIERED = [...CRITICAL_PACKAGES, ...STANDARD_PACKAGES, ...LOW_PACKAGES];
+
+  /**
+   * Parse package grades and notes from QUALITY.md.
+   * @returns Map of package name → { grade, notes }
+   */
+  function parsePackageQuality(): Map<string, { grade: string; notes: string }> {
     const content = cachedRead(PATHS.qualityMd);
-    const rowPattern = /\|\s*(\w+)\/?\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([A-Z])\s*\|/g;
-    const grades = new Map<string, string>();
+    const rowPattern = /\|\s*(\w+)\/?\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([A-Z])\s*\|\s*([^|]*)\|/g;
+    const map = new Map<string, { grade: string; notes: string }>();
     let match: RegExpExecArray | null;
     while ((match = rowPattern.exec(content)) !== null) {
-      grades.set(match[1] as string, match[2] as string);
+      map.set(match[1] as string, {
+        grade: match[2] as string,
+        notes: (match[3] as string).trim(),
+      });
     }
+    return map;
+  }
 
-    const violations: string[] = [];
-    for (const pkg of CRITICAL_PACKAGES) {
-      const grade = grades.get(pkg);
-      if (!grade || (grade !== 'A' && grade !== 'B')) {
-        violations.push(`${pkg}/ has grade "${grade ?? 'missing'}" (critical tier requires >= B)`);
-      }
+  it('tier assignments cover every package exactly once', () => {
+    const tiered = new Set(ALL_TIERED);
+    const missing: string[] = [];
+    const extra: string[] = [];
+
+    for (const pkg of PACKAGES) {
+      if (!tiered.has(pkg)) missing.push(pkg);
     }
+    for (const pkg of ALL_TIERED) {
+      if (!PACKAGES.includes(pkg as (typeof PACKAGES)[number])) extra.push(pkg);
+    }
+    // Check for duplicates across tiers
+    expect(
+      ALL_TIERED.length,
+      `Duplicate tier assignments detected (${ALL_TIERED.length} assignments for ${PACKAGES.length} packages)`,
+    ).toBe(new Set(ALL_TIERED).size);
 
     expect(
-      violations,
-      `Critical-tier grade violations:\n  ${violations.join('\n  ')}\n` +
-        `Fix: critical-tier packages (${CRITICAL_PACKAGES.join(', ')}) must maintain grade >= B.`,
+      missing,
+      `Packages missing from tier assignments: ${missing.join(', ')}. ` +
+        `Fix: add them to CRITICAL_PACKAGES, STANDARD_PACKAGES, or LOW_PACKAGES.`,
+    ).toHaveLength(0);
+    expect(
+      extra,
+      `Tier assignments reference non-existent packages: ${extra.join(', ')}.`,
     ).toHaveLength(0);
   });
 
-  it('every package in PACKAGES has a tier assignment in doc-governance.md', () => {
+  it('tier assignments match doc-governance.md', () => {
     const content = cachedRead(path.join(ROOT, 'docs', 'conventions', 'doc-governance.md'));
     const missing: string[] = [];
     for (const pkg of PACKAGES) {
@@ -552,6 +579,71 @@ describe('Consistency: autonomy tier validation', () => {
       missing,
       `Packages missing from autonomy tier table in doc-governance.md: ${missing.join(', ')}. ` +
         `Fix: assign every package to a tier in the "Autonomy Tiers" table.`,
+    ).toHaveLength(0);
+  });
+
+  it('critical-tier packages have grade >= B in QUALITY.md', () => {
+    const quality = parsePackageQuality();
+    const violations: string[] = [];
+    for (const pkg of CRITICAL_PACKAGES) {
+      const entry = quality.get(pkg);
+      if (!entry || (entry.grade !== 'A' && entry.grade !== 'B')) {
+        violations.push(
+          `${pkg}/ has grade "${entry?.grade ?? 'missing'}" (critical tier requires >= B)`,
+        );
+      }
+    }
+    expect(
+      violations,
+      `Critical-tier grade violations:\n  ${violations.join('\n  ')}\n` +
+        `Fix: critical-tier packages (${CRITICAL_PACKAGES.join(', ')}) must maintain grade >= B.`,
+    ).toHaveLength(0);
+  });
+
+  it('critical-tier packages have contract or fixture tests', () => {
+    const violations: string[] = [];
+
+    for (const pkg of CRITICAL_PACKAGES) {
+      // Check for actual test files
+      const pkgTestDir = path.join(PACKAGES_DIR, pkg, 'tests');
+      const hasTests =
+        fs.existsSync(pkgTestDir) && fs.readdirSync(pkgTestDir).some((f) => f.endsWith('.test.ts'));
+
+      // Check root-level contract/proxy/fixture tests that cover this package
+      const rootTestFiles = fs
+        .readdirSync(path.join(ROOT, 'tests'))
+        .filter((f) => f.endsWith('.test.ts'));
+      const hasRootContract = rootTestFiles.some(
+        (f) =>
+          (f.includes('proxy') || f.includes('golden') || f.includes('fixture')) &&
+          fs.readFileSync(path.join(ROOT, 'tests', f), 'utf-8').includes(pkg),
+      );
+
+      if (!hasTests && !hasRootContract) {
+        violations.push(`${pkg}/ has no contract/fixture tests (critical tier requires them)`);
+      }
+    }
+
+    expect(
+      violations,
+      `Critical-tier contract test violations:\n  ${violations.join('\n  ')}\n` +
+        `Fix: critical-tier packages must have blocking contract or fixture tests.`,
+    ).toHaveLength(0);
+  });
+
+  it('critical-tier A-grade packages have semantic PASS in notes', () => {
+    const quality = parsePackageQuality();
+    const violations: string[] = [];
+    for (const pkg of CRITICAL_PACKAGES) {
+      const entry = quality.get(pkg);
+      if (entry && entry.grade === 'A' && !/semantic\s+pass/i.test(entry.notes)) {
+        violations.push(`${pkg}/ is A-grade critical-tier but notes lack semantic PASS`);
+      }
+    }
+    expect(
+      violations,
+      `Critical-tier semantic PASS violations:\n  ${violations.join('\n  ')}\n` +
+        `Fix: A-grade critical-tier packages must record a semantic PASS note.`,
     ).toHaveLength(0);
   });
 });

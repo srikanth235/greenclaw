@@ -169,6 +169,9 @@ breadth before depth.
   hooks are convenience only), (3) added per-package autonomy readiness table
   with bootable/contract/observable/rollback-safe criteria, (4) added autonomy
   tiers (critical/standard/low) with grade floor enforcement for critical
-  packages.
+  packages. Follow-up: added state-class enforcement for autonomy readiness
+  value changes (requires defect log entry), strengthened tier validation to
+  verify contract/fixture test existence, unique tier assignment, and semantic
+  PASS requirement for A-grade critical packages.
 
 Last updated: 2026-03-14
