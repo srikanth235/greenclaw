@@ -22,6 +22,7 @@ completed plans, and known technical debt are all versioned and co-located.
 | [PLAN-010](exec-plans/completed/PLAN-010-semantic-repo-truth.md) | 2026-03-13 | Semantic repo-truth guards |
 | [PLAN-011](exec-plans/completed/PLAN-011-owner-doc-semantic-harness.md) | 2026-03-13 | Owner-doc semantic consistency and claim enforcement |
 | [PLAN-012](exec-plans/completed/PLAN-012-doc-governance.md) | 2026-03-14 | Document mutation governance harness |
+| [PLAN-013](exec-plans/completed/PLAN-013-frontmatter-migration.md) | 2026-03-14 | YAML frontmatter as single source of truth for package metadata |
 
 ## Technical Debt
 
