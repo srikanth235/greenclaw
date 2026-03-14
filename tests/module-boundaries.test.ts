@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { getPackageNames } from './lib/frontmatter';
 
 /**
  * Module boundary enforcement — code-level taste checks that catch
@@ -15,16 +16,7 @@ import { describe, expect, it } from 'vitest';
 const ROOT = path.resolve(__dirname, '..');
 const PACKAGES_DIR = path.join(ROOT, 'packages');
 
-const PACKAGES = [
-  'types',
-  'config',
-  'telemetry',
-  'optimization',
-  'monitoring',
-  'cli',
-  'api',
-  'dashboard',
-] as const;
+const PACKAGES = getPackageNames();
 
 /**
  * Recursively find all .ts source files (excluding tests) in a directory.

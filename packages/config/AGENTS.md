@@ -1,3 +1,14 @@
+---
+package: config
+layer: 1
+tier: standard
+grade: C
+autonomy:
+  bootable: true
+  contract: false
+  observable: false
+  rollback_safe: true
+---
 # config/ — Agent Guidelines
 
 ## Ownership

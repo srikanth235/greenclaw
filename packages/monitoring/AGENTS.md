@@ -1,3 +1,14 @@
+---
+package: monitoring
+layer: 3
+tier: standard
+grade: C
+autonomy:
+  bootable: true
+  contract: false
+  observable: false
+  rollback_safe: true
+---
 # monitoring/ — Agent Guidelines
 
 ## Ownership

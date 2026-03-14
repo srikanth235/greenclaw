@@ -25,7 +25,8 @@ determines what kinds of changes are allowed and how the harness enforces them.
 | `docs/design/*.md` | decision | Body after status line (when status is Accepted/Verified) |
 | `docs/PLANS.md` | index | Plan link table |
 | `docs/design/index.md` | index | Design doc table |
-| `packages/*/AGENTS.md` | owner-map | Entire file |
+| `packages/*/AGENTS.md` — body | owner-map | Everything below the frontmatter `---` block |
+| `packages/*/AGENTS.md` — frontmatter | state | YAML between opening and closing `---` delimiters |
 | `CLAUDE.md` | owner-map | Entire file |
 | `AGENTS.md` | owner-map | Entire file |
 | `docs/conventions/*.md` | reference | Entire file |
@@ -55,6 +56,7 @@ introduce temporal coupling and status drift:
 - `changelog`, `history`, `what changed`
 
 Allowed exceptions:
+- Lines inside YAML frontmatter (`---` delimited block at file start)
 - Dates inside markdown link targets (e.g. plan file names)
 - `Active` / `Completed` in execution plan status references within table cells
 - `in progress` in table cells that also reference a `PLAN-NNN`
@@ -83,6 +85,32 @@ stronger evidence before changes are considered safe.
 | **Critical** | `api`, `telemetry` | Contract tests + fixture eval + semantic owner-doc PASS |
 | **Standard** | `config`, `optimization`, `monitoring`, `types` | Unit tests + harness pass |
 | **Low** | `cli`, `dashboard` | Harness pass |
+
+## Package Frontmatter
+
+Each `packages/*/AGENTS.md` carries YAML frontmatter as the **single source
+of truth** for package metadata. Markdown tables in QUALITY.md, CLAUDE.md,
+and this file are validated views — they must match the frontmatter values.
+Enforced by `tests/consistency.test.ts` (frontmatter-table parity checks).
+
+Schema (validated by Zod in `tests/lib/frontmatter.ts`):
+
+```yaml
+---
+package: <name>
+layer: <0-5>
+tier: critical | standard | low
+grade: A | B | C | D
+autonomy:
+  bootable: <bool>
+  contract: <bool>
+  observable: <bool>
+  rollback_safe: <bool>
+---
+```
+
+The volatile-word scan excludes the frontmatter block. Grade and tier
+changes in frontmatter are state-class mutations (require defect log entry).
 
 ## Adding a New Governed Document
 

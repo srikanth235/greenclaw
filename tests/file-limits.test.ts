@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { getPackageNames } from './lib/frontmatter';
 
 /**
  * File size limit enforcement — prevents monolithic source files.
@@ -37,16 +38,7 @@ function findSourceFiles(dir: string): string[] {
 
 const TESTS_DIR = path.join(ROOT, 'tests');
 
-const PACKAGES = [
-  'types',
-  'config',
-  'telemetry',
-  'optimization',
-  'monitoring',
-  'cli',
-  'api',
-  'dashboard',
-] as const;
+const PACKAGES = getPackageNames();
 
 describe('File limits: source files stay under line cap', () => {
   it(`no source file in packages/*/src/ exceeds ${MAX_SOURCE_LINES} lines`, () => {

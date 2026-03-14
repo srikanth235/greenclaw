@@ -1,3 +1,14 @@
+---
+package: optimization
+layer: 3
+tier: standard
+grade: C
+autonomy:
+  bootable: true
+  contract: true
+  observable: false
+  rollback_safe: true
+---
 # optimization/ — Agent Guidelines
 
 ## Ownership

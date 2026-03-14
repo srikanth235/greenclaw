@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { getPackageOrder } from './lib/frontmatter';
 
 /**
  * Dependency layer enforcement.
@@ -11,16 +12,7 @@ import { describe, expect, it } from 'vitest';
  * A package may only import from packages at the same or lower layer.
  */
 
-const PACKAGE_ORDER = [
-  'types',
-  'config',
-  'telemetry',
-  'optimization',
-  'monitoring',
-  'cli',
-  'api',
-  'dashboard',
-] as const;
+const PACKAGE_ORDER = getPackageOrder();
 
 const ROOT = path.resolve(__dirname, '..');
 const PACKAGES_DIR = path.join(ROOT, 'packages');
@@ -31,7 +23,7 @@ const PACKAGES_DIR = path.join(ROOT, 'packages');
  * @returns The layer index, or -1 if not found
  */
 function getLayerIndex(packageName: string): number {
-  return PACKAGE_ORDER.indexOf(packageName as (typeof PACKAGE_ORDER)[number]);
+  return PACKAGE_ORDER.indexOf(packageName);
 }
 
 /**
@@ -71,10 +63,7 @@ function extractPackageImports(filePath: string): string[] {
   let match: RegExpExecArray | null;
   while ((match = importRegex.exec(content)) !== null) {
     const packageName = match[1];
-    if (
-      packageName !== undefined &&
-      PACKAGE_ORDER.includes(packageName as (typeof PACKAGE_ORDER)[number])
-    ) {
+    if (packageName !== undefined && PACKAGE_ORDER.includes(packageName)) {
       packages.push(packageName);
     }
   }
@@ -334,10 +323,7 @@ describe('Architecture: Re-export Hygiene (no deep imports)', () => {
           const targetPackage = match[1] as string;
           const deepPath = match[2] as string;
           // Only flag cross-package deep imports, not within the same package
-          if (
-            targetPackage !== packageName &&
-            PACKAGE_ORDER.includes(targetPackage as (typeof PACKAGE_ORDER)[number])
-          ) {
+          if (targetPackage !== packageName && PACKAGE_ORDER.includes(targetPackage)) {
             violations.push(
               `${packageName}/${path.relative(path.join(PACKAGES_DIR, packageName), filePath)} ` +
                 `deep-imports @greenclaw/${targetPackage}/${deepPath} — use @greenclaw/${targetPackage} instead`,

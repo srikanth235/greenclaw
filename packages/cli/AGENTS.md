@@ -1,3 +1,14 @@
+---
+package: cli
+layer: 4
+tier: low
+grade: C
+autonomy:
+  bootable: true
+  contract: false
+  observable: false
+  rollback_safe: true
+---
 # cli/ — Agent Guidelines
 
 ## Ownership

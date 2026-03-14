@@ -440,8 +440,26 @@ describe('Document Governance', () => {
       const content = fs.readFileSync(absPath, 'utf-8');
       const lines = content.split('\n');
 
+      // Skip YAML frontmatter block (--- delimited at file start)
+      let inFrontmatter = false;
+      let frontmatterDone = false;
+
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
+
+        // Track frontmatter boundaries
+        if (line.trim() === '---' && !frontmatterDone) {
+          if (!inFrontmatter && i === 0) {
+            inFrontmatter = true;
+            continue;
+          }
+          if (inFrontmatter) {
+            inFrontmatter = false;
+            frontmatterDone = true;
+            continue;
+          }
+        }
+        if (inFrontmatter) continue;
 
         // Skip lines that are markdown link definitions or code blocks
         if (line.trim().startsWith('```')) continue;
