@@ -1,3 +1,14 @@
+---
+package: api
+layer: 4
+tier: critical
+grade: B
+autonomy:
+  bootable: true
+  contract: true
+  observable: true
+  rollback_safe: true
+---
 # api/ — Agent Guidelines
 
 ## Ownership

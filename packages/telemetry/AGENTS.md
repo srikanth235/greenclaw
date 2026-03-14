@@ -1,3 +1,14 @@
+---
+package: telemetry
+layer: 2
+tier: critical
+grade: B
+autonomy:
+  bootable: true
+  contract: true
+  observable: true
+  rollback_safe: true
+---
 # telemetry/ — Agent Guidelines
 
 ## Ownership

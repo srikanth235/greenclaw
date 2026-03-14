@@ -1,3 +1,14 @@
+---
+package: dashboard
+layer: 5
+tier: low
+grade: D
+autonomy:
+  bootable: true
+  contract: false
+  observable: false
+  rollback_safe: true
+---
 # dashboard/ — Agent Guidelines
 
 ## Ownership

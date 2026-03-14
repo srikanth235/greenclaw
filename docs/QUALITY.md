@@ -174,4 +174,16 @@ breadth before depth.
   verify contract/fixture test existence, unique tier assignment, and semantic
   PASS requirement for A-grade critical packages.
 
+- 2026-03-14: YAML frontmatter migration — added per-package frontmatter to
+  AGENTS.md as single source of truth for layer/tier/grade/autonomy. Shared
+  test utility `tests/lib/frontmatter.ts` replaces duplicated constants.
+  Parity tests validate QUALITY.md/CLAUDE.md/doc-governance.md tables match.
+
+- 2026-03-14: Fixed P1 — `loadAllPackageMeta()` now throws on missing
+  AGENTS.md or absent frontmatter instead of silently skipping. Added
+  `discoverPackageDirs()` for filesystem-based package discovery. Fixed P2 —
+  frontmatter tiers parity test now catches packages omitted from
+  doc-governance.md tier table (not just mismatches). Also fixed bold-marker
+  regex in tier table parsing.
+
 Last updated: 2026-03-14

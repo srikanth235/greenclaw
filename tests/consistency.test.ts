@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { getPackageNames, getPackagesByTier, loadAllPackageMeta } from './lib/frontmatter';
 
 /**
  * Consistency checks — periodic validation that documentation,
@@ -14,16 +15,7 @@ import { describe, expect, it } from 'vitest';
 const ROOT = path.resolve(__dirname, '..');
 const PACKAGES_DIR = path.join(ROOT, 'packages');
 
-const PACKAGES = [
-  'types',
-  'config',
-  'telemetry',
-  'optimization',
-  'monitoring',
-  'cli',
-  'api',
-  'dashboard',
-] as const;
+const PACKAGES = getPackageNames();
 
 // ---------------------------------------------------------------------------
 // Shared file-content cache — avoids redundant fs.readFileSync calls across
@@ -514,9 +506,9 @@ describe('Consistency: QUALITY.md autonomy readiness covers all packages', () =>
 // ---------------------------------------------------------------------------
 
 describe('Consistency: autonomy tier validation', () => {
-  const CRITICAL_PACKAGES = ['api', 'telemetry'] as const;
-  const STANDARD_PACKAGES = ['config', 'optimization', 'monitoring', 'types'] as const;
-  const LOW_PACKAGES = ['cli', 'dashboard'] as const;
+  const CRITICAL_PACKAGES = getPackagesByTier('critical');
+  const STANDARD_PACKAGES = getPackagesByTier('standard');
+  const LOW_PACKAGES = getPackagesByTier('low');
 
   /** All tier-assigned packages must cover PACKAGES exactly. */
   const ALL_TIERED = [...CRITICAL_PACKAGES, ...STANDARD_PACKAGES, ...LOW_PACKAGES];
@@ -548,7 +540,7 @@ describe('Consistency: autonomy tier validation', () => {
       if (!tiered.has(pkg)) missing.push(pkg);
     }
     for (const pkg of ALL_TIERED) {
-      if (!PACKAGES.includes(pkg as (typeof PACKAGES)[number])) extra.push(pkg);
+      if (!PACKAGES.includes(pkg)) extra.push(pkg);
     }
     // Check for duplicates across tiers
     expect(
@@ -1256,5 +1248,160 @@ describe('Semantic: env var parity', () => {
   it('observability docs reference the current log-level env var name', () => {
     const observability = cachedRead(path.join(ROOT, 'docs', 'conventions', 'observability.md'));
     expect(observability).toContain('GREENCLAW_LOG_LEVEL');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Frontmatter parity — AGENTS.md frontmatter is the single source of truth.
+// These tests validate that markdown tables in QUALITY.md, CLAUDE.md, and
+// doc-governance.md stay in sync with frontmatter values.
+// ---------------------------------------------------------------------------
+
+describe('Consistency: frontmatter parity', () => {
+  const meta = loadAllPackageMeta();
+
+  it('every AGENTS.md has valid frontmatter', () => {
+    const missing: string[] = [];
+    for (const pkg of PACKAGES) {
+      if (!meta.has(pkg)) {
+        missing.push(pkg);
+      }
+    }
+    expect(
+      missing,
+      `Packages missing valid frontmatter in AGENTS.md: ${missing.join(', ')}. ` +
+        `Fix: add YAML frontmatter to packages/<pkg>/AGENTS.md.`,
+    ).toHaveLength(0);
+  });
+
+  it('frontmatter package field matches directory name', () => {
+    const violations: string[] = [];
+    for (const [dir, m] of meta) {
+      if (m.package !== dir) {
+        violations.push(`${dir}/AGENTS.md: frontmatter says "${m.package}", expected "${dir}"`);
+      }
+    }
+    expect(violations, `Package name mismatches:\n  ${violations.join('\n  ')}`).toHaveLength(0);
+  });
+
+  it('frontmatter grades match QUALITY.md', () => {
+    const content = cachedRead(PATHS.qualityMd);
+    const rowPattern = /\|\s*(\w+)\/?\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([A-Z])\s*\|/g;
+    const qualityGrades = new Map<string, string>();
+    let match: RegExpExecArray | null;
+    while ((match = rowPattern.exec(content)) !== null) {
+      qualityGrades.set(match[1] as string, match[2] as string);
+    }
+
+    const violations: string[] = [];
+    for (const [pkg, m] of meta) {
+      const qGrade = qualityGrades.get(pkg);
+      if (qGrade && qGrade !== m.grade) {
+        violations.push(`${pkg}: frontmatter grade=${m.grade}, QUALITY.md grade=${qGrade}`);
+      }
+    }
+    expect(
+      violations,
+      `Frontmatter/QUALITY.md grade mismatches:\n  ${violations.join('\n  ')}\n` +
+        `Fix: update either AGENTS.md frontmatter or QUALITY.md to match.`,
+    ).toHaveLength(0);
+  });
+
+  it('frontmatter layers match CLAUDE.md package map', () => {
+    const claudeMd = cachedRead(PATHS.claudeMd);
+    const rowPattern = /\|\s*(\d+)\s*\|\s*`?(?:packages\/|@greenclaw\/|src\/)(\w+)\/?`?/g;
+    const claudeLayers = new Map<string, number>();
+    let match: RegExpExecArray | null;
+    while ((match = claudeMd.matchAll(rowPattern)) !== null) {
+      // Use matchAll workaround
+      break;
+    }
+    // Re-parse with exec loop
+    const re = /\|\s*(\d+)\s*\|\s*`?(?:packages\/|@greenclaw\/|src\/)(\w+)\/?`?/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(claudeMd)) !== null) {
+      claudeLayers.set(m[2] as string, Number.parseInt(m[1] as string, 10));
+    }
+
+    const violations: string[] = [];
+    for (const [pkg, pm] of meta) {
+      const claudeLayer = claudeLayers.get(pkg);
+      if (claudeLayer !== undefined && claudeLayer !== pm.layer) {
+        violations.push(`${pkg}: frontmatter layer=${pm.layer}, CLAUDE.md layer=${claudeLayer}`);
+      }
+    }
+    expect(
+      violations,
+      `Frontmatter/CLAUDE.md layer mismatches:\n  ${violations.join('\n  ')}\n` +
+        `Fix: update either AGENTS.md frontmatter or CLAUDE.md package map to match.`,
+    ).toHaveLength(0);
+  });
+
+  it('frontmatter tiers match doc-governance.md', () => {
+    const govMd = cachedRead(path.join(ROOT, 'docs', 'conventions', 'doc-governance.md'));
+    const tierPattern = /\|\s*\*{0,2}(\w+)\*{0,2}\s*\|\s*`([^`]+(?:`,\s*`[^`]+)*)`\s*\|/g;
+    const govTiers = new Map<string, string>();
+    let match: RegExpExecArray | null;
+    while ((match = tierPattern.exec(govMd)) !== null) {
+      const tier = (match[1] as string).toLowerCase();
+      const pkgs = (match[2] as string).split(/`,\s*`/).map((p) => p.replace(/`/g, ''));
+      for (const pkg of pkgs) {
+        govTiers.set(pkg, tier);
+      }
+    }
+
+    const violations: string[] = [];
+    for (const [pkg, pm] of meta) {
+      const govTier = govTiers.get(pkg);
+      if (!govTier) {
+        violations.push(`${pkg}: missing from doc-governance.md Autonomy Tiers table`);
+      } else if (govTier !== pm.tier) {
+        violations.push(`${pkg}: frontmatter tier=${pm.tier}, doc-governance.md tier=${govTier}`);
+      }
+    }
+    expect(
+      violations,
+      `Frontmatter/doc-governance.md tier mismatches:\n  ${violations.join('\n  ')}\n` +
+        `Fix: update either AGENTS.md frontmatter or doc-governance.md tier table to match.`,
+    ).toHaveLength(0);
+  });
+
+  it('frontmatter autonomy readiness matches QUALITY.md', () => {
+    const content = cachedRead(PATHS.qualityMd);
+    const autonomySection = content.slice(content.indexOf('## Autonomy Readiness'));
+    const rowPattern =
+      /\|\s*(\w+)\/?\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|\s*(Yes|No)\s*\|/g;
+    const qualityAutonomy = new Map<
+      string,
+      { bootable: boolean; contract: boolean; observable: boolean; rollback_safe: boolean }
+    >();
+    let match: RegExpExecArray | null;
+    while ((match = rowPattern.exec(autonomySection)) !== null) {
+      qualityAutonomy.set(match[1] as string, {
+        bootable: match[2] === 'Yes',
+        contract: match[3] === 'Yes',
+        observable: match[4] === 'Yes',
+        rollback_safe: match[5] === 'Yes',
+      });
+    }
+
+    const violations: string[] = [];
+    for (const [pkg, pm] of meta) {
+      const qa = qualityAutonomy.get(pkg);
+      if (!qa) continue;
+      const fields = ['bootable', 'contract', 'observable', 'rollback_safe'] as const;
+      for (const field of fields) {
+        if (pm.autonomy[field] !== qa[field]) {
+          violations.push(
+            `${pkg}.autonomy.${field}: frontmatter=${pm.autonomy[field]}, QUALITY.md=${qa[field]}`,
+          );
+        }
+      }
+    }
+    expect(
+      violations,
+      `Frontmatter/QUALITY.md autonomy readiness mismatches:\n  ${violations.join('\n  ')}\n` +
+        `Fix: update either AGENTS.md frontmatter or QUALITY.md autonomy table to match.`,
+    ).toHaveLength(0);
   });
 });

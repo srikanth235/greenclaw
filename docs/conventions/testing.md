@@ -67,6 +67,8 @@ they validate the shape of the codebase itself.
 - Trace-shape hygiene for stored telemetry fields
 - Autonomy readiness table coverage (every package has a row)
 - Autonomy tier validation (critical-tier packages maintain grade >= B)
+- Frontmatter schema validation (every AGENTS.md has valid YAML frontmatter)
+- Frontmatter-table parity (QUALITY.md, CLAUDE.md, doc-governance.md match frontmatter)
 
 #### Deterministic repo-truth parity checks (in `tests/consistency.test.ts`)
 
@@ -145,11 +147,19 @@ workspace package behavior isolated from unrelated root harnesses.
 - When a semantic harness becomes trusted-CI eligible, wire its activation into
   CI and update `docs/QUALITY.md` in the same change.
 
+## Shared Test Utilities
+
+`tests/lib/frontmatter.ts` provides the canonical package list and metadata.
+All test files import from here instead of maintaining local `PACKAGES`
+constants. Enforced by `tests/consistency.test.ts`.
+
+- `loadAllPackageMeta()` — reads all `packages/*/AGENTS.md` frontmatter
+- `getPackageNames()` — sorted by layer
+- `getPackageOrder()` — layer-ordered for architecture checks
+- `getPackagesByTier(tier)` — filtered by tier
+
 ## Adding Tests for a New Module
 
 1. Create `tests/<module>.test.ts`
-2. Add the module to `MODULES` in `tests/consistency.test.ts`
-3. Add the module to `LAYER_ORDER` in `tests/architecture.test.ts`
-4. Add the module to `MODULES` in `tests/file-limits.test.ts`
-5. Add the module to `MODULES` in `tests/module-boundaries.test.ts`
-6. Register the test in the table above
+2. Add YAML frontmatter to `packages/<module>/AGENTS.md`
+3. Register the test in the table above

@@ -1,3 +1,14 @@
+---
+package: types
+layer: 0
+tier: standard
+grade: B
+autonomy:
+  bootable: true
+  contract: false
+  observable: false
+  rollback_safe: true
+---
 # types/ — Agent Guidelines
 
 ## Ownership
