@@ -74,12 +74,15 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Codex CLI
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
         run: npm install -g @openai/codex
 
       - name: Authenticate Codex CLI
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: printenv OPENAI_API_KEY | codex login --with-api-key
 
       - name: Semantic owner-doc harness
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
         run: GREENCLAW_ENABLE_LLM_HARNESS=1 pnpm test -- tests/owner-doc-semantic.test.ts

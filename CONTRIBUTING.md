@@ -117,7 +117,9 @@ CI runs on both `push` to main and `pull_request` targeting main. Two jobs:
 
 1. **check** — typecheck, lint, test (always runs)
 2. **semantic-owner-docs** — LLM-backed owner-doc consistency check (runs only
-   when `vars.ENABLE_SEMANTIC_HARNESS` is set to `'true'` in repository settings)
+   when `vars.ENABLE_SEMANTIC_HARNESS` is set to `'true'` in repository settings;
+   auth steps are individually gated on `secrets.OPENAI_API_KEY` so fork PRs
+   skip gracefully)
 
 Pre-commit hooks run automatically:
 

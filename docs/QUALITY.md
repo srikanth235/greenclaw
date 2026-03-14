@@ -139,4 +139,11 @@ breadth before depth.
   in job-level `if` conditions. Replaced with `vars.ENABLE_SEMANTIC_HARNESS`
   repository variable. Added `push` trigger so CI runs on merges to main.
 
+- 2026-03-14: Tightened doc-governance harness per review — (1) CI semantic job
+  gates auth steps on secrets availability to prevent fork PR failures,
+  (2) grade-change check now covers cross-cutting quality rows with spaces,
+  (3) defect log append-only validates full entry blocks including continuation
+  lines, (4) resolved debt compares full row content not just IDs, (5) added
+  missing `done` and `history` to volatile-word ban list with precise exemptions.
+
 Last updated: 2026-03-14

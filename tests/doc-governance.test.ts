@@ -148,15 +148,31 @@ function extractSection(content: string, headingPattern: RegExp): string | null 
 }
 
 /**
- * Extract non-empty, non-header lines from a section.
+ * Extract defect-log entries as complete blocks (top-level `- ` line plus
+ * any continuation lines that follow before the next `- ` or blank line).
  * @param section - Section content
- * @returns Trimmed content lines
+ * @returns Array of full entry strings (including continuation lines)
  */
-function contentLines(section: string): string[] {
-  return section
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('|') && l.startsWith('- '));
+function defectEntries(section: string): string[] {
+  const lines = section.split('\n');
+  const entries: string[] = [];
+  let current: string[] = [];
+
+  for (const line of lines) {
+    if (line.startsWith('- ')) {
+      if (current.length > 0) entries.push(current.join('\n'));
+      current = [line];
+    } else if (current.length > 0 && line.match(/^\s+\S/)) {
+      // continuation line (indented)
+      current.push(line);
+    } else {
+      if (current.length > 0) entries.push(current.join('\n'));
+      current = [];
+    }
+  }
+  if (current.length > 0) entries.push(current.join('\n'));
+
+  return entries;
 }
 
 /**
@@ -195,9 +211,9 @@ describe('Document Governance', () => {
 
     if (!oldDefectLog) return; // section didn't exist before
 
-    // Every old defect entry (lines starting with "- ") must still exist
-    const oldEntries = contentLines(oldDefectLog);
-    const newEntries = contentLines(newDefectLog ?? '');
+    // Every old defect entry (full block including continuation lines) must still exist
+    const oldEntries = defectEntries(oldDefectLog);
+    const newEntries = defectEntries(newDefectLog ?? '');
 
     const missing = oldEntries.filter((entry) => !newEntries.includes(entry));
 
@@ -232,17 +248,19 @@ describe('Document Governance', () => {
     const oldRows = tableRows(oldResolved).filter((r) => !r.includes('(none yet)'));
     const newRows = tableRows(newResolved ?? '');
 
+    // Normalize whitespace for comparison (collapse internal spaces)
+    const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
+    const newRowsNormalized = newRows.map(normalize);
+
     const missing = oldRows.filter((row) => {
-      // Extract TD-NNN ID from the row
-      const idMatch = row.match(/\|\s*(TD-\d+)\s*\|/);
-      if (!idMatch) return false;
-      return !newRows.some((nr) => nr.includes(idMatch[1]));
+      if (row.includes('(none yet)')) return false;
+      return !newRowsNormalized.includes(normalize(row));
     });
 
     expect(
       missing,
       `Resolved debt rows are append-only (tombstone-based). ` +
-        `These resolved entries were deleted:\n` +
+        `These resolved entries were deleted or modified:\n` +
         `${missing.map((e) => `  ${e}`).join('\n')}\n\n` +
         `See docs/conventions/doc-governance.md.`,
     ).toHaveLength(0);
@@ -260,18 +278,37 @@ describe('Document Governance', () => {
 
     const newContent = fs.readFileSync(path.join(ROOT, 'docs/QUALITY.md'), 'utf-8');
 
-    // Parse package quality rows: | name | ... | ... | ... | grade | notes |
-    const gradeRowPattern =
-      /\|\s*(\S+?)\/?(\s*)\|[^|]*\|[^|]*\|[^|]*\|\s*([A-D])\s*\|\s*(.*?)\s*\|/g;
+    // Parse both package quality rows (| name/ | impl | tests | docs | grade | notes |)
+    // and cross-cutting rows (| domain | status | grade | notes |).
+    // The name column may contain spaces, colons, slashes.
+    const pkgRowPattern =
+      /\|\s*([^|]+?)\/?(\s*)\|[^|]*\|[^|]*\|[^|]*\|\s*([A-D])\s*\|\s*(.*?)\s*\|/g;
+    const crossCutRowPattern = /\|\s*([^|]+?)\s*\|[^|]*\|\s*([A-D])\s*\|\s*(.*?)\s*\|/g;
 
-    /** Parse grade table into a map of name → { grade, notes } */
+    /** Parse grade tables into a map of name → { grade, notes } */
     function parseGrades(content: string): Map<string, { grade: string; notes: string }> {
       const map = new Map<string, { grade: string; notes: string }>();
       let match: RegExpExecArray | null;
-      const re = new RegExp(gradeRowPattern.source, 'g');
-      while ((match = re.exec(content)) !== null) {
-        map.set(match[1], { grade: match[3], notes: match[4] });
+
+      // Package quality table (6 columns)
+      const pkgRe = new RegExp(pkgRowPattern.source, 'g');
+      while ((match = pkgRe.exec(content)) !== null) {
+        const name = match[1].trim();
+        if (name === 'Package' || name === '---' || name.startsWith('-')) continue;
+        map.set(name, { grade: match[3], notes: match[4] });
       }
+
+      // Cross-cutting quality table (4 columns)
+      const ccSection = extractSection(content, /^##\s+Cross-Cutting Quality/);
+      if (ccSection) {
+        const ccRe = new RegExp(crossCutRowPattern.source, 'g');
+        while ((match = ccRe.exec(ccSection)) !== null) {
+          const name = match[1].trim();
+          if (name === 'Domain' || name === '---' || name.startsWith('-')) continue;
+          map.set(name, { grade: match[2], notes: match[3] });
+        }
+      }
+
       return map;
     }
 
@@ -330,6 +367,8 @@ describe('Document Governance', () => {
       { pattern: /\bpending\b/i, label: '"pending"' },
       { pattern: /\bchangelog\b/i, label: '"changelog"' },
       { pattern: /\bwhat changed\b/i, label: '"what changed"' },
+      { pattern: /\bdone\b/i, label: '"done"' },
+      { pattern: /\bhistory\b/i, label: '"history"' },
     ];
 
     // Date pattern: bare dates like 2026-03-14 outside of link targets
@@ -355,8 +394,20 @@ describe('Document Governance', () => {
             if (label === '"in progress"' && line.includes('|') && /PLAN-\d+/.test(line)) {
               continue;
             }
-            // Allow "pending" in table cells about test status
-            if (label === '"pending"' && line.includes('|')) {
+            // Allow "Pending" in table cells that describe test/impl status columns
+            if (
+              label === '"pending"' &&
+              line.includes('|') &&
+              /\b(Tests|Implementation|Docs)\b/i.test(line)
+            ) {
+              continue;
+            }
+            // Allow "done" only in table cells referencing completion status
+            if (label === '"done"' && line.includes('|') && /PLAN-\d+/.test(line)) {
+              continue;
+            }
+            // Allow "history" in bulleted feature descriptions (not as headers)
+            if (label === '"history"' && line.trim().startsWith('- ')) {
               continue;
             }
             violations.push(`${file}:${i + 1}: volatile word ${label}`);
